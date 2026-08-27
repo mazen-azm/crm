@@ -132,6 +132,18 @@ Place files in `attachments/` next to this `intake.md`, then list them here so t
 
 ## Technical hints (optional)
 
+<!-- standing-hints -->
+- **Read first, before anything else:** `.squad/plan-lessons.md` — one rule per
+  defect an earlier plan review found. A plan that repeats a listed defect is
+  rejected in review.
+- **Ids:** cite other stories only from `scripts/backlog.txt` (or the generated
+  `BACKLOG.md`), as FULL-NAME ids with the Jira key: `PLATFORM-13-ALL (CRM-28)`.
+  Documents under `docs/` may lag; the backlog is the authority.
+- **Structure:** `docs/taxonomy.md` (names), `docs/architecture.md` (where code
+  goes), `docs/git.md` (branches and commits) — cite them, do not restate them.
+- **Nothing committed may mention AI assistance** — commits, docs, or ignore-file
+  entries. Verification steps must include the grep that proves it.
+
 - Repos/roots: `api, web, android`. Primary language: `JavaScript` (api, web) and Kotlin (android, later).
 - Read first: `docs/taxonomy.md` (the 15 feature names — branch names use them),
   `docs/architecture.md` (where code goes; this story creates only the three empty roots),

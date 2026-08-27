@@ -80,11 +80,20 @@ client, deliberately one sprint after splitting it produced two thin ones.
 ## The loop — every story goes through it
 
 ```
-1. squad new-story <feature> --id CRM-N     intake pulled from Jira
-2. /squad-plan <intake>                      inside Claude Code, not the console
-3. fresh scoped session, only the plan file  build
-4. tests + checks + commit                   close, test count must go up
+1. squad new-story <feature> --id CRM-N          intake pulled from Jira
+2. node scripts/prepare-intake.mjs <intake>       inject the standing hints
+3. fill Technical hints / Out of scope by hand    the parts only you know
+4. /squad-plan <intake>                           inside Claude Code, not the console
+5. REVIEW the plan; every defect found becomes    .squad/plan-lessons.md
+   a rule in the lessons file before executing
+6. fresh scoped session, only the plan file       build
+7. tests + checks + commit                        close, test count must go up
 ```
+
+**The lessons file is the planner's memory.** Every intake points at
+`.squad/plan-lessons.md`; every plan review that finds a defect appends a
+rule there before the next plan is generated. A plan that repeats a listed
+defect is rejected in review, not patched quietly.
 
 The console (0.12.4) browses stories, plans and config well, but its drafter
 fails on `read_file` — plan from inside Claude Code. First story to run the
