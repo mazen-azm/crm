@@ -1,0 +1,41 @@
+# rules.txt — every rule the product promises, each with an id and an owner.
+# Derived from docs/product-brief.md. A rule nobody owns fails verify-backlog.
+# RULE <id> | <area> | <text>
+
+RULE BR-1 | global | Nothing is hard-deleted. Deletion sets deleted_at; the audit row survives.
+RULE BR-2 | global | Every mutation is audited: actor, entity, action, before, after, timestamp.
+RULE BR-3 | global | Time is UTC in storage, the reader's locale on display.
+RULE BR-4 | global | No unbounded list: paginated, filterable, sortable, with a maximum page size.
+RULE BR-5 | global | No silent overwrite: a write carries the revision it read; a mismatch returns 409. Applies to status change, assignment, priority change, article edit.
+RULE BR-6 | global | Two languages, always, in resource files, never hardcoded.
+
+RULE T-1 | tickets | Statuses: new open pending resolved closed reopened. Priorities: low normal high urgent.
+RULE T-2 | tickets | The first public agent reply moves new to open and stops the response clock, once.
+RULE T-3 | tickets | new to resolved is legal.
+RULE T-4 | tickets | Resolving requires a resolution note.
+RULE T-5 | tickets | A reply to a resolved ticket reopens it, within a 14-day window.
+RULE T-6 | tickets | A resolved ticket auto-closes after 14 days.
+RULE T-7 | tickets | An illegal status change is refused, and the refusal names what is legal.
+
+RULE S-1 | service-levels | Two clocks from creation: response and resolution.
+RULE S-2 | service-levels | Targets by priority: urgent 1h/4h, high 4h/24h, normal 8h/72h, low 24h/168h — fixed by the seed, by decision.
+RULE S-3 | service-levels | Clocks run 24/7; there is no working-hours calendar, by decision.
+RULE S-4 | service-levels | Time spent pending is not counted against the resolution clock.
+RULE S-5 | service-levels | A breach is a stored row, never recomputed on read.
+RULE S-6 | service-levels | A resolution breach raises priority one level and notifies an admin exactly once, enforced by a constraint.
+
+RULE E-1 | errors | One shape, every failure, no stack trace.
+RULE E-2 | errors | Every failure returns its documented code: 400 401 403 404 409 422 429 500.
+RULE E-3 | errors | 501 means named and deliberately not built — never 404.
+
+RULE I-1 | identity | users and customers are two tables; customers.user_id is null until first sign-in.
+RULE I-2 | identity | Identity resolution creates a customer the moment a request arrives from a new address.
+RULE I-3 | identity | Staff accounts are created by an admin; the first admin comes from the seed.
+RULE I-4 | identity | Email addresses identify customers.
+
+RULE SC-1 | scope | One organisation, one queue.
+RULE SC-2 | scope | Every rule is enforced in the API; no client enforces anything.
+RULE SC-3 | scope | The demo database is generated; schema plus seed produces a working system.
+
+RULE D-1 | design | No colour literal outside the tokens file, in any root.
+RULE D-2 | design | Empty, loading and error states are designed, not accidental.
