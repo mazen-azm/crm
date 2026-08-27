@@ -6,14 +6,15 @@ import assert from 'node:assert/strict';
 
 import { createApp } from './app.js';
 import { HttpError } from './platform/http/errors.js';
+import { requireSubject, requirePermission } from './platform/http/permission.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const servers = [];
 after(() => servers.forEach((s) => s.close()));
 
-function start(mountTestRoutes) {
-  const app = createApp({ mountTestRoutes });
+function start(mountTestRoutes, subjectResolver) {
+  const app = createApp({ mountTestRoutes, subjectResolver });
   const server = app.listen(0);
   servers.push(server);
   return `http://127.0.0.1:${server.address().port}`;
@@ -74,4 +75,54 @@ test('the response carries the request id set by the middleware', async () => {
   const err = await fetch(`${url}/nope`, { headers: { 'X-Request-Id': 'trace-2' } });
   assert.equal(err.headers.get('x-request-id'), 'trace-2');
   assert.equal((await err.json()).requestId, 'trace-2');
+});
+
+test('a route guarded by requireSubject() returns 401 when no resolver is wired', async () => {
+  let handlerRan = false;
+  const url = start((app) =>
+    app.get('/private', requireSubject(), (req, res) => {
+      handlerRan = true;
+      res.json({ ok: true });
+    }),
+  );
+  const res = await fetch(`${url}/private`);
+  assert.equal(res.status, 401);
+  const body = await res.json();
+  assert.equal(body.code, 'UNAUTHENTICATED');
+  assert.match(body.requestId, UUID);
+  assert.equal(handlerRan, false);
+});
+
+test('a route guarded by requirePermission(deny) returns 403 and never calls the service', async () => {
+  const url = start(
+    (app) =>
+      app.get('/private', requirePermission(() => false), () => {
+        throw new Error('service must not run');
+      }),
+    async () => ({ id: 'u1' }),
+  );
+  const res = await fetch(`${url}/private`);
+  assert.equal(res.status, 403);
+  assert.equal((await res.json()).code, 'FORBIDDEN');
+});
+
+test('a route guarded by requirePermission(allow) reaches the service and returns 200', async () => {
+  const url = start(
+    (app) =>
+      app.get('/private', requirePermission((s) => s.id === 'u1'), (req, res) =>
+        res.json({ hello: req.subject.id }),
+      ),
+    async () => ({ id: 'u1' }),
+  );
+  const res = await fetch(`${url}/private`);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { hello: 'u1' });
+});
+
+test('the request id on a 401/403 from the permission chain is the one the client supplied', async () => {
+  const url = start((app) => app.get('/private', requireSubject(), (req, res) => res.json({})));
+  const res = await fetch(`${url}/private`, { headers: { 'X-Request-Id': 'trace-perm' } });
+  assert.equal(res.status, 401);
+  assert.equal(res.headers.get('x-request-id'), 'trace-perm');
+  assert.equal((await res.json()).requestId, 'trace-perm');
 });
