@@ -102,3 +102,52 @@ sign-in story's key by counting and wrote CRM-24 (actually the React
 skeleton); the session that reviewed the plan re-counted and "corrected" it
 to CRM-39; Jira says CRM-41. Two different models both counted carefully and
 both were wrong — the tracker is the only source that knows.
+
+## L-9 — An error body names the field, never the value
+
+**Rule:** any plan for an error contract, a validation response, or a failure
+log states that the payload carries **identifiers only** — field names,
+paths, codes, request ids — and **never a value the caller submitted**. A
+value can be a password, a token, or personal data; echoing it to satisfy
+"tell me which field" sends it back to the client and writes it into every
+log that touches the response. The carrier type enforces this (keep only
+strings; drop objects and scalars), it is not left to the caller's goodwill.
+
+**Paid for by:** the CRM-20 plan's first draft shaped the 422 body's `fields`
+as `[{ field, message }]` and its e2e test threw
+`unprocessable([{ field: 'name', message: 'required' }])` — one careless
+future schema writing `message: \`got ${input.password}\`` would have leaked
+the password to the client and the logs. Gate 2 cut it to a list of names,
+with the `ValidationError` constructor filtering non-strings out.
+
+## L-10 — Do not hand-roll a source scan for an invariant a guard enforces
+
+**Rule:** when an invariant can be enforced **structurally** — a constructor
+that throws, a type that will not compile, a frozen map — the plan enforces
+it there and proves it with **one unit test on the guard**. It does not also
+propose a test that greps or parses source files for call sites. A
+text-scan check is brittle (misses a value built from a variable, a call
+split oddly across lines), and worse, file-content structure checks are a
+named story's job (**PLATFORM-15-ALL-structure-check, CRM-30**) — a plan that
+builds one early is doing another story's work with a weaker tool.
+
+**Paid for by:** the CRM-20 plan's first draft added
+`documented-codes.test.js`, a tree-walk over `api/src` regex-matching
+`new HttpError(<literal>` and asserting each status was in the catalogue —
+on top of a constructor that already throws on an undocumented status. Gate 2
+deleted the file, the acceptance-criteria bullet that demanded it, and the
+edge-case notes apologising for the regex's blind spots.
+
+## L-11 — A status outside rule E-2's catalogue is a promise the rules forbid
+
+**Rule:** rule E-2 names the whole catalogue — 400 401 403 404 409 422 429 500.
+Any other 4xx/5xx a plan promises is a rule violation wearing a number. If a
+story genuinely needs one (E-3's 501), the story that owns that rule extends
+the catalogue; every other plan stays inside it.
+
+**Paid for by:** two of them in one evening. The CRM-18 plan left a breadcrumb
+promising CRM-20 would map an oversized body to `413/PAYLOAD_TOO_LARGE` — 413
+is not in the catalogue, so honouring the promise breaks E-2 and ignoring it
+leaves a dead promise in the code. The CRM-19 draft would have let a strict
+catalogue guard block CHANNELS-2-API from ever throwing its 501. Both are now
+caught by `scripts/verify-plan.mjs` before a human reads the plan.
