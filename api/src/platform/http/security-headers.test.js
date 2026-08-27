@@ -30,13 +30,13 @@ function start() {
 }
 
 test('sets the standard set of security headers on every response', async () => {
-  const res = await fetch(`${start()}/ok`);
+  const res = await fetch(`${start()}/api/v1/ok`);
   for (const [name, value] of Object.entries(EXPECTED)) {
     assert.equal(res.headers.get(name), value, `missing or wrong: ${name}`);
   }
 });
 
 test('does not send X-Powered-By', async () => {
-  const res = await fetch(`${start()}/ok`);
+  const res = await fetch(`${start()}/api/v1/ok`);
   assert.equal(res.headers.get('x-powered-by'), null);
 });
