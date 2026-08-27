@@ -42,6 +42,14 @@ api/src/
     └── <slug>.test.js
 ```
 
+**The database is SQLite, through `node:sqlite`** — `DatabaseSync`, shipped with
+the runtime, no dependency and no native module. One file per environment, named
+by `DB_PATH`; the tests open `:memory:` so the suite needs no server and no
+teardown. Timestamps are ISO-8601 `TEXT`, ids are `TEXT` UUIDs generated in code
+(`crypto.randomUUID()`), and case-insensitive uniqueness is `COLLATE NOCASE` —
+no `TIMESTAMPTZ`, no `CITEXT`, no extensions, no other engine's dialect anywhere.
+A query plan is read with `EXPLAIN QUERY PLAN`.
+
 **A feature reaches another only through its `index.js`.** Where one needs
 another's capability it is injected in `app.js` — customers is handed a way to
 create an account, tickets a way to notify, identity a way to release a queue.
