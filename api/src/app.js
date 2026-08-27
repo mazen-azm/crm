@@ -3,6 +3,7 @@ import express from 'express';
 import { requestId } from './platform/http/request-id.js';
 import { securityHeaders } from './platform/http/security-headers.js';
 import { notFoundHandler, errorHandler } from './platform/http/errors.js';
+import { attachSubject } from './platform/http/permission.js';
 
 // The composition root: every injection happens here, and nothing here
 // listens. No database is opened in this story — the first feature that needs
@@ -21,6 +22,12 @@ export function createApp(deps = {}) {
   // A defensive cap, not a contract — PLATFORM-6-API (CRM-21) owns real
   // request ceilings.
   app.use(express.json({ limit: '100kb' }));
+
+  // The permission seam: every request past this line carries req.subject —
+  // the authenticated subject, or null. The default resolver is null-only, so
+  // a feature that forgets its guard 401s instead of silently succeeding.
+  // IDENTITY-1-API (CRM-41) supplies the real resolver.
+  app.use(attachSubject(deps.subjectResolver));
 
   // Features mount here in a later story. Tests use the same seam to mount a
   // throwing route without polluting the production tree.
