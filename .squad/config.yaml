@@ -8,7 +8,7 @@ project:
     - android
 tracker:
   type: jira
-  workspace: azen-al-nabarawy.atlassian.net
+  workspace: mazen-al-nabarawy.atlassian.net
   project: CRM
 naming:
   includeTrackerId: false
