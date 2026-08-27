@@ -89,3 +89,16 @@ ones, which is luck, not process. The same half-migration hid in
 `verify-backlog.mjs`: ids went full-name at the naming pivot, needs stayed
 prefixed, and the check had been failing with 166 errors that nobody saw
 because nobody ran it. A check that is not run is not a check.
+
+## L-8 — Never compute a tracker key
+
+**Rule:** `scripts/backlog.txt` and `BACKLOG.md` contain no `CRM-N` keys, so a
+key can only be **looked up in Jira**, never derived by counting rows. Cite a
+future story by its full id alone (`IDENTITY-1-API`) and append the key only
+when it came from the tracker or the intake.
+
+**Paid for by:** one story, three answers. The CRM-19 plan computed the
+sign-in story's key by counting and wrote CRM-24 (actually the React
+skeleton); the session that reviewed the plan re-counted and "corrected" it
+to CRM-39; Jira says CRM-41. Two different models both counted carefully and
+both were wrong — the tracker is the only source that knows.
