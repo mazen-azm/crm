@@ -5,7 +5,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { HttpError, errorHandler } from './errors.js';
+import {
+  HttpError,
+  ValidationError,
+  DOCUMENTED,
+  unprocessable,
+  errorHandler,
+} from './errors.js';
 
 function stubRes() {
   const res = {
@@ -70,4 +76,54 @@ test('errorHandler delegates when headers are already sent', () => {
   });
   assert.equal(delegated, err);
   assert.equal(res.body, null);
+});
+
+test('the constructor refuses a status outside the documented catalogue', () => {
+  assert.throws(() => new HttpError(418, 'TEAPOT'), RangeError);
+  // 501 belongs to rule E-3 and joins the catalogue in CHANNELS-2-API.
+  assert.throws(() => new HttpError(501, 'NOT_IMPLEMENTED'), RangeError);
+  assert.doesNotThrow(() => new HttpError(429, 'RATE_LIMITED'));
+});
+
+test('a domain code at a documented status still constructs', () => {
+  const err = new HttpError(409, 'REVISION_MISMATCH');
+  assert.equal(err.status, 409);
+  assert.equal(err.code, 'REVISION_MISMATCH');
+});
+
+test('DOCUMENTED is exactly the eight statuses of rule E-2, and frozen', () => {
+  assert.deepEqual(
+    Object.keys(DOCUMENTED).map(Number).sort((a, b) => a - b),
+    [400, 401, 403, 404, 409, 422, 429, 500],
+  );
+  assert.ok(Object.isFrozen(DOCUMENTED));
+});
+
+test('unprocessable() carries 422, its code, and the field names', () => {
+  const err = unprocessable(['email']);
+  assert.ok(err instanceof HttpError);
+  assert.ok(err instanceof ValidationError);
+  assert.equal(err.status, 422);
+  assert.equal(err.code, 'VALIDATION_FAILED');
+  assert.deepEqual(err.fields, ['email']);
+});
+
+test('unprocessable() keeps names and drops anything that could be a value', () => {
+  assert.deepEqual(unprocessable(['email', 42, { field: 'name' }]).fields, ['email']);
+  assert.deepEqual(unprocessable('not-a-list').fields, []);
+});
+
+test('errorHandler serialises fields on a 422', () => {
+  const res = stubRes();
+  errorHandler()(unprocessable(['email']), { id: 'req-1' }, res, () => {});
+  assert.equal(res.statusCode, 422);
+  assert.deepEqual(Object.keys(res.body).sort(), ['code', 'fields', 'requestId']);
+  assert.deepEqual(res.body.fields, ['email']);
+});
+
+test('errorHandler omits fields when the list is empty', () => {
+  const res = stubRes();
+  errorHandler()(unprocessable([]), { id: 'req-1' }, res, () => {});
+  assert.equal(res.statusCode, 422);
+  assert.deepEqual(Object.keys(res.body).sort(), ['code', 'requestId']);
 });
