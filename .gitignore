@@ -1,8 +1,19 @@
-# Managed by squad-kit — do not edit this block
-.squad/secrets.yaml
-.squad/stories/**/attachments/
-.squad/.trash/
-.squad/.last-run.json
-.squad/.last-copy-prompt.md
-.squad/runs/
-# End squad-kit block
+# Root notes are mine. The README is the only one the repo publishes.
+/*.md
+!/README.md
+
+node_modules/
+dist/
+build/
+.gradle/
+local.properties
+*.iml
+.idea/
+.DS_Store
+.env
+.env.*
+!.env.example
+api/*.db
+api/*.db-journal
+api/*.db-shm
+api/*.db-wal

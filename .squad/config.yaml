@@ -8,7 +8,8 @@ project:
     - android
 tracker:
   type: jira
-  workspace: https://mazen-al-nabarawy.atlassian.net/jira/software/projects/CRM/boards/1?filter=&groupBy=none
+  workspace: azen-al-nabarawy.atlassian.net
+  project: CRM
 naming:
   includeTrackerId: false
   globalSequence: false

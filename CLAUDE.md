@@ -1,194 +1,132 @@
 # CLAUDE.md — Support Desk
 
-A customer support CRM. **One repository, three roots:**
+Project-level context for Claude Code inside this repo.
+(The learning-workspace map lives in `../../CLAUDE.md`.)
+
+## What this project is
+
+A customer-support CRM built as an assessed learning project. The company brief
+(12 areas, from customer management to platform) is the requirement; the
+assessment sheet weighs **planning and specification at 40 of 100 points** —
+more than the code itself. The real goal is to learn **squad-kit** end to end:
+intake → plan → build → verify, with Jira as the tracker.
+
+This is the second attempt. The first (`../support-crm`) shipped 8 sprints and
+still runs; it stopped being navigable because one feature carried four names
+and three documents described the same backlog with nobody comparing them.
+Nothing there was deleted. This repo starts clean with the lessons applied.
+
+## The taxonomy — one name per thing
+
+15 features. The slug is the folder name in `api/src/features/`, in
+`.squad/stories/`, in `.squad/plans/`, and (uppercased) in every story id.
+**Never abbreviated anywhere** — no `TCK`, no `SLA`, no `PLT`. An abbreviation
+is a lookup table the reader has to memorize, and it broke the first attempt.
 
 ```
-api/       Node 26 + Express 5 + node:sqlite   every business rule
-web/       React 19 + Vite + TypeScript        the agent's desk
-android/   Kotlin + Compose                    the agent away from it
+platform        languages       identity        customers       tickets
+conversation    service-levels  notifications   channels        portal
+reports         audit           knowledge-base  satisfaction    assist
 ```
 
-This is the second time this product has been built. The first attempt shipped
-blocks 0–7 and works; it stopped because its **planning structure** had four names
-for every feature and no single place listing the work. Everything below that
-reads like an unusually specific rule is one that attempt paid for once.
+There is no feature named backend, web or mobile — those are **layers**.
+A folder named after a layer puts "sign in on a phone" next to "read a report
+on a phone", which share nothing but a screen size.
 
-## Read these first, in this order
-
-| | What it settles |
-|---|---|
-| `docs/taxonomy.md` | **What everything is called.** Sixteen features, one name each. |
-| `docs/blocks.md` | **When it gets built.** Eleven blocks, and what each demonstrates. |
-| `docs/architecture.md` | **Where code goes**, and which check enforces it. |
-
-There is no fourth map. If a document restates one of these, delete it — that is
-how the previous attempt ended up with its task list and its plan folder disagreeing
-inside a day.
-
----
-
-## The one rule everything else follows
-
-**Every business rule lives in the API.** A rule enforced in a client is a rule
-that can be bypassed by calling the API directly.
-
-An internal note is *never selected* rather than filtered out. An unauthorised
-call is refused by middleware rather than by a missing button. The state machine
-is in a service, not in a dropdown. The clients render state and send intent.
-Nothing else.
-
----
-
-## Naming
-
-`docs/taxonomy.md` is the authority. In short:
+## The id — reads without opening anything
 
 ```
-TCK-2-WEB          feature prefix · number inside the feature · layer
+TICKETS-2-WEB-queue-filter-sort
+│       │ │   └── what it does (2–4 words, kebab-case)
+│       │ └── layer: API · WEB · MOB · ALL
+│       └── number inside the feature
+└── the feature, spelled out
 ```
 
-- **The slug in the taxonomy table is the folder name**, in `api/src/features/`,
-  in `.squad/plans/`, and in the branch. Never abbreviated in one place and
-  spelled out in another.
-- **Every id carries its layer.** `API`, `WEB`, `MOB` — including the API one.
-- **There is no `mobile`, `backend` or `web` feature.** Those are layers. A story
-  lives with the rule it renders.
-- **A block is a field, not a folder.**
+The same id runs through everything: the Jira summary starts with it, the
+story folder is named by it, the plan file carries it, the branch is named
+after it, the commit cites it. One name, seven places, zero translation.
 
----
+## The backlog
 
-## Structure
+- **Source of truth:** `scripts/backlog.txt` — 15 features, 90 capabilities,
+  138 story units, 480 points. Everything else is generated; nothing derived
+  is ever edited by hand.
+- **Rules:** `scripts/rules.txt` — 31 rules from the product brief, each owned
+  by at least one story. A rule nobody owns fails the check.
+- **Check:** `node scripts/verify-backlog.mjs` — id shape, duplicates,
+  dependencies exist and never point at a later sprint, no cycles, sprint
+  balance against the measured velocity (36 ± 25%), rule ownership.
+- **Generate:** `node scripts/generate.mjs` → `BACKLOG.md` + `jira-import.csv`.
 
-**Organise by feature, then by layer inside it** — from the first commit, not
-after a refactor. Node.js Best Practices, Feature-Sliced Design and Google's
-Android guidance all say this independently.
+13 sprints (0–12), all inside 33–43 points. Sprint 10 is the whole mobile
+client, deliberately one sprint after splitting it produced two thin ones.
 
-Inside an API feature:
+## Jira
+
+- Site: `mazen-al-nabarawy.atlassian.net` (personal, not the company instance)
+- Project: **CRM** — 153 issues: 15 epics (CRM-1..15, one per feature, full
+  name as the summary) and 138 stories (CRM-16..153).
+- Every story: summary starts with the full id · labels carry the layer
+  (`backend` / `web` / `mobile` / `shared`), the feature slug, the actor,
+  `sprint-N` and `pts-N` · parent is the feature's epic · description carries
+  the owned rules, the dependencies, and the squad-kit story folder.
+- Verified 2026-08-27 by reading back from Jira: all 153 keys with no gap,
+  zero stories missing labels or parent, layer counts 68/54/10/6 and all 13
+  sprint counts exactly matching `backlog.txt`, zero old abbreviations.
+- The board shows stories only; epics appear in Timeline or Group-by-Epic.
+- Sprints are labels (`sprint-N`) because the project is a team-managed Kanban.
+
+## The loop — every story goes through it
 
 ```
-.routes      HTTP · req and res stop here
-.schema      well-formed → 422
-.service     allowed → 409 · validation lives here, not in the route
-.rules       the pure part
-.mapper      row → wire
-.repository  SQL · nowhere else
-.jobs        what happens unasked
+1. squad new-story <feature> --id CRM-N     intake pulled from Jira
+2. /squad-plan <intake>                      inside Claude Code, not the console
+3. fresh scoped session, only the plan file  build
+4. tests + checks + commit                   close, test count must go up
 ```
 
-Features never import each other's internals. Where one needs another's
-capability, it is **injected in `api/src/app.js`**.
+The console (0.12.4) browses stories, plans and config well, but its drafter
+fails on `read_file` — plan from inside Claude Code. First story to run the
+whole loop: **CRM-16** (`PLATFORM-1-ALL-repo-conventions`) — nothing depends
+on it and it depends on nothing.
 
-`node scripts/verify-architecture.mjs` enforces this. It runs on every push, and
-it must be written in block 0 — the previous attempt added its checks in block 3
-and the first run found nine real violations that had been accumulating.
+## Rules that were paid for once already
 
----
+- **One name per thing.** Not abbreviated in one place and spelled out in
+  another — that includes display names, not just ids.
+- **State is derived, never declared.** No hand-written "done" column anywhere;
+  git tags and the plans' checkboxes are the record.
+- **A check that reads one source proves only that the source agrees with
+  itself.** Verify Jira against `backlog.txt`, the filesystem against the
+  taxonomy, the plans against the code.
+- **Do not plan before the code exists.** A planner pointed at an empty folder
+  invents paths.
+- **A decision written down is a decision; one that is not is an omission.**
+  Eleven brief items are deliberately not built (email/WhatsApp/SMS/chat
+  channels, chatbot, auto-categorisation, ERP, multi-branch, branding,
+  auto-assignment, attachments) — each recorded, none silently dropped.
 
-## Rules that were paid for once
+## Decisions
 
-Each of these cost a defect, a wasted block, or a thrown-away plan.
+- **Backend:** Node + Express + SQLite. Same as the first attempt; known, fast
+  tests on `:memory:`.
+- **SLA targets are fixed by the seed**, by decision — no admin screen for them
+  (recorded in `rules.txt` S-2).
+- **Design is stories, not vibes:** tokens file (`PLATFORM-10-WEB`), one shell
+  (`PLATFORM-12-WEB`), designed states (`PLATFORM-16-WEB`), the same palette on
+  mobile (`PLATFORM-18-MOB`). Rules D-1 (no colour literal outside the tokens
+  file) and D-2 (states are designed) are checked, not hoped for.
+- **Open — web framework:** the backlog says React; Vite keeps the "every rule
+  lives in the API" principle cleaner than Next's server components. Decide
+  before `PLATFORM-9-WEB`.
+- **Open — mobile:** the backlog says Compose (`PLATFORM-18-MOB`). KMP was
+  discussed; if wanted, it becomes a later story proving the layer-swap rule,
+  not a sprint-0 prerequisite.
 
-### Correctness
+## No AI attribution
 
-- **A version is a counter, never a timestamp.** `updated_at` has millisecond
-  precision, so two writes inside one millisecond share a value and a stale write
-  is accepted. `revision` answers *which*; `updated_at` answers *when*.
-- **A breach is a stored row, not a computation**, and escalation happens once —
-  enforced by a unique constraint, not by the job remembering.
-- **Due times are measured from creation**, including on a priority change. This
-  can put a ticket immediately in breach. That is correct.
-- **A ticket due exactly now is not in breach.** Strictly past.
-- **`users` and `customers` are two tables**, joined by `customers.user_id`, null
-  until that person first signs in.
-- **Two SLA columns, not one.** Response and resolution are separate promises.
-- **Nothing is hard-deleted**, which is why the customer email index is partial.
-- **Rate limiting keys on the address prefix, not the address.** An IPv6 client
-  usually holds a whole /64, so per-address limiting can be walked around
-  billions of times.
-
-### Checks
-
-- **A check that passes over nothing is worse than no check.** A web layer check
-  once walked `.js` files in a TypeScript project and reported `ok` over an empty
-  set for two blocks. Every check prints what it actually read.
-- **Two independent statements of one fact are compared.** Nine checks once passed
-  because all nine read the same document.
-- **A green tick is read together with what it resolved to.** `credential resolved
-  (none)` passed as green while the thing it checked was empty.
-- **A validator's issue count is not a defect count.** Read what a finding
-  resolved to before believing it.
-- **A path is a count of directory levels.** Moving a file changes the count
-  without changing the string. This bit four times.
-- **Package scripts name files that exist**, checked. `npm run seed` was broken
-  for a whole block after a file move; every test passed.
-- **A variable `.env.example` declares and the code refuses to start without must
-  be loaded by something**, checked. The documented way to start the API did not
-  start the API for six blocks.
-
-### Working
-
-- **An intermittent test is a report, not noise. Read its duration first.** Four
-  of them: two were sockets the harness left open, one was a real race, and three
-  had been dismissed as machine load.
-- **Open the story in the running application, as the role it is for.** A ticket
-  screen once called an admin-only endpoint; every agent saw an empty control and
-  no test noticed.
-- **Never write "the only X" into a plan from memory.** Put the `grep` in the plan
-  and let the executor run it. `platform/db/seed.js` is a second composition root,
-  so every service signature change has two call sites.
-- **Do not plan ahead of the code.** A planner pointed at what does not exist
-  writes invented paths.
-- **A missing translation key fails the build**, on the file where the omission
-  is. One component serving two audiences needs words that know which.
-- **Superseded documentation is deleted, not left lying about.** It competes for
-  the planner's read budget.
-
----
-
-## Definition of done
-
-1. Tests pass, **including the failure case**.
-2. Validation is in the service; the failure returns its documented code.
-3. It writes an audit row if it changes anything.
-4. **A stranger is refused, and a test says so.**
-5. Every layer named in its id is finished, or has no story.
-6. Strings are in resource files, in both languages.
-7. The OpenAPI document is current — a served route that is not documented
-   fails the suite.
-8. Committed on its branch with the reasoning in the body.
-9. **Opened in the running application, as the role it is for.**
-10. Demonstrable.
-
-Items 4 and 9 came from defects rather than principle: a write path shipped with a
-guard on reading and none on writing, and a screen shipped calling an endpoint the
-role it was built for cannot reach. Both were invisible to a green suite.
-
----
-
-## Branches
-
-| Branch | Cut from | Merges into |
-|---|---|---|
-| `main` | — | — |
-| `release/block-N` | `main` | `main`, at the block review |
-| `<story-id>` | its block branch | its block branch |
-
-Closing a block: tag `block-N` with what it can be shown doing, delete merged
-branches, run every check.
-
-## No AI attribution in a commit — absolutely
-
-No `Co-Authored-By:` trailers, no tool name in a subject or body, ever. `.squad/`
-and `docs/ai-usage.md` are committed deliberately because the method is part of
-the deliverable; the commit rule still holds. `.squad/secrets.yaml` is never
-committed.
-
-## Who I am
-
-Mazen — senior Flutter developer. Strong in mobile architecture, state management,
-REST APIs, async. Newer to Node, React and the Android ecosystem.
-
-Explain **why**, not just what. Skip beginner explanations. Keep answers short and
-plain. Answer in English in a terminal session — no terminal here implements the
-Unicode bidirectional algorithm properly, so Arabic mixed with paths and
-identifiers comes out reversed. Arabic is fine in a chat window.
+No `Co-Authored-By:` trailers, no "Claude" in a commit subject or body, no AI
+sections in the README, no `CLAUDE.md` named in `.gitignore` (use `/*.md` +
+`!/README.md`). Removing it from the tip is not enough — it must never enter
+history.
