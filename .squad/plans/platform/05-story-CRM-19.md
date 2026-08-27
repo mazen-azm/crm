@@ -21,7 +21,7 @@ Concretely:
    - a `requireSubject()` middleware that turns "no subject" into `HttpError(401, 'UNAUTHENTICATED')`;
    - a `requirePermission(policy)` factory that turns a pure `(subject, req) => boolean | Promise<boolean>` policy into a middleware that either calls `next()` or throws `HttpError(403, 'FORBIDDEN')`.
 2. `createApp` in `api/src/app.js` composes `attachSubject` into the chain **before** the `mountTestRoutes` seam, so every feature that later mounts under this seam already sees `req.subject` and can guard itself with `requireSubject()` / `requirePermission(policy)` **before** its service function is called.
-3. A feature service **never** decides authentication or authorization — the middleware has already decided by the time the route handler dispatches into the service. This is the shape the future architecture check (PLATFORM-11-ALL / structure-check) will enforce; here we only lay the seam and the tests that prove it fires first.
+3. A feature service **never** decides authentication or authorization — the middleware has already decided by the time the route handler dispatches into the service. This is the shape the future architecture check (PLATFORM-15-ALL / structure-check) will enforce; here we only lay the seam and the tests that prove it fires first.
 
 **Not in scope**
 

@@ -37,7 +37,7 @@ Explicitly **out of scope** (owners named):
 2. **`docs/architecture.md`** lines 25–59 — the API tree: `app.js` is "the composition root · every injection happens here"; `platform/http/` is exactly "error middleware, request id, security headers"; `req` and `res` "stop at the route" (check #3, line 110). Do not add anything else to `platform/http/`.
 3. **`docs/git.md`** lines 11–56 — sprint / story branch model and the **no-AI-attribution** rule (commits, docs, ignores). Verification must grep for it.
 4. **`scripts/rules.txt`** lines 27–29 — the three error rules. Only **E-1** lands here; **E-2** and **E-3** are noted in comments so a later story finds the seam.
-5. **`scripts/criteria/platform.md`** lines 42–62 — the six acceptance criteria for this story (its `## PLT-3-API` heading uses the criteria file's internal prefix) and the out-of-scope note about translation.
+5. **`scripts/criteria/platform.md`** lines 42–62 — the six acceptance criteria for this story, under the heading `## PLATFORM-3-API`, and the out-of-scope note about translation.
 6. **`scripts/backlog.txt`** lines 22–26 — confirms the story's id (`PLATFORM-3-API`), that PLATFORM-2-API is its `needs`, and that PLATFORM-4/5/6-API depend on it.
 7. **`api/package.json`** lines 1–13 — one file, `"type": "module"`, `node --test`, no glob. Extending this is the only place a dependency is declared.
 8. **`api/src/platform/config/index.js`** lines 1–12 — the frozen `config` object; **do not** re-read env in `app.js` — import `config` from here.
@@ -158,7 +158,7 @@ No frontend changes required. The `web/` and `android/` roots are untouched.
 - **Async throw** from an Express v5 handler. Express v5 forwards rejected promises to the error middleware automatically — **do not** add a `express-async-errors` shim (Express v4-only). Test in task 9.4 covers this.
 - **Unknown method on a known path** — for this story every path is unknown; `notFoundHandler` catches both. When routes exist, Express raises 404 for unmatched method+path pairs and the same handler funnels it.
 - **`OPTIONS` / `HEAD` requests** — `express.json()` and both middlewares run for every method; security headers and request id are set. Not asserted in tests this story (adds noise); leave as a comment in `security-headers.js`.
-- **JSON body over 100 KB** — Express's built-in body parser throws a `PayloadTooLargeError`. It reaches `errorHandler` as a non-`HttpError`, becomes `500/INTERNAL` this story. The catalogue in **PLATFORM-5-API (CRM-20)** will map it to `413/PAYLOAD_TOO_LARGE`; leave a `TODO(PLATFORM-5-API/CRM-20)` breadcrumb in `errors.js`.
+- **JSON body over 100 KB** — Express's built-in body parser throws a `PayloadTooLargeError`. It reaches `errorHandler` as a non-`HttpError`, becomes `500/INTERNAL` this story. PLATFORM-5-API (CRM-20) did NOT map it: 413 is not one of rule E-2's eight statuses, so honouring that would break the rule. It still answers 500 until a story that owns the body ceiling decides otherwise.
 - **Concurrent requests** — request id is stored on `req` (per-request object); no module-level state. No race possible.
 
 ---

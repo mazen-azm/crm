@@ -29,9 +29,10 @@ const STORIES = join(ROOT, '.squad/stories')
 const CATALOGUE = new Set([400, 401, 403, 404, 409, 422, 429, 500])
 const ENGINE = /node:sqlite|SQLite|DatabaseSync/
 const FOREIGN_DIALECT = /TIMESTAMPTZ|CITEXT|pgcrypto|CREATE EXTENSION|pg_advisory|mongoose|prisma|Sequelize/gi
-// Naming a dialect to forbid it is not using it — architecture.md's own
-// sentence is a list of what the engine does not have.
-const PROHIBITED_NEARBY = /\b(no|not|never|without|forbid\w*|instead of)\s+\S{0,3}$/i
+// Naming a thing in order to forbid it is not doing it: a prohibition, a
+// done-criterion asserting absence, and the grep that proves it all read as
+// matches. The negation lives anywhere on the line, so the line is the unit.
+const NEGATED = /\b(no|not|never|without|forbid\w*|refuse\w*|reject\w*|instead of|must not|do not)\b|NOT|grep/i
 // Only a plan that actually writes storage needs the engine named. The bare
 // word "database" appears in every out-of-scope list ever written.
 const PERSISTENCE = /CREATE TABLE|\bmigrations?\/|\.sql\b|db\.(?:exec|prepare)\(/i
@@ -160,7 +161,7 @@ function checkPlan(p) {
 
   // L-5 — name the engine before planning persistence
   for (const m of body.matchAll(FOREIGN_DIALECT)) {
-    if (PROHIBITED_NEARBY.test(body.slice(Math.max(0, m.index - 14), m.index))) continue
+    if (NEGATED.test(lines[at(m.index) - 1])) continue
     say(at(m.index), `uses ${m[0]} — another engine's dialect (L-5)`)
   }
   if (PERSISTENCE.test(body) && !ENGINE.test(body))
@@ -192,8 +193,12 @@ function checkPlan(p) {
   }
 
   // L-6 — a guard's scope is the surface its rule governs
-  if (/whole (?:working )?tree|entire (?:working )?tree|recursively grep the repo/i.test(body))
+  for (const line of lines) {
+    if (!/whole (?:working )?tree|entire (?:working )?tree|recursively grep the repo/i.test(line)) continue
+    if (/\bnot\b|NOT|never|rather than|instead of/.test(line)) continue   // saying it is not whole-tree
     flag(`${p.file} proposes a repo-wide grep — .squad/ names its tools by design, so scope the guard to the code root (L-6)`)
+    break
+  }
 
   // L-3 — the branch a story is cut from must exist
   for (const m of body.matchAll(/cut from [`']?(sprint-\d+)[`']?/g)) {
