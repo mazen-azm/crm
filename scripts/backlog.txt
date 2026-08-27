@@ -1,0 +1,121 @@
+# feature|PREFIX|Display name
+# n|actor|title|LAYER:block,LAYER:block   (layers: API WEB MOB ALL)
+
+platform|PLT|Platform
+1|system|the repository, its ignore rules and its branch conventions|ALL:0
+2|system|the schema, migrations that run once, and the four queue indexes|API:0
+3|system|the chain: wiring, one error middleware, a request id, security headers|API:0
+4|system|/api/v1, a maximum page size, health, and structured logging|API:0
+5|system|an API document checked against the routes actually served|API:0
+6|system|the seed fills reference data and can be run twice|API:0
+7|system|the seed walks tickets through the real state machine|API:2
+8|developer|a React skeleton: router, auth context, client, loading hook|WEB:0
+9|developer|the web application has a test setup and its first tests|WEB:0
+10|developer|the suite runs on every push and a red suite blocks a merge|ALL:0
+11|developer|the structure rules are enforced by a script, in all three roots|ALL:0
+12|developer|the taxonomy and every cited path are checked by a script|ALL:0
+13|developer|a Compose skeleton: networking, injection, navigation|MOB:7
+14|system|hardening: a rate-limit sweep, an error audit, the README, screenshots|ALL:9
+
+i18n|I18N|Languages
+1|developer|every string in a resource file, in both languages|WEB:0,MOB:7
+2|agent|switching to Arabic flips the interface without a restart|WEB:0,MOB:7
+3|agent|dates and numbers read the way my locale writes them|WEB:1
+4|developer|a key missing from one language fails the build|WEB:0
+
+identity|IDN|Identity
+1|agent|I sign in and reach my queue|API:1,WEB:1,MOB:7
+2|admin|I create, disable and re-enable accounts, and set roles|API:1,WEB:6
+3|any|an expired token returns me to sign-in, not a broken screen|WEB:1
+4|system|failed sign-ins are throttled per account and per address|API:1
+5|admin|I set a user's password, so a locked-out person gets back in|API:3,WEB:3
+6|any|I change my own password, knowing the current one|API:3,WEB:3
+7|any|changing it ends every other session|API:5
+8|agent|I read the list of people a ticket can be assigned to|API:1,WEB:2
+9|admin|disabling somebody unassigns their queue and tells me how much|API:5
+
+customers|CUS|Customers
+1|agent|I search by name, address or number|API:1,WEB:1
+2|agent|contacts, open tickets and history in one screen|API:1,WEB:1,MOB:7
+3|agent|I write an internal note about a customer|API:1,WEB:1
+4|admin|deleting a customer hides them and keeps the audit trail|API:4,WEB:4
+5|system|an arriving request matches a customer by address, or creates one|API:3
+6|agent|I add a customer while I am on the phone to them|API:3,WEB:3
+7|agent|I correct a customer's contact details|API:4,WEB:4
+8|agent|I give a customer a sign-in|API:3,WEB:3
+
+tickets|TCK|Tickets
+1|agent|I raise a ticket for a customer|API:2,WEB:2
+2|agent|I filter and sort the queue; an agent sees all of it|API:2,WEB:2,MOB:7
+3|agent|I assign a ticket|API:2,WEB:2,MOB:7
+4|system|an illegal status change is refused with what is legal|API:2
+5|agent|resolving a ticket needs a note|API:2,WEB:2
+6|customer|I reopen a resolved ticket inside the window|API:4,WEB:4
+7|agent|I read the whole history in order|API:2,WEB:2,MOB:7
+8|system|a customer may act only on their own ticket, on every path|API:2
+9|agent|I change a ticket's category|API:4,WEB:4
+10|agent|my own tickets are one click away|WEB:4
+11|agent|I search tickets by their text|API:8,WEB:8
+12|agent|my change is refused if somebody edited it while I read|API:5,WEB:5
+13|system|a resolved ticket closes itself once the window passes|API:5
+14|agent|the categories are readable, so a form has something to offer|API:2,WEB:2
+
+conversation|CNV|Conversation
+1|agent|I reply, and the first reply stops the response clock|API:4,WEB:4,MOB:7
+2|agent|my internal note never reaches a customer, in any response|API:4,WEB:4
+3|customer|I reply on my own ticket; replying to a resolved one reopens it|API:4,WEB:4
+4|system|an agent's first reply moves a new ticket to open|API:4
+5|agent|a long thread pages rather than arriving whole|API:4,WEB:4
+
+service-levels|SLA|Service levels
+1|system|a ticket carries both deadlines, from its priority|API:2
+2|agent|time waiting on the customer is not counted against me|API:5
+3|agent|a missed deadline is recorded once and shown on the queue|API:5,WEB:5,MOB:7
+4|admin|a missed resolution deadline raises it and tells me, once|API:5
+5|system|the seed runs the escalation once|API:5
+
+notifications|NTF|Notifications
+1|agent|I am told when a ticket becomes mine|API:5
+2|admin|I read my notifications|API:5,WEB:5
+
+channels|CHN|Channels
+1|customer|a ticket enters through the channel interface, not around it|API:3,WEB:3
+2|developer|an unimplemented channel says so rather than failing quietly|API:3
+3|system|the public intake is throttled per address|API:3
+
+portal|POR|Portal
+1|customer|I raise a ticket without an account|WEB:3
+2|customer|I sign in and see my tickets and nothing else|WEB:3
+3|customer|I read my ticket: the replies, never the internal notes|WEB:4
+
+reports|RPT|Reports
+1|admin|I see the queue by status|API:6,WEB:6
+2|admin|I see what share of tickets met their promise|API:6,WEB:6
+3|admin|I see load per agent, idle agents shown as zero|API:6,WEB:6
+4|admin|today means today where I am, not in UTC|API:6,WEB:6
+5|admin|average satisfaction, and how many answers it rests on|API:8,WEB:8
+
+audit|AUD|Audit
+1|system|every change writes an audit row|API:1
+2|admin|I read the audit log filtered by person, thing or date|API:6,WEB:6
+
+administration|ADM|Administration
+1|system|permission is decided in middleware before any service runs|API:1
+2|client|every failure returns its documented code and one shape|API:1
+
+knowledge-base|KB|Knowledge base
+1|admin|I write and publish an article in both languages|API:8,WEB:8
+2|agent|I search articles by their text|API:8,WEB:8
+3|agent|I put an article into a reply as editable text|WEB:8
+4|customer|I read and search published articles without signing in|API:8,WEB:8
+5|admin|an article's edits are kept, so a bad one is recoverable|API:8
+
+satisfaction|SAT|Satisfaction
+1|customer|I say whether the answer helped, once|API:8,WEB:8
+2|admin|the ratings become a number I can act on|API:8,WEB:8
+
+assist|AST|Assist
+1|developer|one interface, a recorded stub, and a rate limit|API:9
+2|agent|I summarise a long ticket|API:9,WEB:9
+3|agent|I get a draft I edit before sending; nothing is sent for me|API:9,WEB:9
+4|agent|when the assist is unavailable the ticket still works|API:9,WEB:9

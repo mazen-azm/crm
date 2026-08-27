@@ -1,0 +1,49 @@
+version: 1
+project:
+  name: Support Desk
+  primaryLanguage: JavaScript
+  projectRoots:
+    - api
+    - web
+    - android
+tracker:
+  type: none
+naming:
+  includeTrackerId: false
+  globalSequence: false
+agents:
+  - claude-code
+planner:
+  enabled: true
+  provider: anthropic
+  mode: auto
+  auth:
+    anthropic: subscription
+  budget:
+    maxFileReads: 40
+    maxContextBytes: 150000
+    maxDurationSeconds: 360
+  cache:
+    enabled: true
+  maxOutputTokens: 16384
+  stages:
+    scout:
+      enabled: true
+      maxFiles: 24
+      maxOutputTokens: 2048
+  tools:
+    grep: true
+    listDir: true
+    rangedRead: true
+  validation:
+    enabled: true
+    strict: false
+  runtime:
+    anthropic: agent-sdk
+  providerOptions:
+    anthropic:
+      thinking: adaptive
+      effort: medium
+      effortByPhase:
+        scout: minimal
+        draft: medium

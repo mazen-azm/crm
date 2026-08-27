@@ -1,0 +1,344 @@
+"Issue Type","Issue Key","Summary","Description","Epic Name","Parent","Labels","Labels","Labels","Sprint"
+"Epic","EPIC-PLATFORM","Platform","All work in the platform domain. Slug: platform. Prefix: PLT.","Platform","","platform","","",""
+"Epic","EPIC-I18N","Languages","All work in the i18n domain. Slug: i18n. Prefix: I18N.","Languages","","i18n","","",""
+"Epic","EPIC-IDENTITY","Identity","All work in the identity domain. Slug: identity. Prefix: IDN.","Identity","","identity","","",""
+"Epic","EPIC-CUSTOMERS","Customers","All work in the customers domain. Slug: customers. Prefix: CUS.","Customers","","customers","","",""
+"Epic","EPIC-TICKETS","Tickets","All work in the tickets domain. Slug: tickets. Prefix: TCK.","Tickets","","tickets","","",""
+"Epic","EPIC-CONVERSATION","Conversation","All work in the conversation domain. Slug: conversation. Prefix: CNV.","Conversation","","conversation","","",""
+"Epic","EPIC-SERVICE-LEVELS","Service levels","All work in the service-levels domain. Slug: service-levels. Prefix: SLA.","Service levels","","service-levels","","",""
+"Epic","EPIC-NOTIFICATIONS","Notifications","All work in the notifications domain. Slug: notifications. Prefix: NTF.","Notifications","","notifications","","",""
+"Epic","EPIC-CHANNELS","Channels","All work in the channels domain. Slug: channels. Prefix: CHN.","Channels","","channels","","",""
+"Epic","EPIC-PORTAL","Portal","All work in the portal domain. Slug: portal. Prefix: POR.","Portal","","portal","","",""
+"Epic","EPIC-REPORTS","Reports","All work in the reports domain. Slug: reports. Prefix: RPT.","Reports","","reports","","",""
+"Epic","EPIC-AUDIT","Audit","All work in the audit domain. Slug: audit. Prefix: AUD.","Audit","","audit","","",""
+"Epic","EPIC-ADMINISTRATION","Administration","All work in the administration domain. Slug: administration. Prefix: ADM.","Administration","","administration","","",""
+"Epic","EPIC-KNOWLEDGE-BASE","Knowledge base","All work in the knowledge-base domain. Slug: knowledge-base. Prefix: KB.","Knowledge base","","knowledge-base","","",""
+"Epic","EPIC-SATISFACTION","Satisfaction","All work in the satisfaction domain. Slug: satisfaction. Prefix: SAT.","Satisfaction","","satisfaction","","",""
+"Epic","EPIC-ASSIST","Assist","All work in the assist domain. Slug: assist. Prefix: AST.","Assist","","assist","","",""
+"Story","PLT-1-ALL","[ALL] system — the repository, its ignore rules and its branch conventions","Three roots in one repository, with the conventions written down before anything
+is built on them.
+
+*Acceptance criteria*
+- Given a fresh clone, when I read the README, then it names the three roots and
+  how to start each one.
+- Given `.gitignore`, when I add a root-level note file, then it is ignored, and
+  the README is not.
+- Given a commit on `main`, when the branch conventions are read, then they say
+  what is cut from what and what merges where.
+- Given any commit in this repository, when its message is read, then it carries
+  no AI attribution of any kind. This is checked, not trusted.
+
+*Out of scope*
+- CI. That is PLT-10-ALL.","","EPIC-PLATFORM","all-roots","platform","block-0","Block 0"
+"Story","PLT-2-API","[API] system — the schema, migrations that run once, and the four queue indexes","The schema, and migrations that can be run twice without changing anything.
+
+*Acceptance criteria*
+- Given an empty database, when migrations run, then every table in the schema
+  exists and the run is recorded.
+- Given a database already migrated, when migrations run a second time, then
+  nothing changes and nothing throws.
+- Given the queue's four filters, when a query plan is read, then each uses an
+  index rather than a scan.
+- Given `customers`, when two rows share an email and one is hidden, then the
+  insert succeeds — the email index is partial, because nothing is hard-deleted.
+- Given `sla_breaches`, when the same ticket and clock are inserted twice, then
+  the second insert is refused by a unique constraint.
+- Given `escalations`, when the same breach is escalated twice, then the second
+  is refused by a unique constraint.
+
+*Out of scope*
+- Any business rule. This story creates tables and nothing that writes to them.","","EPIC-PLATFORM","backend","platform","block-0","Block 0"
+"Story","PLT-3-API","[API] system — the chain: wiring, one error middleware, a request id, security headers","One error shape, one place that decides the status code, and a request id on
+everything.
+
+*Acceptance criteria*
+- Given any error, when it reaches the client, then the body carries a code, a
+  request id, and no stack trace.
+- Given an unknown route, when it is called, then the response is the same
+  documented shape as every other error.
+- Given a request with no id, when it is handled, then one is generated and
+  returned in the response headers.
+- Given a request that carries an id, when it is handled, then that id is used
+  rather than a new one.
+- Given a thrown error anywhere in a service, when it surfaces, then exactly one
+  middleware decided its status code.
+- Given the response, when its security headers are read, then the standard set
+  is present.
+
+*Out of scope*
+- Translating codes into sentences. The API returns codes; clients translate.","","EPIC-PLATFORM","backend","platform","block-0","Block 0"
+"Story","PLT-4-API","[API] system — /api/v1, a maximum page size, health, and structured logging","The prefix, the page ceiling, health, and logs that say what actually happened.
+
+*Acceptance criteria*
+- Given any route, when it is called without the `/api/v1` prefix, then it is not
+  found.
+- Given a list endpoint, when it is called with a limit above the maximum, then
+  it is refused rather than silently clamped.
+- Given the health endpoint, when it is called by a stranger, then it answers
+  without authentication.
+- Given a request to `/api/v1/users`, when the log line is read, then the path it
+  logs is `/api/v1/users` and not `/users`. Express restores `baseUrl` before the
+  finish event, and a log field that is quietly wrong is worse than a missing one.
+- Given a log line, when it is read, then it carries the request id that the
+  client was given.","","EPIC-PLATFORM","backend","platform","block-0","Block 0"
+"Story","PLT-5-API","[API] system — an API document checked against the routes actually served","An API document that cannot drift, because the suite compares it to the router.
+
+*Acceptance criteria*
+- Given the running application, when the suite runs, then every served route
+  appears in the OpenAPI document.
+- Given a route added without documentation, when the suite runs, then it fails
+  and names the route.
+- Given a documented route that is no longer served, when the suite runs, then it
+  fails and names it.
+- Given the request collection, when it is imported into a client, then every
+  request in it resolves against the running application.","","EPIC-PLATFORM","backend","platform","block-0","Block 0"
+"Story","PLT-6-API","[API] system — the seed fills reference data and can be run twice","A seed that fills what is empty and can be run twice.
+
+*Acceptance criteria*
+- Given an empty database, when the seed runs, then staff, customers, categories
+  and service-level targets exist.
+- Given a seeded database, when the seed runs again, then no row is duplicated.
+- Given the seed has run, when it finishes, then it prints the password it set,
+  because an admin who cannot sign in has been handed nothing.
+- Given the seed, when it is read, then it builds its own services rather than
+  importing the application's. It is a second composition root, on purpose.
+- Given `npm run seed`, when it is typed after any file move, then it runs. The
+  package scripts are checked by PLT-11-ALL.
+
+*Out of scope*
+- Tickets. They need rules that do not exist yet, and putting the deadline
+  arithmetic in the seed would place a second copy of the promise in the codebase.
+  That is PLT-7-API.","","EPIC-PLATFORM","backend","platform","block-0","Block 0"
+"Story","PLT-7-API","[API] system — the seed walks tickets through the real state machine","Tickets that were walked through the real state machine, not inserted.
+
+*Acceptance criteria*
+- Given the seed, when tickets are created, then each moved through the real
+  state machine rather than being written directly at its final status.
+- Given the seeded queue, when it is read, then every status and every priority
+  appears at least once.
+- Given the seeded queue, when it is read, then some tickets are unassigned and
+  some are already past their promise — otherwise the service-level screens have
+  nothing to show.
+- Given the seeded tickets, when their text is read, then they are written, not
+  generated. Fifty rows of ""Ticket 37"" fill the same screen and demonstrate
+  nothing.","","EPIC-PLATFORM","backend","platform","block-2","Block 2"
+"Story","PLT-8-WEB","[WEB] developer — a React skeleton: router, auth context, client, loading hook","The skeleton every screen is built on.
+
+*Acceptance criteria*
+- Given the application, when it starts, then the router resolves and an
+  unauthenticated visitor lands on sign-in.
+- Given a signed-in session, when the page is reloaded, then the session survives.
+- Given an API call, when it returns an error code, then the client surfaces the
+  code rather than a generic failure.
+- Given a slow request, when it is in flight, then the loading state is
+  observable, and the hook that owns it is used by every screen rather than
+  reimplemented.
+- Given the layers, when an import points upward, then the structure check fails.","","EPIC-PLATFORM","web","platform","block-0","Block 0"
+"Story","PLT-9-WEB","[WEB] developer — the web application has a test setup and its first tests","A test setup, and enough first tests to prove it goes red.
+
+*Acceptance criteria*
+- Given the test command, when it runs, then it runs without network access.
+- Given a deliberately broken component, when the suite runs, then it fails.
+- Given the environment, when a test touches `localStorage`, then it works —
+  Node 26 defines a global that throws unless started with a flag, and jsdom's
+  returns `undefined`, so the setup provides its own.
+- Given a render helper, when a test uses it, then providers, router and
+  translations are all in place without the test repeating them.
+
+*Out of scope*
+- Broad coverage. This story proves the setup, and every story after it carries
+  its own tests.","","EPIC-PLATFORM","web","platform","block-0","Block 0"
+"Story","PLT-10-ALL","[ALL] developer — the suite runs on every push and a red suite blocks a merge","The suite runs on every push, and a red suite blocks a merge.
+
+*Acceptance criteria*
+- Given a push, when it lands, then the API suite, the web suite and every check
+  script run.
+- Given a failing test, when a merge is attempted, then it is blocked.
+- Given a run, when it finishes, then the duration of each suite is reported. An
+  intermittent test is a report, not noise, and the duration is the first thing
+  read.
+- Given a hanging test, when the ceiling is reached, then it reports itself
+  rather than stopping the run.","","EPIC-PLATFORM","all-roots","platform","block-0","Block 0"
+"Story","PLT-11-ALL","[ALL] developer — the structure rules are enforced by a script, in all three roots","The structure enforced by a script, from the first feature rather than after nine
+violations.
+
+*Acceptance criteria*
+- Given the API, when a feature imports another feature's internals, then the
+  check fails and names both.
+- Given the API, when `shared` or `platform` imports a feature, then it fails.
+- Given a service or repository holding `req` or `res`, then it fails.
+- Given SQL outside a repository, then it fails.
+- Given the web, when a layer imports upward, then it fails.
+- Given two sibling slices, when one imports the other outside `@x`, then it
+  fails.
+- Given Android, when model or data code imports Compose, then it fails.
+- Given a screen taking a navigator, then it fails.
+- Given a package script naming a file that does not exist, then it fails.
+- Given a variable `.env.example` declares that nothing reads, then it fails.
+- Given any check, when it passes, then it prints how many files it read. A check
+  that passes over an empty set is worse than no check.","","EPIC-PLATFORM","all-roots","platform","block-0","Block 0"
+"Story","PLT-12-ALL","[ALL] developer — the taxonomy and every cited path are checked by a script","The names and the citations checked, because the previous attempt's confusion was
+entirely a naming problem.
+
+*Acceptance criteria*
+- Given a feature folder in any root, when it is not in `docs/taxonomy.md`, then
+  the check fails.
+- Given a slug in the taxonomy that owns code, when its folder is missing, then
+  the check fails.
+- Given a path cited in any document, when it does not exist and is not declared
+  as future work, then the check fails and names the document and the line.
+- Given a story id anywhere, when its prefix is not in the taxonomy, then it
+  fails.
+- Given a story id, when it carries no layer suffix, then it fails.","","EPIC-PLATFORM","all-roots","platform","block-0","Block 0"
+"Story","PLT-13-MOB","[MOB] developer — a Compose skeleton: networking, injection, navigation","The Android skeleton, from an empty directory.
+
+*Acceptance criteria*
+- Given the application, when it starts on an emulator, then it reads one
+  endpoint and renders what came back.
+- Given the emulator, when a request is made, then it resolves over IPv4 — the
+  emulator does not route IPv6.
+- Given cleartext HTTP to the local server, when a request is made, then it is
+  permitted for the loopback host only, and for no other host.
+- Given the network configuration is absent, when the application runs, then the
+  failure is loud rather than silent. It fails silently by default, which is why
+  this criterion exists.
+- Given the structure, when model or data code is read, then it imports nothing
+  from Compose.
+
+*Out of scope*
+- Any screen a user works in. Those are the `-MOB` halves of their own features.","","EPIC-PLATFORM","mobile","platform","block-7","Block 7"
+"Story","PLT-14-ALL","[ALL] system — hardening: a rate-limit sweep, an error audit, the README, screenshots","Hardening, once everything it inspects exists.
+
+*Acceptance criteria*
+- Given every route, when the sweep runs, then none is unthrottled.
+- Given every error path, when it is exercised, then none leaks a stack trace or
+  an internal identifier.
+- Given the README, when it is followed on a clean machine, then the application
+  starts.
+- Given the screenshots, when they are read, then they show the application as it
+  actually is.","","EPIC-PLATFORM","all-roots","platform","block-9","Block 9"
+"Story","I18N-1-WEB","[WEB] developer — every string in a resource file, in both languages","_Acceptance criteria not written yet._","","EPIC-I18N","web","i18n","block-0","Block 0"
+"Story","I18N-1-MOB","[MOB] developer — every string in a resource file, in both languages","_Acceptance criteria not written yet._","","EPIC-I18N","mobile","i18n","block-7","Block 7"
+"Story","I18N-2-WEB","[WEB] agent — switching to Arabic flips the interface without a restart","_Acceptance criteria not written yet._","","EPIC-I18N","web","i18n","block-0","Block 0"
+"Story","I18N-2-MOB","[MOB] agent — switching to Arabic flips the interface without a restart","_Acceptance criteria not written yet._","","EPIC-I18N","mobile","i18n","block-7","Block 7"
+"Story","I18N-3-WEB","[WEB] agent — dates and numbers read the way my locale writes them","_Acceptance criteria not written yet._","","EPIC-I18N","web","i18n","block-1","Block 1"
+"Story","I18N-4-WEB","[WEB] developer — a key missing from one language fails the build","_Acceptance criteria not written yet._","","EPIC-I18N","web","i18n","block-0","Block 0"
+"Story","IDN-1-API","[API] agent — I sign in and reach my queue","_Acceptance criteria not written yet._","","EPIC-IDENTITY","backend","identity","block-1","Block 1"
+"Story","IDN-1-WEB","[WEB] agent — I sign in and reach my queue","_Acceptance criteria not written yet._","","EPIC-IDENTITY","web","identity","block-1","Block 1"
+"Story","IDN-1-MOB","[MOB] agent — I sign in and reach my queue","_Acceptance criteria not written yet._","","EPIC-IDENTITY","mobile","identity","block-7","Block 7"
+"Story","IDN-2-API","[API] admin — I create, disable and re-enable accounts, and set roles","_Acceptance criteria not written yet._","","EPIC-IDENTITY","backend","identity","block-1","Block 1"
+"Story","IDN-2-WEB","[WEB] admin — I create, disable and re-enable accounts, and set roles","_Acceptance criteria not written yet._","","EPIC-IDENTITY","web","identity","block-6","Block 6"
+"Story","IDN-3-WEB","[WEB] any — an expired token returns me to sign-in, not a broken screen","_Acceptance criteria not written yet._","","EPIC-IDENTITY","web","identity","block-1","Block 1"
+"Story","IDN-4-API","[API] system — failed sign-ins are throttled per account and per address","_Acceptance criteria not written yet._","","EPIC-IDENTITY","backend","identity","block-1","Block 1"
+"Story","IDN-5-API","[API] admin — I set a user's password, so a locked-out person gets back in","_Acceptance criteria not written yet._","","EPIC-IDENTITY","backend","identity","block-3","Block 3"
+"Story","IDN-5-WEB","[WEB] admin — I set a user's password, so a locked-out person gets back in","_Acceptance criteria not written yet._","","EPIC-IDENTITY","web","identity","block-3","Block 3"
+"Story","IDN-6-API","[API] any — I change my own password, knowing the current one","_Acceptance criteria not written yet._","","EPIC-IDENTITY","backend","identity","block-3","Block 3"
+"Story","IDN-6-WEB","[WEB] any — I change my own password, knowing the current one","_Acceptance criteria not written yet._","","EPIC-IDENTITY","web","identity","block-3","Block 3"
+"Story","IDN-7-API","[API] any — changing it ends every other session","_Acceptance criteria not written yet._","","EPIC-IDENTITY","backend","identity","block-5","Block 5"
+"Story","IDN-8-API","[API] agent — I read the list of people a ticket can be assigned to","_Acceptance criteria not written yet._","","EPIC-IDENTITY","backend","identity","block-1","Block 1"
+"Story","IDN-8-WEB","[WEB] agent — I read the list of people a ticket can be assigned to","_Acceptance criteria not written yet._","","EPIC-IDENTITY","web","identity","block-2","Block 2"
+"Story","IDN-9-API","[API] admin — disabling somebody unassigns their queue and tells me how much","_Acceptance criteria not written yet._","","EPIC-IDENTITY","backend","identity","block-5","Block 5"
+"Story","CUS-1-API","[API] agent — I search by name, address or number","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","backend","customers","block-1","Block 1"
+"Story","CUS-1-WEB","[WEB] agent — I search by name, address or number","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","web","customers","block-1","Block 1"
+"Story","CUS-2-API","[API] agent — contacts, open tickets and history in one screen","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","backend","customers","block-1","Block 1"
+"Story","CUS-2-WEB","[WEB] agent — contacts, open tickets and history in one screen","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","web","customers","block-1","Block 1"
+"Story","CUS-2-MOB","[MOB] agent — contacts, open tickets and history in one screen","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","mobile","customers","block-7","Block 7"
+"Story","CUS-3-API","[API] agent — I write an internal note about a customer","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","backend","customers","block-1","Block 1"
+"Story","CUS-3-WEB","[WEB] agent — I write an internal note about a customer","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","web","customers","block-1","Block 1"
+"Story","CUS-4-API","[API] admin — deleting a customer hides them and keeps the audit trail","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","backend","customers","block-4","Block 4"
+"Story","CUS-4-WEB","[WEB] admin — deleting a customer hides them and keeps the audit trail","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","web","customers","block-4","Block 4"
+"Story","CUS-5-API","[API] system — an arriving request matches a customer by address, or creates one","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","backend","customers","block-3","Block 3"
+"Story","CUS-6-API","[API] agent — I add a customer while I am on the phone to them","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","backend","customers","block-3","Block 3"
+"Story","CUS-6-WEB","[WEB] agent — I add a customer while I am on the phone to them","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","web","customers","block-3","Block 3"
+"Story","CUS-7-API","[API] agent — I correct a customer's contact details","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","backend","customers","block-4","Block 4"
+"Story","CUS-7-WEB","[WEB] agent — I correct a customer's contact details","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","web","customers","block-4","Block 4"
+"Story","CUS-8-API","[API] agent — I give a customer a sign-in","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","backend","customers","block-3","Block 3"
+"Story","CUS-8-WEB","[WEB] agent — I give a customer a sign-in","_Acceptance criteria not written yet._","","EPIC-CUSTOMERS","web","customers","block-3","Block 3"
+"Story","TCK-1-API","[API] agent — I raise a ticket for a customer","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-2","Block 2"
+"Story","TCK-1-WEB","[WEB] agent — I raise a ticket for a customer","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-2","Block 2"
+"Story","TCK-2-API","[API] agent — I filter and sort the queue; an agent sees all of it","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-2","Block 2"
+"Story","TCK-2-WEB","[WEB] agent — I filter and sort the queue; an agent sees all of it","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-2","Block 2"
+"Story","TCK-2-MOB","[MOB] agent — I filter and sort the queue; an agent sees all of it","_Acceptance criteria not written yet._","","EPIC-TICKETS","mobile","tickets","block-7","Block 7"
+"Story","TCK-3-API","[API] agent — I assign a ticket","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-2","Block 2"
+"Story","TCK-3-WEB","[WEB] agent — I assign a ticket","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-2","Block 2"
+"Story","TCK-3-MOB","[MOB] agent — I assign a ticket","_Acceptance criteria not written yet._","","EPIC-TICKETS","mobile","tickets","block-7","Block 7"
+"Story","TCK-4-API","[API] system — an illegal status change is refused with what is legal","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-2","Block 2"
+"Story","TCK-5-API","[API] agent — resolving a ticket needs a note","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-2","Block 2"
+"Story","TCK-5-WEB","[WEB] agent — resolving a ticket needs a note","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-2","Block 2"
+"Story","TCK-6-API","[API] customer — I reopen a resolved ticket inside the window","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-4","Block 4"
+"Story","TCK-6-WEB","[WEB] customer — I reopen a resolved ticket inside the window","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-4","Block 4"
+"Story","TCK-7-API","[API] agent — I read the whole history in order","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-2","Block 2"
+"Story","TCK-7-WEB","[WEB] agent — I read the whole history in order","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-2","Block 2"
+"Story","TCK-7-MOB","[MOB] agent — I read the whole history in order","_Acceptance criteria not written yet._","","EPIC-TICKETS","mobile","tickets","block-7","Block 7"
+"Story","TCK-8-API","[API] system — a customer may act only on their own ticket, on every path","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-2","Block 2"
+"Story","TCK-9-API","[API] agent — I change a ticket's category","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-4","Block 4"
+"Story","TCK-9-WEB","[WEB] agent — I change a ticket's category","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-4","Block 4"
+"Story","TCK-10-WEB","[WEB] agent — my own tickets are one click away","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-4","Block 4"
+"Story","TCK-11-API","[API] agent — I search tickets by their text","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-8","Block 8"
+"Story","TCK-11-WEB","[WEB] agent — I search tickets by their text","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-8","Block 8"
+"Story","TCK-12-API","[API] agent — my change is refused if somebody edited it while I read","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-5","Block 5"
+"Story","TCK-12-WEB","[WEB] agent — my change is refused if somebody edited it while I read","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-5","Block 5"
+"Story","TCK-13-API","[API] system — a resolved ticket closes itself once the window passes","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-5","Block 5"
+"Story","TCK-14-API","[API] agent — the categories are readable, so a form has something to offer","_Acceptance criteria not written yet._","","EPIC-TICKETS","backend","tickets","block-2","Block 2"
+"Story","TCK-14-WEB","[WEB] agent — the categories are readable, so a form has something to offer","_Acceptance criteria not written yet._","","EPIC-TICKETS","web","tickets","block-2","Block 2"
+"Story","CNV-1-API","[API] agent — I reply, and the first reply stops the response clock","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","backend","conversation","block-4","Block 4"
+"Story","CNV-1-WEB","[WEB] agent — I reply, and the first reply stops the response clock","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","web","conversation","block-4","Block 4"
+"Story","CNV-1-MOB","[MOB] agent — I reply, and the first reply stops the response clock","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","mobile","conversation","block-7","Block 7"
+"Story","CNV-2-API","[API] agent — my internal note never reaches a customer, in any response","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","backend","conversation","block-4","Block 4"
+"Story","CNV-2-WEB","[WEB] agent — my internal note never reaches a customer, in any response","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","web","conversation","block-4","Block 4"
+"Story","CNV-3-API","[API] customer — I reply on my own ticket; replying to a resolved one reopens it","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","backend","conversation","block-4","Block 4"
+"Story","CNV-3-WEB","[WEB] customer — I reply on my own ticket; replying to a resolved one reopens it","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","web","conversation","block-4","Block 4"
+"Story","CNV-4-API","[API] system — an agent's first reply moves a new ticket to open","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","backend","conversation","block-4","Block 4"
+"Story","CNV-5-API","[API] agent — a long thread pages rather than arriving whole","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","backend","conversation","block-4","Block 4"
+"Story","CNV-5-WEB","[WEB] agent — a long thread pages rather than arriving whole","_Acceptance criteria not written yet._","","EPIC-CONVERSATION","web","conversation","block-4","Block 4"
+"Story","SLA-1-API","[API] system — a ticket carries both deadlines, from its priority","_Acceptance criteria not written yet._","","EPIC-SERVICE-LEVELS","backend","service-levels","block-2","Block 2"
+"Story","SLA-2-API","[API] agent — time waiting on the customer is not counted against me","_Acceptance criteria not written yet._","","EPIC-SERVICE-LEVELS","backend","service-levels","block-5","Block 5"
+"Story","SLA-3-API","[API] agent — a missed deadline is recorded once and shown on the queue","_Acceptance criteria not written yet._","","EPIC-SERVICE-LEVELS","backend","service-levels","block-5","Block 5"
+"Story","SLA-3-WEB","[WEB] agent — a missed deadline is recorded once and shown on the queue","_Acceptance criteria not written yet._","","EPIC-SERVICE-LEVELS","web","service-levels","block-5","Block 5"
+"Story","SLA-3-MOB","[MOB] agent — a missed deadline is recorded once and shown on the queue","_Acceptance criteria not written yet._","","EPIC-SERVICE-LEVELS","mobile","service-levels","block-7","Block 7"
+"Story","SLA-4-API","[API] admin — a missed resolution deadline raises it and tells me, once","_Acceptance criteria not written yet._","","EPIC-SERVICE-LEVELS","backend","service-levels","block-5","Block 5"
+"Story","SLA-5-API","[API] system — the seed runs the escalation once","_Acceptance criteria not written yet._","","EPIC-SERVICE-LEVELS","backend","service-levels","block-5","Block 5"
+"Story","NTF-1-API","[API] agent — I am told when a ticket becomes mine","_Acceptance criteria not written yet._","","EPIC-NOTIFICATIONS","backend","notifications","block-5","Block 5"
+"Story","NTF-2-API","[API] admin — I read my notifications","_Acceptance criteria not written yet._","","EPIC-NOTIFICATIONS","backend","notifications","block-5","Block 5"
+"Story","NTF-2-WEB","[WEB] admin — I read my notifications","_Acceptance criteria not written yet._","","EPIC-NOTIFICATIONS","web","notifications","block-5","Block 5"
+"Story","CHN-1-API","[API] customer — a ticket enters through the channel interface, not around it","_Acceptance criteria not written yet._","","EPIC-CHANNELS","backend","channels","block-3","Block 3"
+"Story","CHN-1-WEB","[WEB] customer — a ticket enters through the channel interface, not around it","_Acceptance criteria not written yet._","","EPIC-CHANNELS","web","channels","block-3","Block 3"
+"Story","CHN-2-API","[API] developer — an unimplemented channel says so rather than failing quietly","_Acceptance criteria not written yet._","","EPIC-CHANNELS","backend","channels","block-3","Block 3"
+"Story","CHN-3-API","[API] system — the public intake is throttled per address","_Acceptance criteria not written yet._","","EPIC-CHANNELS","backend","channels","block-3","Block 3"
+"Story","POR-1-WEB","[WEB] customer — I raise a ticket without an account","_Acceptance criteria not written yet._","","EPIC-PORTAL","web","portal","block-3","Block 3"
+"Story","POR-2-WEB","[WEB] customer — I sign in and see my tickets and nothing else","_Acceptance criteria not written yet._","","EPIC-PORTAL","web","portal","block-3","Block 3"
+"Story","POR-3-WEB","[WEB] customer — I read my ticket: the replies, never the internal notes","_Acceptance criteria not written yet._","","EPIC-PORTAL","web","portal","block-4","Block 4"
+"Story","RPT-1-API","[API] admin — I see the queue by status","_Acceptance criteria not written yet._","","EPIC-REPORTS","backend","reports","block-6","Block 6"
+"Story","RPT-1-WEB","[WEB] admin — I see the queue by status","_Acceptance criteria not written yet._","","EPIC-REPORTS","web","reports","block-6","Block 6"
+"Story","RPT-2-API","[API] admin — I see what share of tickets met their promise","_Acceptance criteria not written yet._","","EPIC-REPORTS","backend","reports","block-6","Block 6"
+"Story","RPT-2-WEB","[WEB] admin — I see what share of tickets met their promise","_Acceptance criteria not written yet._","","EPIC-REPORTS","web","reports","block-6","Block 6"
+"Story","RPT-3-API","[API] admin — I see load per agent, idle agents shown as zero","_Acceptance criteria not written yet._","","EPIC-REPORTS","backend","reports","block-6","Block 6"
+"Story","RPT-3-WEB","[WEB] admin — I see load per agent, idle agents shown as zero","_Acceptance criteria not written yet._","","EPIC-REPORTS","web","reports","block-6","Block 6"
+"Story","RPT-4-API","[API] admin — today means today where I am, not in UTC","_Acceptance criteria not written yet._","","EPIC-REPORTS","backend","reports","block-6","Block 6"
+"Story","RPT-4-WEB","[WEB] admin — today means today where I am, not in UTC","_Acceptance criteria not written yet._","","EPIC-REPORTS","web","reports","block-6","Block 6"
+"Story","RPT-5-API","[API] admin — average satisfaction, and how many answers it rests on","_Acceptance criteria not written yet._","","EPIC-REPORTS","backend","reports","block-8","Block 8"
+"Story","RPT-5-WEB","[WEB] admin — average satisfaction, and how many answers it rests on","_Acceptance criteria not written yet._","","EPIC-REPORTS","web","reports","block-8","Block 8"
+"Story","AUD-1-API","[API] system — every change writes an audit row","_Acceptance criteria not written yet._","","EPIC-AUDIT","backend","audit","block-1","Block 1"
+"Story","AUD-2-API","[API] admin — I read the audit log filtered by person, thing or date","_Acceptance criteria not written yet._","","EPIC-AUDIT","backend","audit","block-6","Block 6"
+"Story","AUD-2-WEB","[WEB] admin — I read the audit log filtered by person, thing or date","_Acceptance criteria not written yet._","","EPIC-AUDIT","web","audit","block-6","Block 6"
+"Story","ADM-1-API","[API] system — permission is decided in middleware before any service runs","_Acceptance criteria not written yet._","","EPIC-ADMINISTRATION","backend","administration","block-1","Block 1"
+"Story","ADM-2-API","[API] client — every failure returns its documented code and one shape","_Acceptance criteria not written yet._","","EPIC-ADMINISTRATION","backend","administration","block-1","Block 1"
+"Story","KB-1-API","[API] admin — I write and publish an article in both languages","_Acceptance criteria not written yet._","","EPIC-KNOWLEDGE-BASE","backend","knowledge-base","block-8","Block 8"
+"Story","KB-1-WEB","[WEB] admin — I write and publish an article in both languages","_Acceptance criteria not written yet._","","EPIC-KNOWLEDGE-BASE","web","knowledge-base","block-8","Block 8"
+"Story","KB-2-API","[API] agent — I search articles by their text","_Acceptance criteria not written yet._","","EPIC-KNOWLEDGE-BASE","backend","knowledge-base","block-8","Block 8"
+"Story","KB-2-WEB","[WEB] agent — I search articles by their text","_Acceptance criteria not written yet._","","EPIC-KNOWLEDGE-BASE","web","knowledge-base","block-8","Block 8"
+"Story","KB-3-WEB","[WEB] agent — I put an article into a reply as editable text","_Acceptance criteria not written yet._","","EPIC-KNOWLEDGE-BASE","web","knowledge-base","block-8","Block 8"
+"Story","KB-4-API","[API] customer — I read and search published articles without signing in","_Acceptance criteria not written yet._","","EPIC-KNOWLEDGE-BASE","backend","knowledge-base","block-8","Block 8"
+"Story","KB-4-WEB","[WEB] customer — I read and search published articles without signing in","_Acceptance criteria not written yet._","","EPIC-KNOWLEDGE-BASE","web","knowledge-base","block-8","Block 8"
+"Story","KB-5-API","[API] admin — an article's edits are kept, so a bad one is recoverable","_Acceptance criteria not written yet._","","EPIC-KNOWLEDGE-BASE","backend","knowledge-base","block-8","Block 8"
+"Story","SAT-1-API","[API] customer — I say whether the answer helped, once","_Acceptance criteria not written yet._","","EPIC-SATISFACTION","backend","satisfaction","block-8","Block 8"
+"Story","SAT-1-WEB","[WEB] customer — I say whether the answer helped, once","_Acceptance criteria not written yet._","","EPIC-SATISFACTION","web","satisfaction","block-8","Block 8"
+"Story","SAT-2-API","[API] admin — the ratings become a number I can act on","_Acceptance criteria not written yet._","","EPIC-SATISFACTION","backend","satisfaction","block-8","Block 8"
+"Story","SAT-2-WEB","[WEB] admin — the ratings become a number I can act on","_Acceptance criteria not written yet._","","EPIC-SATISFACTION","web","satisfaction","block-8","Block 8"
+"Story","AST-1-API","[API] developer — one interface, a recorded stub, and a rate limit","_Acceptance criteria not written yet._","","EPIC-ASSIST","backend","assist","block-9","Block 9"
+"Story","AST-2-API","[API] agent — I summarise a long ticket","_Acceptance criteria not written yet._","","EPIC-ASSIST","backend","assist","block-9","Block 9"
+"Story","AST-2-WEB","[WEB] agent — I summarise a long ticket","_Acceptance criteria not written yet._","","EPIC-ASSIST","web","assist","block-9","Block 9"
+"Story","AST-3-API","[API] agent — I get a draft I edit before sending; nothing is sent for me","_Acceptance criteria not written yet._","","EPIC-ASSIST","backend","assist","block-9","Block 9"
+"Story","AST-3-WEB","[WEB] agent — I get a draft I edit before sending; nothing is sent for me","_Acceptance criteria not written yet._","","EPIC-ASSIST","web","assist","block-9","Block 9"
+"Story","AST-4-API","[API] agent — when the assist is unavailable the ticket still works","_Acceptance criteria not written yet._","","EPIC-ASSIST","backend","assist","block-9","Block 9"
+"Story","AST-4-WEB","[WEB] agent — when the assist is unavailable the ticket still works","_Acceptance criteria not written yet._","","EPIC-ASSIST","web","assist","block-9","Block 9"

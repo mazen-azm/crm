@@ -1,0 +1,16 @@
+"Issue Type","Issue Key","Summary","Description","Epic Name","Parent","Labels","Labels","Labels","Sprint"
+"Epic","EPIC-PLATFORM","Platform","All work in the platform domain. Slug: platform. Prefix: PLT.","Platform","","platform","","",""
+"Story","PLT-1-ALL","[ALL] system — the repository, its ignore rules and its branch conventions","Three roots in one repository, with the conventions written down before anything
+"Story","PLT-2-API","[API] system — the schema, migrations that run once, and the four queue indexes","The schema, and migrations that can be run twice without changing anything.
+"Story","PLT-3-API","[API] system — the chain: wiring, one error middleware, a request id, security headers","One error shape, one place that decides the status code, and a request id on
+"Story","PLT-4-API","[API] system — /api/v1, a maximum page size, health, and structured logging","The prefix, the page ceiling, health, and logs that say what actually happened.
+"Story","PLT-5-API","[API] system — an API document checked against the routes actually served","An API document that cannot drift, because the suite compares it to the router.
+"Story","PLT-6-API","[API] system — the seed fills reference data and can be run twice","A seed that fills what is empty and can be run twice.
+"Story","PLT-7-API","[API] system — the seed walks tickets through the real state machine","Tickets that were walked through the real state machine, not inserted.
+"Story","PLT-8-WEB","[WEB] developer — a React skeleton: router, auth context, client, loading hook","The skeleton every screen is built on.
+"Story","PLT-9-WEB","[WEB] developer — the web application has a test setup and its first tests","A test setup, and enough first tests to prove it goes red.
+"Story","PLT-10-ALL","[ALL] developer — the suite runs on every push and a red suite blocks a merge","The suite runs on every push, and a red suite blocks a merge.
+"Story","PLT-11-ALL","[ALL] developer — the structure rules are enforced by a script, in all three roots","The structure enforced by a script, from the first feature rather than after nine
+"Story","PLT-12-ALL","[ALL] developer — the taxonomy and every cited path are checked by a script","The names and the citations checked, because the previous attempt's confusion was
+"Story","PLT-13-MOB","[MOB] developer — a Compose skeleton: networking, injection, navigation","The Android skeleton, from an empty directory.
+"Story","PLT-14-ALL","[ALL] system — hardening: a rate-limit sweep, an error audit, the README, screenshots","Hardening, once everything it inspects exists.
