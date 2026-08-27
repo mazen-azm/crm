@@ -33,9 +33,17 @@ user's call.
 
 ## 4. Plan, then review it mechanically
 
-After approval: run `/squad-plan` on the intake. Then review the generated plan
-with this checklist — each item is a rejection rule, not a suggestion. The
-checklist exists because every item has already caught a real defect:
+After approval: run `/squad-plan` on the intake (or `squad new-plan --api -y
+<intake-path>`). Then, FIRST: **rename the generated plan file so the story id
+keeps its capitals** — `git mv NN-story-crm-NN.md NN-story-CRM-NN.md`.
+squad-kit lowercases the id when writing the filename but matches it
+case-sensitively when reading (console "planned" badge, regenerate-overwrite),
+so the lowercase name makes every story read as unplanned. Fix the tool's own
+`00-overview.md` row to the renamed file.
+
+Then review the plan with this checklist — each item is a rejection rule, not
+a suggestion. The checklist exists because every item has already caught a
+real defect:
 
 - [ ] Every lesson in `.squad/plan-lessons.md` is obeyed (read them all first).
 - [ ] Every `file:line` citation opened and compared against the real file —

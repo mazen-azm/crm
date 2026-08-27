@@ -43,7 +43,7 @@ Explicitly **out of scope** (owners named):
 8. **`api/src/platform/config/index.js`** lines 1–12 — the frozen `config` object; **do not** re-read env in `app.js` — import `config` from here.
 9. **`api/src/platform/db/connection.js`** lines 1–24 — the factory that `app.js` will call (or be handed) if a later story needs a DB. This story does not need one at runtime, but the pattern of injecting the DB into `app.js` is documented here.
 10. Grep for `handleRequest`, `express`, `randomUUID`, `X-Request-Id` under `api/` to confirm none are present today: `grep -R "express" api/src` (must be empty before this story).
-11. Sibling plans — read `.squad/plans/platform/01-story-crm-16.md` and `.squad/plans/platform/03-story-crm-17.md` to match tone, section ordering, verification-step phrasing, and how tests are named. (There is no `02-` file — a superseded draft was deleted at review.) Do **not** copy filenames or line numbers from them.
+11. Sibling plans — read `.squad/plans/platform/01-story-CRM-16.md` and `.squad/plans/platform/03-story-CRM-17.md` to match tone, section ordering, verification-step phrasing, and how tests are named. (There is no `02-` file — a superseded draft was deleted at review.) Do **not** copy filenames or line numbers from them.
 
 ---
 
