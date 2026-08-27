@@ -13,6 +13,10 @@ local.properties
 .env
 .env.*
 !.env.example
+
+# Credentials the planning tool stores. It writes them here by default and
+# nothing warns that the file is committable.
+.squad/secrets.yaml
 api/*.db
 api/*.db-journal
 api/*.db-shm
