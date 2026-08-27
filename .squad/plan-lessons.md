@@ -8,11 +8,16 @@ for it — never advice in general.
 
 **Rule:** cite other stories only by the id in `scripts/backlog.txt` (or the
 generated `BACKLOG.md`), with the Jira key beside it: `PLATFORM-13-ALL (CRM-28)`.
-Never take an id from `docs/`, from a criteria file, or from memory.
+Never take an id from `docs/`, from a criteria file, or from memory. And the id
+is the **slug spelled out in full** — the backlog's second column (`PLT`, `TCK`)
+and the criteria files' headings are internal plumbing; reproducing them in a
+plan resurrects the abbreviations this project killed.
 
-**Paid for by:** the CRM-16 plan cited `PLT-10-ALL` and `PLT-14-ALL` — ids from
-an abandoned naming scheme that stale docs still carried. Ten citations were
-wrong; two pointed at the wrong story entirely.
+**Paid for by:** twice. The CRM-16 plan cited `PLT-10-ALL` and `PLT-14-ALL` —
+ids from an abandoned naming scheme that stale docs still carried; ten
+citations were wrong, two pointed at the wrong story entirely. Then the CRM-18
+plan, reading the backlog faithfully, copied the prefix column into every
+citation and had to be de-abbreviated at review.
 
 ## L-2 — Do not assert your own filename
 
@@ -54,3 +59,15 @@ no committed document named the database, so the planner reached for the common
 default. The stack decision lived only in an ignored note the planner never
 reads. The fix was to the source, not the plan: architecture.md now names the
 engine and its idioms.
+
+## L-6 — A check's scope excludes the surfaces the rules exempt
+
+**Rule:** an automated guard must grep exactly the surface its rule governs.
+The no-AI-attribution rule governs code, docs and commit messages — NOT
+`.squad/` (the planning record is a scored deliverable whose generated headers
+name the planner model by design) and NOT the gitignored root notes. A guard
+scoped wider than its rule fails on day one and gets deleted instead of obeyed.
+
+**Paid for by:** the CRM-18 plan proposed a test that greps the whole working
+tree for assistant names — it would have failed immediately on `.squad/` plan
+headers and the ignored notes, on content the project's own rules permit.
