@@ -53,7 +53,7 @@ for (const { text, n } of lines('backlog.txt')) {
   for (const part of layerSpec.split(',').map((s) => s.trim())) {
     const lm = part.match(/^(API|WEB|MOB|ALL):(\d+):(\d+)$/)
     if (!lm) { fail.push(`backlog.txt:${n} layer spec "${part}" is not LAYER:block:pts`); continue }
-    const id = `${cur.prefix}-${num}-${lm[1]}`
+    const id = `${cur.slug.toUpperCase()}-${num}-${lm[1]}`
     if (units.has(id)) fail.push(`backlog.txt:${n} ${id} expands twice`)
     const u = { id, story, layer: lm[1], block: +lm[2], pts: +lm[3], rules: [], needs: [] }
     units.set(id, u); story.layers.push(u)
@@ -63,7 +63,7 @@ for (const { text, n } of lines('backlog.txt')) {
   for (const u of story.layers) { u.rules = rl; u.needs = nl }
   for (const r of rl) {
     if (!rules.has(r)) fail.push(`backlog.txt:${n} cites ${r}, which rules.txt does not define`)
-    else rules.get(r).owners.push(`${cur.prefix}-${num}`)
+    else rules.get(r).owners.push(`${cur.slug.toUpperCase()}-${num}`)
   }
   cur.stories.push(story)
 }

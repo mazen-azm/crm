@@ -7,7 +7,8 @@ project:
     - web
     - android
 tracker:
-  type: none
+  type: jira
+  workspace: https://mazen-al-nabarawy.atlassian.net/jira/software/projects/CRM/boards/1?filter=&groupBy=none
 naming:
   includeTrackerId: false
   globalSequence: false

@@ -1,0 +1,137 @@
+[
+{
+"slug": "platform",
+"summary": "Platform",
+"description": "The repository, the schema, the chain, the checks, and the design foundations",
+"labels": [
+"platform",
+"epic"
+]
+},
+{
+"slug": "languages",
+"summary": "Languages",
+"description": "Two languages, both directions, in resource files",
+"labels": [
+"languages",
+"epic"
+]
+},
+{
+"slug": "identity",
+"summary": "Identity",
+"description": "Sign-in, users, roles, throttling, passwords, sessions",
+"labels": [
+"identity",
+"epic"
+]
+},
+{
+"slug": "customers",
+"summary": "Customers",
+"description": "The customer record, contacts, search, identity resolution",
+"labels": [
+"customers",
+"epic"
+]
+},
+{
+"slug": "tickets",
+"summary": "Tickets",
+"description": "The ticket, the queue, the state machine, categories, search",
+"labels": [
+"tickets",
+"epic"
+]
+},
+{
+"slug": "conversation",
+"summary": "Conversation",
+"description": "Replies, internal notes, the timeline",
+"labels": [
+"conversation",
+"epic"
+]
+},
+{
+"slug": "service-levels",
+"summary": "Service levels",
+"description": "The promise about time, pauses, breaches, escalation",
+"labels": [
+"service-levels",
+"epic"
+]
+},
+{
+"slug": "notifications",
+"summary": "Notifications",
+"description": "Telling somebody that something happened",
+"labels": [
+"notifications",
+"epic"
+]
+},
+{
+"slug": "channels",
+"summary": "Channels",
+"description": "How a request enters the system from outside — an API seam, not a screen",
+"labels": [
+"channels",
+"epic"
+]
+},
+{
+"slug": "portal",
+"summary": "Portal",
+"description": "The customer-facing surface",
+"labels": [
+"portal",
+"epic"
+]
+},
+{
+"slug": "reports",
+"summary": "Reports",
+"description": "Numbers an admin can act on",
+"labels": [
+"reports",
+"epic"
+]
+},
+{
+"slug": "audit",
+"summary": "Audit",
+"description": "The record of every change",
+"labels": [
+"audit",
+"epic"
+]
+},
+{
+"slug": "knowledge-base",
+"summary": "Knowledge base",
+"description": "Articles, published, versioned and searched",
+"labels": [
+"knowledge-base",
+"epic"
+]
+},
+{
+"slug": "satisfaction",
+"summary": "Satisfaction",
+"description": "Ratings, and the number they add up to",
+"labels": [
+"satisfaction",
+"epic"
+]
+},
+{
+"slug": "assist",
+"summary": "Assist",
+"description": "The AI helper, its seam, and its fallback",
+"labels": [
+"assist",
+"epic"
+]
+}
+]
