@@ -41,25 +41,30 @@ case-sensitively when reading (console "planned" badge, regenerate-overwrite),
 so the lowercase name makes every story read as unplanned. Fix the tool's own
 `00-overview.md` row to the renamed file.
 
-Then review the plan with this checklist — each item is a rejection rule, not
-a suggestion. The checklist exists because every item has already caught a
-real defect:
+Then run the mechanical half of the review:
 
-- [ ] Every lesson in `.squad/plan-lessons.md` is obeyed (read them all first).
-- [ ] Every `file:line` citation opened and compared against the real file —
-      the cited lines must say what the plan claims they say.
-- [ ] Every story id grepped in `scripts/backlog.txt`. Ids from prose are wrong.
-- [ ] The plan names the engine and cites where `docs/architecture.md` declares
-      it (L-5). Grep the plan for another engine's dialect.
-- [ ] Every command in the plan can run on THIS machine: check `node --version`
-      against any flags (experimental flags die), remember npm scripts run
-      under `sh` (no `**` glob expansion), and check odd flag syntax against
-      the tool's manual (`git log --grep` takes `=pattern`).
-- [ ] No two created files claim the same name or ordinal.
-- [ ] No promise the platform cannot keep (SQLite cannot add a constraint to
-      an existing table; a "we'll add the FK later" comment is a lie).
-- [ ] Exactly ONE plan file exists for this story — delete any superseded
-      sibling so the executor cannot attach the wrong one.
+```
+node scripts/verify-plan.mjs .squad/plans/<feature>/<plan-file>
+```
+
+It enforces the lessons that a regular expression can decide: abbreviated or
+invented story ids, tracker keys that disagree with Jira, another engine's
+dialect, a status outside rule E-2's catalogue, `file:line` citations that do
+not resolve, empty intake sections, a missing criteria section, a base branch
+that does not exist, a duplicate plan, and the filename casing above. It must
+exit 0 before a human reads the plan. Findings on an already-shipped plan are
+warnings; on this one they are failures.
+
+Then read the plan yourself for what the script cannot judge:
+
+- [ ] Does the plan do THIS story and stop — nothing a later story owns?
+- [ ] Every command it gives can run on THIS machine: `node --version` against
+      any flags (experimental flags die), npm scripts run under `sh` (no `**`
+      glob expansion), odd flag syntax checked against the tool's manual.
+- [ ] No promise the platform cannot keep (SQLite cannot add a constraint to an
+      existing table; a "we'll add the FK later" comment is a lie).
+- [ ] Does a test it proposes pass for the right reason — and can it fail?
+- [ ] Does it contradict a decision an earlier story made, or a rule?
 
 Apply fixes to the PLAN file directly (never plan-around in code later).
 
