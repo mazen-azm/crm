@@ -5,7 +5,7 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createApp } from './app.js';
-import { HttpError } from './platform/http/errors.js';
+import { HttpError, unprocessable } from './platform/http/errors.js';
 import { requireSubject, requirePermission } from './platform/http/permission.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -125,4 +125,47 @@ test('the request id on a 401/403 from the permission chain is the one the clien
   assert.equal(res.status, 401);
   assert.equal(res.headers.get('x-request-id'), 'trace-perm');
   assert.equal((await res.json()).requestId, 'trace-perm');
+});
+
+const JSON_POST = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+
+test('a malformed JSON body returns 400 MALFORMED_BODY in the documented shape', async () => {
+  const res = await fetch(`${start()}/anything`, { ...JSON_POST, body: '{ not json' });
+  assert.equal(res.status, 400);
+  const body = await res.json();
+  assert.deepEqual(Object.keys(body).sort(), ['code', 'requestId']);
+  assert.equal(body.code, 'MALFORMED_BODY');
+  assert.match(body.requestId, UUID);
+  assert.ok(res.headers.get('x-request-id'));
+});
+
+test('a well-formed JSON body still reaches the handler', async () => {
+  const url = start((app) => app.post('/echo', (req, res) => res.json(req.body)));
+  const res = await fetch(`${url}/echo`, { ...JSON_POST, body: '{"a":1}' });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { a: 1 });
+});
+
+test('a route that throws a ValidationError returns 422 with field names only', async () => {
+  const url = start((app) =>
+    app.get('/v', () => {
+      throw unprocessable(['name', 'email']);
+    }),
+  );
+  const res = await fetch(`${url}/v`);
+  assert.equal(res.status, 422);
+  const body = await res.json();
+  assert.equal(body.code, 'VALIDATION_FAILED');
+  assert.deepEqual(body.fields, ['name', 'email']);
+  assert.match(body.requestId, UUID);
+});
+
+test('the request id on a 400 malformed-body error is the client-supplied one', async () => {
+  const res = await fetch(`${start()}/anything`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Request-Id': 'trace-body' },
+    body: '{ not json',
+  });
+  assert.equal(res.headers.get('x-request-id'), 'trace-body');
+  assert.equal((await res.json()).requestId, 'trace-body');
 });
