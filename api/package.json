@@ -1,0 +1,13 @@
+{
+  "name": "support-desk-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "migrate": "node --env-file-if-exists=.env src/platform/db/migrate.js",
+    "test": "node --env-file-if-exists=.env --test"
+  }
+}
