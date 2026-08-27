@@ -71,3 +71,21 @@ scoped wider than its rule fails on day one and gets deleted instead of obeyed.
 **Paid for by:** the CRM-18 plan proposed a test that greps the whole working
 tree for assistant names — it would have failed immediately on `.squad/` plan
 headers and the ignored notes, on content the project's own rules permit.
+
+## L-7 — A ported document keeps its old world's ids
+
+**Rule:** before any plan cites `scripts/criteria/*.md`, the section id it
+cites must equal the story id in `scripts/backlog.txt` — not merely a section
+that exists. A document carried over from an earlier attempt keeps that
+attempt's numbering, and a citation into it is then wrong even though the
+file, the section and the line number are all real.
+
+**Paid for by:** `scripts/criteria/platform.md` was ported from the first
+attempt: fourteen sections for a nineteen-story feature, every id from
+section 4 onward pointing at a different story than the backlog's, and four
+stories — permission-middleware among them — with no criteria at all. The
+CRM-19 plan had to invent its own acceptance criteria; it invented sensible
+ones, which is luck, not process. The same half-migration hid in
+`verify-backlog.mjs`: ids went full-name at the naming pivot, needs stayed
+prefixed, and the check had been failing with 166 errors that nobody saw
+because nobody ran it. A check that is not run is not a check.

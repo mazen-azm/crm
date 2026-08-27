@@ -68,6 +68,18 @@ for (const { text, n } of lines('backlog.txt')) {
   cur.stories.push(story)
 }
 
+// needs are written with the feature prefix (plumbing); ids are the slug in
+// full. Normalise the needs into the id namespace before any check, so the
+// check compares one namespace to itself — with raw needs every lookup missed
+// and the whole backlog failed as "does not exist".
+const prefixToSlug = new Map(features.map((f) => [f.prefix, f.slug.toUpperCase()]))
+for (const u of units.values()) {
+  u.needs = u.needs.map((need) => {
+    const m = need.match(/^([A-Z]{2,4})-(\d+-(?:API|WEB|MOB|ALL))$/)
+    return m && prefixToSlug.has(m[1]) ? `${prefixToSlug.get(m[1])}-${m[2]}` : need
+  })
+}
+
 // needs: exist, and never point forward in time
 for (const u of units.values()) for (const need of u.needs) {
   const dep = units.get(need)

@@ -1,6 +1,6 @@
 # platform — acceptance criteria
 
-## PLT-1-ALL
+## PLATFORM-1-ALL
 
 Three roots in one repository, with the conventions written down before anything
 is built on them.
@@ -16,9 +16,9 @@ is built on them.
   no AI attribution of any kind. This is checked, not trusted.
 
 *Out of scope*
-- CI. That is PLT-10-ALL.
+- CI. That is PLATFORM-13-ALL.
 
-## PLT-2-API
+## PLATFORM-2-API
 
 The schema, and migrations that can be run twice without changing anything.
 
@@ -39,7 +39,7 @@ The schema, and migrations that can be run twice without changing anything.
 *Out of scope*
 - Any business rule. This story creates tables and nothing that writes to them.
 
-## PLT-3-API
+## PLATFORM-3-API
 
 One error shape, one place that decides the status code, and a request id on
 everything.
@@ -61,7 +61,7 @@ everything.
 *Out of scope*
 - Translating codes into sentences. The API returns codes; clients translate.
 
-## PLT-4-API
+## PLATFORM-6-API
 
 The prefix, the page ceiling, health, and logs that say what actually happened.
 
@@ -78,7 +78,7 @@ The prefix, the page ceiling, health, and logs that say what actually happened.
 - Given a log line, when it is read, then it carries the request id that the
   client was given.
 
-## PLT-5-API
+## PLATFORM-7-API
 
 An API document that cannot drift, because the suite compares it to the router.
 
@@ -92,7 +92,7 @@ An API document that cannot drift, because the suite compares it to the router.
 - Given the request collection, when it is imported into a client, then every
   request in it resolves against the running application.
 
-## PLT-6-API
+## PLATFORM-8-API
 
 A seed that fills what is empty and can be run twice.
 
@@ -105,14 +105,14 @@ A seed that fills what is empty and can be run twice.
 - Given the seed, when it is read, then it builds its own services rather than
   importing the application's. It is a second composition root, on purpose.
 - Given `npm run seed`, when it is typed after any file move, then it runs. The
-  package scripts are checked by PLT-11-ALL.
+  package scripts are checked by PLATFORM-15-ALL.
 
 *Out of scope*
 - Tickets. They need rules that do not exist yet, and putting the deadline
   arithmetic in the seed would place a second copy of the promise in the codebase.
-  That is PLT-7-API.
+  That is PLATFORM-17-API.
 
-## PLT-7-API
+## PLATFORM-17-API
 
 Tickets that were walked through the real state machine, not inserted.
 
@@ -128,7 +128,7 @@ Tickets that were walked through the real state machine, not inserted.
   generated. Fifty rows of "Ticket 37" fill the same screen and demonstrate
   nothing.
 
-## PLT-8-WEB
+## PLATFORM-9-WEB
 
 The skeleton every screen is built on.
 
@@ -143,7 +143,7 @@ The skeleton every screen is built on.
   reimplemented.
 - Given the layers, when an import points upward, then the structure check fails.
 
-## PLT-9-WEB
+## PLATFORM-11-WEB
 
 A test setup, and enough first tests to prove it goes red.
 
@@ -160,7 +160,7 @@ A test setup, and enough first tests to prove it goes red.
 - Broad coverage. This story proves the setup, and every story after it carries
   its own tests.
 
-## PLT-10-ALL
+## PLATFORM-13-ALL
 
 The suite runs on every push, and a red suite blocks a merge.
 
@@ -174,7 +174,7 @@ The suite runs on every push, and a red suite blocks a merge.
 - Given a hanging test, when the ceiling is reached, then it reports itself
   rather than stopping the run.
 
-## PLT-11-ALL
+## PLATFORM-15-ALL
 
 The structure enforced by a script, from the first feature rather than after nine
 violations.
@@ -195,7 +195,7 @@ violations.
 - Given any check, when it passes, then it prints how many files it read. A check
   that passes over an empty set is worse than no check.
 
-## PLT-12-ALL
+## PLATFORM-14-ALL
 
 The names and the citations checked, because the previous attempt's confusion was
 entirely a naming problem.
@@ -211,7 +211,7 @@ entirely a naming problem.
   fails.
 - Given a story id, when it carries no layer suffix, then it fails.
 
-## PLT-13-MOB
+## PLATFORM-18-MOB
 
 The Android skeleton, from an empty directory.
 
@@ -231,7 +231,7 @@ The Android skeleton, from an empty directory.
 *Out of scope*
 - Any screen a user works in. Those are the `-MOB` halves of their own features.
 
-## PLT-14-ALL
+## PLATFORM-19-ALL
 
 Hardening, once everything it inspects exists.
 
@@ -243,3 +243,84 @@ Hardening, once everything it inspects exists.
   starts.
 - Given the screenshots, when they are read, then they show the application as it
   actually is.
+
+<!-- The sections above keep their original line positions — plans cite them by
+     line. The five sections below were appended 2026-08-27, when the file was
+     reconciled with scripts/backlog.txt: the file had been ported from the
+     first attempt and four stories had no criteria at all. -->
+
+## PLATFORM-4-API
+
+Permission is decided in middleware, before any service runs (SC-2).
+
+*Acceptance criteria*
+- Given a guarded route and no subject, when it is called, then the answer is
+  401 with code UNAUTHENTICATED, in the same documented error shape as every
+  other failure.
+- Given a guarded route and a subject the policy refuses, when it is called,
+  then the answer is 403 with code FORBIDDEN.
+- Given a policy that accepts, when the route is called, then the service runs
+  and its result returns unchanged.
+- Given a refused request, when the service is instrumented, then it was never
+  invoked — the decision happened before it, not inside it.
+- Given the chain, when its order is read, then the subject is attached before
+  any feature seam, once per request.
+
+*Out of scope*
+- Loading a real subject from a token or session. That is IDENTITY-1-API.
+
+## PLATFORM-5-API
+
+Every failure returns its documented code, and one shape (E-1, E-2).
+
+*Acceptance criteria*
+- Given any failure, when it reaches the client, then its status is one of
+  400 401 403 404 409 422 429 500 and its body carries the documented code.
+- Given a malformed request body, when it is parsed, then the answer is 400 —
+  not 500.
+- Given input that is well-formed but invalid, when it is validated, then the
+  answer is 422 and the body says which field.
+- Given an error the code never mapped, when it surfaces, then the answer is
+  500 with code INTERNAL and no internal detail leaks.
+- Given the catalogue, when a response carries a code outside it, then the
+  suite fails.
+
+## PLATFORM-10-WEB
+
+One palette, one file: tokens and primitives, both directions (D-1, BR-6).
+
+*Acceptance criteria*
+- Given the tokens file, when any component needs a colour, then it consumes a
+  token — no colour literal exists outside the tokens file, in any root.
+- Given the primitives, when the document direction flips, then they render
+  correctly in both directions.
+- Given user-facing text in a primitive, when it is read, then it comes from a
+  resource file in both languages, never hardcoded.
+- Given a new screen, when it is built, then it can be assembled from the
+  primitives without restating spacing, radius or type scale.
+
+## PLATFORM-12-WEB
+
+The desk has one shell: navigation, header, theme.
+
+*Acceptance criteria*
+- Given any desk screen, when it renders, then it renders inside the one shell —
+  navigation, header and theme are never re-implemented per screen.
+- Given the theme, when it is switched, then the choice survives a reload.
+- Given the language, when it changes, then the shell's direction follows it.
+- Given the shell, when its styles are read, then every colour is a token
+  (D-1).
+
+## PLATFORM-16-WEB
+
+Empty, loading and error states are designed, not accidental (D-2).
+
+*Acceptance criteria*
+- Given a list with no rows, when it renders, then the empty state says why it
+  is empty and offers the next action — not a blank region.
+- Given a failed load, when it renders, then the error state shows the
+  documented code's meaning and offers retry.
+- Given a request in flight, when the screen renders, then the loading state is
+  the shared primitive, not a layout jump.
+- Given any new screen, when it ships, then all three states exist and the
+  review can point at each.
