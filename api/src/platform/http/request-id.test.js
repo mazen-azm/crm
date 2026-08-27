@@ -21,14 +21,14 @@ const probe = (app) => app.get('/probe', (req, res) => res.json({ id: req.id }))
 
 test('generates a UUID when no header is present, echoes it in the response', async () => {
   const url = start(probe);
-  const res = await fetch(`${url}/probe`);
+  const res = await fetch(`${url}/api/v1/probe`);
   assert.equal(res.status, 200);
   assert.match(res.headers.get('x-request-id'), UUID);
 });
 
 test('echoes an accepted incoming X-Request-Id', async () => {
   const url = start(probe);
-  const res = await fetch(`${url}/probe`, {
+  const res = await fetch(`${url}/api/v1/probe`, {
     headers: { 'X-Request-Id': 'abc.123_ok-42' },
   });
   assert.equal(res.headers.get('x-request-id'), 'abc.123_ok-42');
@@ -37,7 +37,7 @@ test('echoes an accepted incoming X-Request-Id', async () => {
 
 test('replaces a malformed X-Request-Id with a fresh UUID', async () => {
   const url = start(probe);
-  const res = await fetch(`${url}/probe`, {
+  const res = await fetch(`${url}/api/v1/probe`, {
     headers: { 'X-Request-Id': 'has spaces in it' },
   });
   assert.match(res.headers.get('x-request-id'), UUID);
@@ -45,7 +45,7 @@ test('replaces a malformed X-Request-Id with a fresh UUID', async () => {
 
 test('replaces an overlong X-Request-Id with a fresh UUID', async () => {
   const url = start(probe);
-  const res = await fetch(`${url}/probe`, {
+  const res = await fetch(`${url}/api/v1/probe`, {
     headers: { 'X-Request-Id': 'a'.repeat(201) },
   });
   assert.match(res.headers.get('x-request-id'), UUID);

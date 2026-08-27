@@ -151,3 +151,17 @@ is not in the catalogue, so honouring the promise breaks E-2 and ignoring it
 leaves a dead promise in the code. The CRM-19 draft would have let a strict
 catalogue guard block CHANNELS-2-API from ever throwing its 501. Both are now
 caught by `scripts/verify-plan.mjs` before a human reads the plan.
+
+## L-12 — When a mount moves, every test that uses the seam moves with it
+
+**Rule:** a plan that relocates a mount point must list **every** test file
+that reaches through it, not the one it happened to read. And after the move,
+check the tests that still pass: a test that asserts something true of every
+response — a header, a shape — keeps passing against a 404 and stops proving
+what it was written to prove.
+
+**Paid for by:** the CRM-21 plan enumerated thirteen URLs in `app.test.js`
+and missed `request-id.test.js` and `security-headers.test.js`, which mount
+through the same seam. The first went red immediately, which is the good
+case. The second stayed **green while asserting security headers on a 404** —
+it would have shipped as a test that could no longer fail for its own reason.
