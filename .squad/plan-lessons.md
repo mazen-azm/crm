@@ -359,3 +359,38 @@ takes arbitrary SQL: `db.exec('DELETE FROM users WHERE …')` inside an open
 transaction is a mutation that never touches `prepare`, so it would have
 committed unaudited through a guard written specifically to make that
 impossible. Both doors now get the same classifier.
+
+## L-26 — A check that reads the working tree passes for reasons CI will not have
+
+**Rule:** before a check script is put in CI, run it against a **clean checkout
+of the committed tree** — `git ls-files` into an empty directory, no
+`node_modules`, no untracked files, no credentials. Anything it touches that is
+gitignored or merely lying around locally is a pass it will not get on a
+runner. And when a check resolves paths, teach it that a git-ignored path is
+*deliberately* absent: ask `git check-ignore` rather than treating every
+missing file as a mistake.
+
+**Paid for by:** CRM-28. `verify-docs` was green on this machine and red in the
+dry run, because `docs/ai-usage.md` cites `.squad/secrets.yaml` — in a sentence
+that says "git-ignored" three words later. The citation was right, the file is
+absent on purpose, and the check could not tell that from a typo. Had the
+workflow been pushed first, the repository's first CI run would have been red
+for a defect in the checker rather than in the code, on the story whose whole
+point is that a red run means something.
+
+## L-27 — Half a criterion is not a criterion
+
+**Rule:** when an acceptance criterion needs a step that cannot be taken from
+inside the repository — a repository setting, a DNS record, a permission
+granted in somebody's console — write down the exact steps, name who must take
+them, and **leave the box unticked**. A ticked box is a claim the thing is
+true. Splitting the criterion in the plan is honest; ticking it because the
+committed half is done is not.
+
+**Paid for by:** CRM-28's second criterion is "given a failing test, when a
+merge is attempted, then it is blocked". `ci.yml` makes the suites run and
+report; blocking comes from a branch-protection rule on `main` that lives in
+GitHub's settings, needs admin rights, and no committed file can turn on. The
+workflow being green proves the suites run — not that a red one stops anything.
+`.github/BRANCH_PROTECTION.md` carries the steps and the exact check names, and
+that box stays open until a person has clicked it.
