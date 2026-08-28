@@ -124,9 +124,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(next);
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    setTheme((/* not used; use state */) => 'light' as Theme); // replace with functional form below
-  }, [setTheme]);
+  // Derived from the current theme in the memo below rather than captured
+  // here — a useCallback closing over `theme` would toggle from a stale value
+  // after two quick clicks.
 
   useEffect(() => {
     // The palette lives on <html data-theme="…">, so the tokens file's second
@@ -153,7 +153,7 @@ export { THEME_KEY };
 
 Notes for the executor:
 
-- Use the functional / memoised form for `toggleTheme` (do not leave the stray placeholder above). The point is: **read every storage access inside `try/catch`**, and **initialise state from storage synchronously**.
+- The stray non-working `toggleTheme` placeholder that the generated plan carried here has been removed in review; a plan must not ship code it knows is wrong beside a note asking the reader to notice. `toggleTheme` is derived inside the `useMemo` from the current `theme`. What matters: **every storage access inside `try/catch`**, and **state initialised from storage synchronously**.
 - Set the initial `data-theme` on `<html>` on the first effect run so the attribute is present even before any state change.
 - Export `THEME_KEY` the same way `auth-context.tsx:74` exports `AUTH_TOKEN_KEY` — the test suite reads it to assert persistence.
 
@@ -200,6 +200,7 @@ export function App() {
 
 ```tsx
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useAuth } from '../auth-context';
 import { useTheme } from '../theme-context';
@@ -220,7 +221,7 @@ export function DeskShell({ children }: { children: ReactNode }) {
     <div className="desk-shell">
       <header className="desk-shell__header">
         <Heading level={1}>{t.home.heading}</Heading>
-        <Stack direction="row" gap={2} align="center">
+        <Stack direction="row" gap={2} align="start">
           <Button
             variant="secondary"
             onClick={toggleTheme}
@@ -236,16 +237,27 @@ export function DeskShell({ children }: { children: ReactNode }) {
       <nav className="desk-shell__nav" aria-label={t.shell.navLabel}>
         {/* Real navigation items land in later stories; today the frame
             exists and is provably one place. A single link that goes home
-            keeps this a nav element, not an empty landmark. */}
-        <a href="/" className="desk-shell__nav-item">
+            keeps this a nav element, not an empty landmark.
+
+            Link, not <a href>: a bare anchor makes the browser fetch the
+            document again, which throws away the router, the auth context and
+            the theme state and shows a blank flash on the way back to the
+            page you were already on. Corrected in review. */}
+        <Link to="/" className="desk-shell__nav-item">
           {t.shell.navHome}
-        </a>
+        </Link>
       </nav>
       <main className="desk-shell__main">{children}</main>
     </div>
   );
 }
 ```
+
+**Corrected in review:** the header's `<Stack>` uses `align="start"`, not
+`align="center"`. `Stack`'s prop is typed `align?: 'start' | 'end'`
+(`web/src/shared/ui/Stack.tsx:9`) and `'center'` does not compile. `vitest`
+would not have caught it — `tsc -b` would, at `npm run build`, which is exactly
+the split L-15 was bought by.
 
 `DeskShell.css` — logical properties only, tokens only, **no colour literals**:
 
@@ -294,15 +306,25 @@ Every colour comes from a token. `tokens.test.ts` already scans the whole of `we
 
 **File:** `web/src/pages/no-hardcoded-strings.test.ts`
 
-Extend `SCANNED` (line 30) to include the shell's directory. Choose **`app/desk-shell`** rather than the whole `app/` tree so files like `App.tsx`, `routes.tsx`, `auth-context.tsx` (which correctly contain no user text) do not need to become AST-verified as string-free forever:
+Extend `SCANNED` (line 30) to cover **the whole of `app/`**, not just the shell's
+folder:
 
 ```ts
-const SCANNED = ['pages', 'features', 'app/desk-shell'];
+const SCANNED = ['pages', 'features', 'app'];
 ```
+
+**Corrected in review.** The generated plan scoped this to `app/desk-shell` to
+avoid holding `App.tsx`, `routes.tsx` and `auth-context.tsx` to the rule
+forever. That reasoning inverts the lesson. Those files contain no user-facing
+text today — checked, all of `app/` and `shared/ui/` are already literal-free
+apart from test files, which the guard skips — so covering them costs nothing
+now and closes the hole permanently. Scoping to one folder means the next
+rendering surface added under `app/` reopens exactly the gap L-6 is about, and
+nobody will notice, because the guard will still be green.
 
 Also update the comment block at lines 1–14 to record **why** the shell directory is scanned (rule D-1's partner: the shell is a rendering surface, and L-6 says a guard whose scope excludes a rendering surface is not a guard).
 
-**Prove the extension (L-16).** After extending `SCANNED`, temporarily add a bare literal such as `<span>Support Desk</span>` inside `DeskShell.tsx`, run `pnpm --dir web test -- no-hardcoded-strings`, watch the suite go red naming `app/desk-shell/DeskShell.tsx`, remove the literal, watch it go green. Do this once at development time; do not commit the literal.
+**Prove the extension (L-16).** After extending `SCANNED`, temporarily add a bare literal such as `<span>Support Desk</span>` inside `DeskShell.tsx`, run `npm test -- no-hardcoded-strings` from `web/` (this repository uses npm and npm ci — corrected in review), watch the suite go red naming `app/desk-shell/DeskShell.tsx`, remove the literal, watch it go green. Do this once at development time; do not commit the literal.
 
 ### 6 — Add shell strings to both locales
 
@@ -441,11 +463,11 @@ The routing test at `web/src/app/routing.test.tsx:20 and :30` looks up **`{ name
 
 ## Verification Steps
 
-1. **Frontend builds:** run `pnpm --dir web build` (or `npm --prefix web run build`) — must pass `tsc -b` and `vite build`.
-2. **Frontend tests:** run `pnpm --dir web test` — all suites green, including the extended `no-hardcoded-strings.test.ts`, the extended `routing.test.tsx`, and the new `theme-context.test.tsx` and `desk-shell/DeskShell.test.tsx`.
-3. **L-16 proof of guard coverage:** temporarily insert a bare English literal into `web/src/app/desk-shell/DeskShell.tsx` (e.g. `<span>Support Desk</span>`), run `pnpm --dir web test -- no-hardcoded-strings`, confirm the suite fails naming `app/desk-shell/DeskShell.tsx`, remove the literal, confirm green.
-4. **D-1 proof:** temporarily insert `color: #ff0000;` into `web/src/app/desk-shell/DeskShell.css`, run `pnpm --dir web test -- tokens`, confirm the suite fails, remove the literal, confirm green.
-5. **Frontend runs:** `pnpm --dir web dev`, sign in, click the theme control in the header, observe `<html data-theme="dark">`, reload the page, observe the palette persists. Sign out, land on `/sign-in`, confirm no navigation landmark is present.
+1. **Frontend builds:** run `npm run build` from `web/` — must pass `tsc -b` and `vite build`.
+2. **Frontend tests:** run `npm test` from `web/` — all suites green, including the extended `no-hardcoded-strings.test.ts`, the extended `routing.test.tsx`, and the new `theme-context.test.tsx` and `desk-shell/DeskShell.test.tsx`.
+3. **L-16 proof of guard coverage:** temporarily insert a bare English literal into `web/src/app/desk-shell/DeskShell.tsx` (e.g. `<span>Support Desk</span>`), run `npm test -- no-hardcoded-strings` from `web/` (this repository uses npm and npm ci — corrected in review), confirm the suite fails naming `app/desk-shell/DeskShell.tsx`, remove the literal, confirm green.
+4. **D-1 proof:** temporarily insert `color: #ff0000;` into `web/src/app/desk-shell/DeskShell.css`, run `npm test -- tokens` from `web/`, confirm the suite fails, remove the literal, confirm green.
+5. **Frontend runs:** `npm run dev` from `web/`, sign in, click the theme control in the header, observe `<html data-theme="dark">`, reload the page, observe the palette persists. Sign out, land on `/sign-in`, confirm no navigation landmark is present.
 6. **RTL sanity:** with the DevTools console, `document.documentElement.setAttribute('lang','ar'); document.documentElement.setAttribute('dir','rtl');` — the shell nav border moves to the inline-end side and no layout mirrors by hand. (Real language switching is CRM-37.)
 7. **Regression — no AI attribution:** `git grep -niE "co-authored-by:|generated by|assisted by|copilot|chatgpt|claude|anthropic|openai"` returns no matches in the diff, and the commit message contains none.
 8. **Backend / Android:** untouched. No `api/` or `android/` command runs required.
