@@ -1,34 +1,28 @@
 // Proves criteria 1 and 2 of scripts/criteria/platform.md section
 // PLATFORM-9-WEB: an unauthenticated visitor lands on sign-in, and a stored
-// session survives a reload.
-import { describe, expect, test, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+// session survives a reload. The providers come from the render helper, so
+// this file states only what it is actually testing.
+import { describe, expect, test } from 'vitest';
 
-import { App } from './App';
+import { renderWithProviders, screen, userEvent } from '../testing/render';
+import { AppRoutes } from './routes';
 import { AUTH_TOKEN_KEY } from './auth-context';
-
-beforeEach(() => {
-  localStorage.clear();
-  window.history.pushState({}, '', '/');
-});
 
 describe('the router', () => {
   test('sends an unauthenticated visitor to sign-in', async () => {
-    render(<App />);
+    renderWithProviders(<AppRoutes />);
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
   });
 
   test('a stored session survives a reload — the app boots signed in', async () => {
     // A reload is a fresh mount reading storage, which is exactly this.
-    localStorage.setItem(AUTH_TOKEN_KEY, 'stub-token');
-    render(<App />);
+    renderWithProviders(<AppRoutes />, { signedIn: true });
     expect(await screen.findByRole('heading', { name: 'Support Desk' })).toBeInTheDocument();
   });
 
   test('signing in reaches the desk, and signing out returns to sign-in', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderWithProviders(<AppRoutes />);
 
     await user.click(await screen.findByRole('button', { name: 'Sign in' }));
     expect(await screen.findByRole('heading', { name: 'Support Desk' })).toBeInTheDocument();
@@ -40,8 +34,13 @@ describe('the router', () => {
   });
 
   test('an unknown path lands on the guarded root, not a blank screen', async () => {
-    window.history.pushState({}, '', '/nothing-here');
-    render(<App />);
+    renderWithProviders(<AppRoutes />, { route: '/nothing-here' });
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  test('the helper can render a screen in another language', async () => {
+    renderWithProviders(<AppRoutes />, { language: 'ar' });
+    expect(await screen.findByRole('heading', { name: 'تسجيل الدخول' })).toBeInTheDocument();
+    expect(document.documentElement.getAttribute('dir')).toBe('rtl');
   });
 });

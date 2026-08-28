@@ -1,11 +1,18 @@
+import { beforeEach, vi } from 'vitest';
+
 import '@testing-library/jest-dom/vitest';
 
-// Node 26 defines a localStorage global that throws unless the runtime is
-// started with a flag, and jsdom's own returns undefined. Neither is usable,
-// so the suite brings its own — a Map is enough, and a test can replace it.
+// The web suite's harness. It provides three things, and each is here because
+// the default would be wrong rather than merely inconvenient:
 //
-// PLATFORM-11-WEB replaces this file with the full harness; this story ships
-// only what its own criteria need.
+//   1. A memory-backed localStorage. Node 26 defines a global that throws
+//      unless the runtime is started with a flag, and jsdom's returns
+//      undefined. Neither is usable.
+//   2. A fetch that fails loudly. The suite must run with no network, so an
+//      unstubbed call is a bug in the test, and the error names the call
+//      instead of hanging or reaching the internet.
+//   3. A reset before every test, so a stub or a stored token from one test
+//      cannot decide the outcome of the next.
 class MemoryStorage implements Storage {
   private entries = new Map<string, string>();
 
@@ -34,3 +41,28 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true,
   configurable: true,
 });
+
+// A test that needs a response stubs fetch for itself with vi.stubGlobal; the
+// reset below puts this back afterwards. An unstubbed call names the request
+// that made it, because "fetch failed" three files away is not a clue.
+class TestNetworkAccessError extends Error {
+  constructor(method: string, url: string) {
+    super(`unstubbed fetch call in test: ${method} ${url}`);
+    this.name = 'TestNetworkAccessError';
+  }
+}
+
+function refuseNetwork(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  throw new TestNetworkAccessError(init?.method ?? 'GET', url);
+}
+
+beforeEach(() => {
+  // Every test starts from an empty store and an unstubbed world, so no test
+  // has to remember to clean up after itself for the next one to be correct.
+  localStorage.clear();
+  vi.unstubAllGlobals();
+  vi.stubGlobal('fetch', refuseNetwork);
+});
+
+vi.stubGlobal('fetch', refuseNetwork);
