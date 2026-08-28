@@ -137,6 +137,16 @@ function checkPlan(p) {
   const say = (line, msg) => bucket.push(`${p.file}:${line} ${msg}${shipped ? ' [shipped]' : ''}`)
   const flag = (msg) => bucket.push(`${msg}${shipped ? ' [shipped]' : ''}`)
 
+  // L-21 — the planner writes the world it read as fact. It titles every plan
+  // "Story 01" whatever the filename says, and it has claimed to be the first
+  // plan in a folder holding three. The heading number is the cheap half to
+  // check: it is in the plan, and the truth is in the filename beside it.
+  const heading = body.match(/^#\s+Story\s+(\d+)\b/m)
+  const fileNN = p.file.match(/^(\d+)-story-/)
+  if (heading && fileNN && heading[1] !== fileNN[1]) {
+    say(at(body.indexOf(heading[0])), `titles itself "Story ${heading[1]}" but is ${fileNN[1]}- in the filename (L-21)`)
+  }
+
   // L-2 — a plan never names its own file
   const selfIdx = body.indexOf(p.file)
   if (selfIdx !== -1) say(at(selfIdx), `names its own file (L-2)`)

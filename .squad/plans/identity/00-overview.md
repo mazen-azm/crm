@@ -11,6 +11,7 @@ Entry point for the **identity** feature. Stories execute in order by their `NN`
 | 16 | `16-story-CRM-42.md` | IDENTITY-1-WEB agent — I sign in and reach my queue | CRM-42 | — |
 | 17 | `17-story-CRM-44.md` | IDENTITY-2-API admin — I create, disable and re-enable accounts, and set roles | CRM-44 | — |
 | 18 | `18-story-CRM-47.md` | IDENTITY-4-API system — failed sign-ins are throttled per account and per address | CRM-47 | — |
+| 19 | `19-story-crm-48.md` | IDENTITY-5-API agent — I read the list of people a ticket can be assigned to | CRM-48 | — |
 
 ## Dependency notes
 
