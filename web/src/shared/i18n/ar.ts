@@ -1,10 +1,9 @@
-import type { Messages } from './en';
+import { defineLocale } from './en';
 
-// Arabic resource file. The Messages type makes a key present in one file and
-// missing in the other a compile error — that is what "always two languages"
-// means in practice rather than as a promise. The wording is provisional and
-// a translator revises it.
-export const ar: Messages = {
+// Arabic resource file. defineLocale makes both directions a compile error: a key English has and Arabic lacks, and a key Arabic has that
+// English does not. That is what "always two languages" means in practice
+// rather than as a promise. The wording is provisional; a translator revises it.
+export const ar = defineLocale({
   signIn: {
     heading: 'تسجيل الدخول',
     emailLabel: 'البريد الإلكتروني',
@@ -16,4 +15,4 @@ export const ar: Messages = {
     heading: 'مكتب الدعم',
     signOut: 'تسجيل الخروج',
   },
-};
+});

@@ -219,3 +219,18 @@ colour-literal guard passed a file containing `background: #ff0000` because
 its regex anchored each declaration to the start of a line, so every rule
 written on one line was invisible to it. It had been green all along, over
 nothing.
+
+## L-17 — TypeScript 7 ships no JavaScript compiler API
+
+**Rule:** a plan that walks a TypeScript AST cannot reach for the `typescript`
+package on this project. Version 7 is the native port, and its npm package
+exports `version` and `versionMajorMinor` — nothing else. `ts.createSourceFile`,
+`ts.ScriptTarget`, the visitors: none of them exist. Use `@babel/parser` with
+the `typescript` and `jsx` plugins, as a dev dependency of the guard that needs
+it.
+
+**Paid for by:** the CRM-35 plan chose the TypeScript AST specifically to avoid
+a dependency, noting `typescript` was already installed. It is — and it is
+version 7, so the guard threw `Cannot read properties of undefined (reading
+'Latest')` on its first run. The plan's own fallback was right; what was wrong
+was assuming an installed package still has the API its name used to imply.
