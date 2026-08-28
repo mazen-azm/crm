@@ -3,24 +3,57 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../app/auth-context';
 import { useTranslation } from '../../shared/i18n';
+import { useRequest } from '../../shared/hooks';
+import { request } from '../../shared/api/client';
 import { Button, Card, Field, Heading, Stack, Text } from '../../shared/ui';
+import type { Messages } from '../../shared/i18n/en';
 
-// Assembled from primitives: no spacing, radius or type scale is restated
-// here. Designed empty, loading and error states are PLATFORM-16-WEB.
+type SignInResponse = { token: string; user: { id: string; role: string; name: string } };
+
+// The screen shows the code the API gave, translated in the resource files
+// rather than in this file. Designed empty, loading and error states as a
+// system are PLATFORM-16-WEB.
+function messageFor(code: string | undefined, t: Messages): string {
+  switch (code) {
+    case 'UNAUTHENTICATED':
+      return t.signIn.errorUnauthenticated;
+    case 'VALIDATION_FAILED':
+      return t.signIn.errorValidationFailed;
+    case 'INTERNAL':
+      return t.signIn.errorInternal;
+    default:
+      return t.signIn.errorUnknown;
+  }
+}
+
 export function SignInPage() {
   const { signIn } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { status, error, run } = useRequest<SignInResponse>();
 
-  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // No network call. IDENTITY-1-API (CRM-41) replaces this with a token the
-    // API issues; the context and the guard around it stay as they are.
-    signIn('stub-token');
-    navigate('/', { replace: true });
+    try {
+      const { token } = await run(() =>
+        request<SignInResponse>('/sign-in', {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        }),
+      );
+      // The API's token, verbatim. Nothing here invents one.
+      signIn(token);
+      navigate('/', { replace: true });
+    } catch {
+      // A refused password must not sit in the field waiting to be sent again.
+      // run() has already recorded the failure; there is nothing to add.
+      setPassword('');
+    }
   }
+
+  const busy = status === 'loading';
 
   return (
     <Stack as="main" gap={5}>
@@ -35,6 +68,7 @@ export function SignInPage() {
             type="email"
             autoComplete="username"
             value={email}
+            disabled={busy}
             onChange={(e) => setEmail(e.target.value)}
           />
 
@@ -45,11 +79,15 @@ export function SignInPage() {
             type="password"
             autoComplete="current-password"
             value={password}
+            disabled={busy}
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          <Button type="submit">{t.signIn.submit}</Button>
-          <Text variant="muted">{t.signIn.stubNotice}</Text>
+          <Button type="submit" disabled={busy}>
+            {busy ? t.signIn.submitting : t.signIn.submit}
+          </Button>
+
+          {error ? <Text variant="muted">{messageFor(error.code, t)}</Text> : null}
         </Stack>
       </Card>
     </Stack>

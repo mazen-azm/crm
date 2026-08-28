@@ -3,10 +3,9 @@ import type { ReactNode } from 'react';
 
 import { setAuthTokenGetter } from '../shared/api/client';
 
-// The token here is a STUB. There is no sign-in endpoint yet, so any non-empty
-// string counts as a session. IDENTITY-1-API (CRM-41) replaces the stub with a
-// token the API issues; the seam — read on boot, store, clear — does not change
-// when it does.
+// The token stored here is what the API issued. It is read synchronously on
+// the first render rather than in an effect, which is what makes a reload keep
+// the session instead of flashing sign-in and navigating back to it.
 const AUTH_TOKEN_KEY = 'support-desk.auth-token';
 
 type AuthValue = {

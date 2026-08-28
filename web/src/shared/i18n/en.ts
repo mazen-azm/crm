@@ -8,7 +8,15 @@ export const en = {
     emailLabel: 'Email',
     passwordLabel: 'Password',
     submit: 'Sign in',
-    stubNotice: 'Real sign-in is not implemented yet — IDENTITY-1-API replaces this stub.',
+    submitting: 'Signing in…',
+    // Keyed by the code the API answers with. The API deliberately gives one
+    // refusal for a wrong password, an unknown address and a disabled
+    // account, so there is one sentence for all three — being more specific
+    // here would undo on the screen what the API refused to reveal.
+    errorUnauthenticated: 'That email and password do not match an account.',
+    errorValidationFailed: 'Check the highlighted fields and try again.',
+    errorInternal: 'Something went wrong at our end. Try again.',
+    errorUnknown: 'Sign-in failed.',
   },
   home: {
     heading: 'Support Desk',

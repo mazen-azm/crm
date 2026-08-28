@@ -8,6 +8,7 @@ Entry point for the **identity** feature. Stories execute in order by their `NN`
 |----|------|-------|------------|------------|
 | _add rows as stories are planned_ |
 | 15 | `15-story-CRM-41.md` | IDENTITY-1-API agent — I sign in and reach my queue | CRM-41 | — |
+| 16 | `16-story-CRM-42.md` | IDENTITY-1-WEB agent — I sign in and reach my queue | CRM-42 | — |
 
 ## Dependency notes
 

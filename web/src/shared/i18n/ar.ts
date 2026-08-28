@@ -9,7 +9,11 @@ export const ar = defineLocale({
     emailLabel: 'البريد الإلكتروني',
     passwordLabel: 'كلمة المرور',
     submit: 'تسجيل الدخول',
-    stubNotice: 'تسجيل الدخول الحقيقي لم يُنفَّذ بعد — سيحل محله IDENTITY-1-API.',
+    submitting: 'جارٍ تسجيل الدخول…',
+    errorUnauthenticated: 'البريد الإلكتروني وكلمة المرور لا يطابقان أي حساب.',
+    errorValidationFailed: 'راجع الحقول المطلوبة وحاول مرة أخرى.',
+    errorInternal: 'حدث خطأ عندنا. حاول مرة أخرى.',
+    errorUnknown: 'فشل تسجيل الدخول.',
   },
   home: {
     heading: 'مكتب الدعم',
