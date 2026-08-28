@@ -112,7 +112,7 @@ Three rules carried over from an earlier Android project and enforced here:
 
 ## The checks
 
-`scripts/verify-architecture.mjs` runs on every push and enforces:
+`scripts/verify-architecture.mjs` (planned — PLATFORM-15-ALL) runs on every push and enforces:
 
 | # | Rule | Root |
 |---|---|---|
