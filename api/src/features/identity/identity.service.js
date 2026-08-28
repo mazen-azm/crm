@@ -38,6 +38,16 @@ const publicShape = (row) => ({
   deletedAt: row.deleted_at ?? null,
 });
 
+// The row the assignee picker gets: id, name, role and nothing else. Email is
+// deliberately absent — a picker does not need staff addresses, and every field
+// that travels is a field that has to keep being safe. That is why it does not
+// reuse publicShape rather than being a narrowing of it.
+const assigneeShape = (row) => ({
+  id: row.id,
+  name: row.name,
+  role: row.role,
+});
+
 export function createIdentityService({ db, secret, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
 
@@ -149,6 +159,25 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       // A read is not a mutation, so it writes no audit row.
       return {
         items: listLiveUsers(db, { limit, offset }).map(publicShape),
+        total: countLiveUsers(db),
+        limit,
+        offset,
+      };
+    },
+
+    // Any signed-in staff member may read this; the guard is requireSubject in
+    // the router, not adminOnly — an agent who cannot see the list cannot hand
+    // a ticket over. Both admin and agent are staff and both are assignable.
+    //
+    // There is no "not a customer" predicate here and there must not be one.
+    // users holds staff only and ROLES freezes admin|agent; customers are their
+    // own table. A predicate for it would be dead code telling a later reader
+    // the schema allows something it does not.
+    //
+    // A read is not a mutation, so it writes no audit row.
+    listAssignees(actor, { limit, offset }) {
+      return {
+        items: listLiveUsers(db, { limit, offset }).map(assigneeShape),
         total: countLiveUsers(db),
         limit,
         offset,

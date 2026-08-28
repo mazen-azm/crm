@@ -24,6 +24,13 @@ export function identityRouter({ db, secret, now }) {
     res.json(req.subject);
   });
 
+  // Named for the question the caller is asking rather than for the users
+  // table, so it will not be confused with /accounts — which is admin-only and
+  // answers a different question with a wider row.
+  router.get('/assignees', requireSubject(), (req, res) => {
+    res.json(service.listAssignees(req.subject, readPagination(req)));
+  });
+
   // The role is decided here, before the service is entered. The service
   // therefore never re-checks it: one rule, one place.
   const adminOnly = requirePermission((subject) => subject.role === 'admin');

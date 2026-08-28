@@ -218,16 +218,16 @@ Grep before reading:
 
 ## Done Criteria
 
-- [ ] `GET /api/v1/assignees` exists and is guarded by `requireSubject()` only (no `adminOnly`).
-- [ ] The response body is `{ items, total, limit, offset }` and each item is exactly `{ id, name, role }` — no `email`, no timestamps, no `password_hash`, no other fields.
-- [ ] Only live staff appear (`deleted_at IS NULL`), and both `admin` and `agent` are included.
-- [ ] No `WHERE role != 'customer'` predicate is added anywhere; the "no customer" guarantee is proved by a test that seeds a customer row.
-- [ ] Pagination reuses `readPagination` from `api/src/platform/http/pagination.js`; `?limit>MAX` is refused with `422 { fields: ['limit'] }`.
-- [ ] Unauthenticated requests get `401 UNAUTHENTICATED`.
-- [ ] No audit row is written for the read.
-- [ ] `api/openapi.json` documents the route with `200/401/422/500`.
-- [ ] `listAccounts`, `publicShape`, `users`, migrations, permission middleware, and sign-in are unchanged in this diff.
-- [ ] `assignees.test.js` covers every case in the Test Plan and passes; all prior tests still pass unchanged.
-- [ ] No commit message, code comment, doc, or ignore-file line added by this story mentions AI assistance.
+- [x] `GET /api/v1/assignees` exists and is guarded by `requireSubject()` only (no `adminOnly`).
+- [x] The response body is `{ items, total, limit, offset }` and each item is exactly `{ id, name, role }` — no `email`, no timestamps, no `password_hash`, no other fields.
+- [x] Only live staff appear (`deleted_at IS NULL`), and both `admin` and `agent` are included.
+- [x] No `WHERE role != 'customer'` predicate is added anywhere; the "no customer" guarantee is proved by a test that seeds a customer row.
+- [x] Pagination reuses `readPagination` from `api/src/platform/http/pagination.js`; `?limit>MAX` is refused with `422 { fields: ['limit'] }`.
+- [x] Unauthenticated requests get `401 UNAUTHENTICATED`.
+- [x] No audit row is written for the read.
+- [x] `api/openapi.json` documents the route with `200/401/422/500`.
+- [x] `listAccounts`, `publicShape`, `users`, migrations, permission middleware, and sign-in are unchanged in this diff.
+- [x] `assignees.test.js` covers every case in the Test Plan and passes; all prior tests still pass unchanged.
+- [x] No commit message, code comment, doc, or ignore-file line added by this story mentions AI assistance.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

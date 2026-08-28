@@ -188,6 +188,25 @@
           }
         }
       }
+    },
+    "/api/v1/assignees": {
+      "get": {
+        "summary": "The live staff a ticket can be assigned to. Any signed-in staff member may read it \u2014 an agent who cannot see the list cannot hand a ticket over.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each item is { id, name, role } \u2014 no address, no timestamps, nothing about the password."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, never clamped (BR-4)."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
     }
   }
 }
