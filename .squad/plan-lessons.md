@@ -394,3 +394,25 @@ GitHub's settings, needs admin rights, and no committed file can turn on. The
 workflow being green proves the suites run — not that a red one stops anything.
 `.github/BRANCH_PROTECTION.md` carries the steps and the exact check names, and
 that box stays open until a person has clicked it.
+
+## L-28 — A helper that makes one rule honest can make another rule impossible
+
+**Rule:** when several checks share a normaliser, ask of **each** rule what the
+normaliser removes and whether the thing that rule hunts is inside it. Strip
+comments for everyone, because a comment explaining a rule reads exactly like a
+breach of it — but strip no further by default. A rule whose subject lives in
+string literals must not be handed source with the strings taken out, or it
+becomes a check that reads every file, finds nothing, and cannot fail.
+
+**Paid for by:** CRM-30's plan gave every rule `stripCommentsAndStrings`,
+correctly for the import matcher — `import … from '<string>'` is a fixed
+grammar and stripping strings first stops a quoted path in a comment counting.
+But the SQL-outside-a-repository rule hunts SQL, and every statement in this
+codebase is inside a string or template literal: `db.prepare('SELECT … FROM
+users …')`. That rule would have scanned 137 files, reported zero findings and
+a green tick, and stayed green no matter what anybody wrote. Two helpers now:
+`stripComments` for all, `stripStrings` composed on top for the one rule that
+can afford it.
+
+**Related:** [[L-13]] is why comments are stripped at all; this is the other
+edge of the same knife.
