@@ -94,3 +94,8 @@ export function useTranslation(): Translation {
   if (!value) throw new Error('useTranslation() was called outside I18nProvider');
   return value;
 }
+
+// Re-exported so a caller reaches for one place when it needs the language and
+// the formatters that follow from it.
+export { formatDate, formatNumber, formatRelativeTime, localeTag } from './format';
+export { useFormatters } from './useFormatters';
