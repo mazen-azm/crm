@@ -1,7 +1,25 @@
 {
-  "name": "Support Desk — smoke",
+  "name": "Support Desk \u2014 smoke",
   "requests": [
-    { "name": "health", "method": "GET", "path": "/api/v1/health" },
-    { "name": "openapi", "method": "GET", "path": "/api/v1/openapi.json" }
+    {
+      "name": "health",
+      "method": "GET",
+      "path": "/api/v1/health"
+    },
+    {
+      "name": "openapi",
+      "method": "GET",
+      "path": "/api/v1/openapi.json"
+    },
+    {
+      "name": "sign-in (unauthenticated shape check)",
+      "method": "POST",
+      "path": "/api/v1/sign-in"
+    },
+    {
+      "name": "me (guarded)",
+      "method": "GET",
+      "path": "/api/v1/me"
+    }
   ]
 }

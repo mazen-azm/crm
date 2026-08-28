@@ -8,7 +8,17 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-import { createApp } from '../../app.js';
+import { composeApp } from '../../compose.js';
+import { openDatabase } from '../db/connection.js';
+import { runMigrations } from '../db/migrate.js';
+
+// The application as production composes it — the document describes what is
+// served, so the check has to look at the same arrangement.
+const createApp = (deps = {}) => {
+  const db = openDatabase(':memory:');
+  runMigrations(db);
+  return composeApp({ db, secret: 'contract-test-secret', ...deps });
+};
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const COLLECTION = JSON.parse(readFileSync(path.resolve(HERE, '../../../requests.json'), 'utf8'));

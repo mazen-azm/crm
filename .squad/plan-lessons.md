@@ -234,3 +234,16 @@ a dependency, noting `typescript` was already installed. It is — and it is
 version 7, so the guard threw `Cannot read properties of undefined (reading
 'Latest')` on its first run. The plan's own fallback was right; what was wrong
 was assuming an installed package still has the API its name used to imply.
+
+## L-18 — A contract check must inspect the application production runs
+
+**Rule:** when a check compares a document, a schema or a route table against
+"the application", it builds the application the way production does. Extract
+that composition into one function both the entry point and the check import.
+A check that assembles its own arrangement is checking something nobody runs.
+
+**Paid for by:** CRM-41 mounted the first feature and the OpenAPI contract test
+went red — correctly. The test built `createApp()` with no features, so the two
+documented routes were "documented but not served". Feeding the test the
+production composition was the fix; teaching the document to expect a
+featureless app would have been the bug.

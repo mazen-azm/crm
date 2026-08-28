@@ -4,7 +4,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createApp } from '../../app.js';
+import { composeApp } from '../../compose.js';
+import { openDatabase } from '../db/connection.js';
+import { runMigrations } from '../db/migrate.js';
+
+// The application as production composes it — the document describes what is
+// served, so the check has to look at the same arrangement.
+const createApp = (deps = {}) => {
+  const db = openDatabase(':memory:');
+  runMigrations(db);
+  return composeApp({ db, secret: 'contract-test-secret', ...deps });
+};
 import { collectRoutes } from './route-table.js';
 import { API_V1_PREFIX } from './prefix.js';
 import { OPENAPI_DOCUMENT } from './openapi.js';

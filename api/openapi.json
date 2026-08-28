@@ -9,7 +9,9 @@
       "get": {
         "summary": "Liveness probe. Public, and says nothing but whether the service is up.",
         "responses": {
-          "200": { "description": "The service is up." }
+          "200": {
+            "description": "The service is up."
+          }
         }
       }
     },
@@ -17,7 +19,47 @@
       "get": {
         "summary": "This contract, served by the running application.",
         "responses": {
-          "200": { "description": "The OpenAPI document." }
+          "200": {
+            "description": "The OpenAPI document."
+          }
+        }
+      }
+    },
+    "/api/v1/sign-in": {
+      "post": {
+        "summary": "Sign in with an email and a password; answers with a bearer token and the account's public fields.",
+        "responses": {
+          "200": {
+            "description": "Signed in. Body: { token, user: { id, role, name } }."
+          },
+          "400": {
+            "description": "The body was not JSON."
+          },
+          "401": {
+            "description": "Wrong password, unknown address, or a soft-deleted account — the body does not distinguish them."
+          },
+          "422": {
+            "description": "Well-formed JSON, but the credentials were the wrong shape. The body names the fields and never their values."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "summary": "Whoever the bearer token resolves to. Guarded.",
+        "responses": {
+          "200": {
+            "description": "Body: { id, role, name }."
+          },
+          "401": {
+            "description": "No token, or one that is malformed, tampered with, expired, foreign-signed, or issued to an account since removed."
+          },
+          "500": {
+            "description": "Internal."
+          }
         }
       }
     }
