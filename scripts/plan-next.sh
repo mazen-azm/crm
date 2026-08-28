@@ -41,7 +41,8 @@ for intake in .squad/stories/*/CRM-*/intake.md; do
     exit 0
   fi
   echo "[$(date '+%F %T')] planning $key"
-  squad new-plan --api -y "$intake" 2>&1 | tail -3
+  out=$(squad new-plan --api -y "$intake" 2>&1)
+  echo "$out" | tail -3
   if ls .squad/plans/*/ 2>/dev/null | grep -qi "story-${key}"; then
     # squad-kit lowercases the id; the console and its own lookup are
     # case-sensitive, so fix it here rather than leaving the story unplanned.
@@ -50,7 +51,15 @@ for intake in .squad/stories/*/CRM-*/intake.md; do
     done
     echo "[$(date '+%F %T')] $key planned"
   else
-    echo "[$(date '+%F %T')] $key not planned — quota or error"
+    # Say which. "quota or error" sent somebody looking at a usage limit for
+    # a run that had actually hit squad-kit's hardcoded 40-turn ceiling
+    # (DEFAULT_PLANNER_MAX_ITERATIONS), which no flag or config key exposes.
+    case "$out" in
+      *"hit your limit"*|*"usage limit"*)  why="usage limit — retry after it resets" ;;
+      *"maximum number of turns"*)         why="hit the 40-turn planner ceiling — retry, or lower planner.budget.maxFileReads so fewer turns go on reading" ;;
+      *)                                   why="see the output above" ;;
+    esac
+    echo "[$(date '+%F %T')] $key not planned — $why"
   fi
   exit 0
 done

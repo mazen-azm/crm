@@ -22,7 +22,13 @@ planner:
   auth:
     anthropic: subscription
   budget:
-    maxFileReads: 40
+    # Deliberately below squad-kit's hardcoded 40-turn planner ceiling
+    # (DEFAULT_PLANNER_MAX_ITERATIONS, which no flag or config key exposes).
+    # Every file read costs a turn, so a read budget equal to the turn budget
+    # can spend the whole allowance before the plan is written — which is how
+    # CRM-27's first attempt died. 24 leaves roughly a third of the turns for
+    # reasoning and writing, and matches the scout's own maxFiles.
+    maxFileReads: 24
     maxContextBytes: 150000
     maxDurationSeconds: 360
   cache:
