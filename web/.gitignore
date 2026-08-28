@@ -2,3 +2,7 @@ node_modules/
 dist/
 .vite/
 coverage/
+
+# tsc -b writes this on every build; committing it puts a churning binary-ish
+# blob in the diff of every change that compiles anything.
+*.tsbuildinfo
