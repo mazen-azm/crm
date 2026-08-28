@@ -1,0 +1,14 @@
+# identity — plan overview
+
+Entry point for the **identity** feature. Stories execute in order by their `NN` prefix.
+
+## Stories
+
+| NN | File | Title | Tracker id | Depends on |
+|----|------|-------|------------|------------|
+| _add rows as stories are planned_ |
+| 15 | `15-story-CRM-41.md` | IDENTITY-1-API agent — I sign in and reach my queue | CRM-41 | — |
+
+## Dependency notes
+
+_Describe sequencing, shared contracts, or cross-feature dependencies here._
