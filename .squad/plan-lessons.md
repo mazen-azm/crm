@@ -262,3 +262,48 @@ account" as `ORDER BY at DESC LIMIT 1` and got the creation row instead of the
 role change — both happened inside one second, so the timestamps were equal
 and the order was whatever the engine felt like. The test looked wrong and the
 data was right.
+
+## L-20 — A counter a success resets is a counter the attacker resets
+
+**Rule:** when a throttle keeps one counter per *victim* and one per *origin*,
+a successful attempt may clear the victim's counter and must never clear the
+origin's. The per-account counter exists to protect one account, and the
+person who just proved the password owns it; the per-address counter exists to
+stop one host sweeping many accounts, and a sweep that lands anywhere would
+otherwise buy itself a fresh budget. State which counters a success clears,
+and why, in the same sentence.
+
+**Paid for by:** CRM-47's plan gave `recordSuccess` both keys — "a person who
+mistypes twice and then signs in is not one failure away from being locked out
+tomorrow", which is right about the account and wrong about the address.
+Credential stuffing succeeds *sometimes*; that is its whole shape. Every hit
+would have wiped the address ceiling, so the second acceptance criterion could
+never fire against a real attacker while firing happily against an office
+behind one NAT.
+
+## L-21 — A plan asserts the world it was generated in; check it, it is already stale
+
+**Rule:** treat every claim a plan makes about the *surroundings* — how many
+plans exist, what has been built, which story is first, what version is
+installed — as unverified. The planner reads a snapshot and writes it as fact.
+Claims about the code it cites are checked mechanically; claims about the
+repository around it are not.
+
+**Paid for by:** CRM-47's plan opened with "No other plans exist yet; this is
+the first entry in `.squad/plans/identity/`" and titled itself "Story 01" —
+with three identity plans already sitting beside it and its own filename
+reading `18-`. Nothing downstream depended on it, which is exactly why it
+would have survived into the record unchallenged. Compare [[L-14]].
+
+## L-22 — A test that needs a seam the story forbids is not a test
+
+**Rule:** before writing a test into a plan, name the seam it turns. If the
+plan's own scope forbids that seam, the test cannot be written and the
+assertion has to move to the layer that owns the parameter — usually the unit,
+where the value is an argument rather than a property of the transport.
+
+**Paid for by:** CRM-47's integration list said "a different simulated address
+is still 401". Every request in that suite comes from one socket peer, and the
+only way to vary `req.ip` is `app.set('trust proxy')` plus a forwarded header —
+which the same plan explicitly forbids, correctly. The isolation belongs in the
+throttle's unit test, where the address is just a string.
