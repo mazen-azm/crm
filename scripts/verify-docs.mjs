@@ -18,6 +18,7 @@
 // that explain rules for a living, and a document explaining a rule contains
 // the words of the rule.
 
+import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -27,7 +28,7 @@ import { readBacklog } from './lib/backlog.mjs'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 const fail = [], warn = []
-let filesRead = 0, citations = 0, storyIds = 0
+let filesRead = 0, citations = 0, storyIds = 0, ignoredCitations = 0
 
 const backlog = readBacklog(HERE)
 filesRead += backlog.filesRead
@@ -47,6 +48,19 @@ const SEARCH_ROOTS = ['', 'api', 'api/src', 'web', 'web/src']
 // './errors.js' inside a code block is an import specifier — it resolves
 // against the file being written, which is not a place this script stands.
 const RELATIVE_IMPORT = /^\.\.?\//
+
+// A path git is told to ignore is absent by design, not by mistake. Asking git
+// rather than pattern-matching .gitignore ourselves means the answer is the one
+// git actually gives — including negations and precedence, which are the part a
+// hand-rolled reader gets wrong.
+function isIgnored(cited) {
+  try {
+    execFileSync('git', ['check-ignore', '-q', '--', cited], { cwd: ROOT, stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
 
 function resolveCited(cited) {
   for (const base of SEARCH_ROOTS) {
@@ -118,6 +132,13 @@ for (const path of documents) {
         citations++
         const resolved = resolveCited(cited)
         if (!resolved) {
+          // A path the repository deliberately does not commit is not a broken
+          // citation — it is the citation being right about something that is
+          // absent on purpose. `.squad/secrets.yaml` is the case that found
+          // this: the sentence naming it says "git-ignored" in the same breath,
+          // and the check still failed, but only in a clean checkout. It passed
+          // on every developer machine, where the file is sitting there.
+          if (isIgnored(cited)) { ignoredCitations++; continue }
           report(`${at} cites ${cited}, which does not exist`)
           continue
         }
@@ -154,7 +175,7 @@ for (const path of documents) {
 
 if (filesRead === 0) fail.push('read no files — this check would have passed over an empty set')
 
-console.log(`\ndocs — ${documents.length} documents · ${citations} citations · ${storyIds} story ids · read ${filesRead} files\n`)
+console.log(`\ndocs — ${documents.length} documents · ${citations} citations (${ignoredCitations} to git-ignored paths) · ${storyIds} story ids · read ${filesRead} files\n`)
 if (warn.length) { console.log(`${warn.length} warning(s)`); for (const w of warn) console.log(`  ~ ${w}`) }
 if (fail.length) { console.log(`${fail.length} failure(s)`); for (const f of fail) console.log(`  x ${f}`); process.exit(1) }
 console.log('all document checks green\n')
