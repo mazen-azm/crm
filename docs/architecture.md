@@ -72,6 +72,17 @@ web/src/
 └── testing/      render helpers, fixtures
 ```
 
+**The build is Vite, and the application is a single-page client.** React with
+the router running in the browser, TypeScript, Vitest with Testing Library, and
+no server-side framework. The reason is the rule the whole project is built on:
+the API is the only contract. A framework that renders on a server invites a
+second data path — a server component reaching a database directly, an action
+that bypasses the documented route — and the day that happens the OpenAPI check
+in PLATFORM-7-API stops describing how the product actually reads its data.
+Vite has no such seam to fall through: the browser talks to `/api/v1` or it has
+nothing. Server rendering buys page-load speed for a public site; this is an
+internal desk behind a sign-in, so it buys nothing here.
+
 Layers import **downward only**: `app → pages → features → entities → shared`.
 
 **Two entity slices that relate use `@x`**, not a move to `shared`. A ticket needs
