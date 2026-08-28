@@ -1,0 +1,7 @@
+.empty-state {
+  background: var(--color-bg-surface);
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding-block: var(--space-6);
+  padding-inline: var(--space-5);
+}

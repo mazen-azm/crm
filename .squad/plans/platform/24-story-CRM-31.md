@@ -234,16 +234,16 @@ Add a short note to `docs/architecture.md` (a single paragraph under the existin
 
 ## Done Criteria
 
-- [ ] `web/src/shared/api/error-messages.ts` exists and exports `errorMessageFor: Record<ApiErrorCode, (t) => string>`.
-- [ ] `web/src/shared/ui/EmptyState.tsx`, `ErrorState.tsx`, `SkeletonBlock.tsx` (each with a matching `.css`) exist and are exported from `web/src/shared/ui/index.ts`.
-- [ ] `SkeletonBlock.css` contains the design comment naming why it reserves shape and forbidding a spinner.
-- [ ] `web/src/shared/i18n/en.ts` and `ar.ts` each contain one `errors.<code>` sentence per `ApiErrorCode` value; `defineLocale` passes.
-- [ ] `web/src/pages/sign-in/SignInPage.tsx` no longer defines `messageFor`; it reads from `errorMessageFor`.
-- [ ] `SignInPage.test.tsx` assertions on rendered sentences pass unchanged.
-- [ ] Every colour used by the new primitives is a token in `tokens.css`; `tokens.test.ts` passes.
-- [ ] `no-hardcoded-strings.test.ts` passes; either the roots are widened with justification, **or** the comment explaining why they were not is in the file.
-- [ ] `npm run build` in `web/` passes; deleting one entry from `errorMessageFor` demonstrably fails `tsc -b` (spot-check locally, do not commit).
-- [ ] `docs/architecture.md` gains one paragraph naming the three primitives as the designed states for `useRequest`-backed screens.
-- [ ] `git grep` for AI-attribution terms returns nothing.
+- [x] `web/src/shared/api/error-messages.ts` exists and exports `errorMessageFor: Record<ApiErrorCode, (t) => string>`.
+- [x] `web/src/shared/ui/EmptyState.tsx`, `ErrorState.tsx`, `SkeletonBlock.tsx` (each with a matching `.css`) exist and are exported from `web/src/shared/ui/index.ts`.
+- [x] `SkeletonBlock.css` contains the design comment naming why it reserves shape and forbidding a spinner.
+- [x] `web/src/shared/i18n/en.ts` and `ar.ts` each contain one `errors.<code>` sentence per `ApiErrorCode` value; `defineLocale` passes.
+- [x] `web/src/pages/sign-in/SignInPage.tsx` no longer defines `messageFor`; it reads from `errorMessageFor`.
+- [x] `SignInPage.test.tsx` assertions on rendered sentences pass unchanged.
+- [x] Every colour used by the new primitives is a token in `tokens.css`; `tokens.test.ts` passes.
+- [x] `no-hardcoded-strings.test.ts` passes; either the roots are widened with justification, **or** the comment explaining why they were not is in the file.
+- [x] `npm run build` in `web/` passes; deleting one entry from `errorMessageFor` demonstrably fails `tsc -b` (spot-check locally, do not commit).
+- [x] `docs/architecture.md` gains one paragraph naming the three primitives as the designed states for `useRequest`-backed screens.
+- [x] `git grep` for AI-attribution terms returns nothing.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 17.**

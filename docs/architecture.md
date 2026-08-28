@@ -89,6 +89,15 @@ Layers import **downward only**: `app → pages → features → entities → sh
 a customer's name; that cross-import is declared as `entities/customer/@x/ticket`
 so the dependency is visible rather than laundered through a shared folder.
 
+**The three states are components, not a habit.** `shared/ui` exports
+`EmptyState`, `ErrorState` and `Skeleton`, and a screen driven by `useRequest`
+renders one of them for `loading`, for `error`, and for a `success` that came
+back with nothing. The error state's sentence comes from `t.errors[code]`,
+which is typed against the API's frozen code catalogue so a new code cannot
+ship without a meaning. Sign-in is the one screen that deliberately does not
+read that map — it answers one sentence for every way a credential can be
+wrong, because the API refuses to say which.
+
 ---
 
 ## Android
@@ -112,7 +121,7 @@ Three rules carried over from an earlier Android project and enforced here:
 
 ## The checks
 
-`scripts/verify-architecture.mjs` (planned — PLATFORM-15-ALL) runs on every push and enforces:
+`scripts/verify-architecture.mjs` runs on every push and enforces:
 
 | # | Rule | Root |
 |---|---|---|
