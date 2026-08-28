@@ -36,10 +36,13 @@
             "description": "The body was not JSON."
           },
           "401": {
-            "description": "Wrong password, unknown address, or a soft-deleted account — the body does not distinguish them."
+            "description": "Wrong password, unknown address, or a soft-deleted account \u2014 the body does not distinguish them."
           },
           "422": {
             "description": "Well-formed JSON, but the credentials were the wrong shape. The body names the fields and never their values."
+          },
+          "429": {
+            "description": "Too many failed sign-ins for this account or from this network address. The body does not say which, because which one it was would say whether the account exists."
           },
           "500": {
             "description": "Internal."
@@ -68,7 +71,7 @@
         "summary": "Create a staff account. Answers with the account and, once, the password it was given.",
         "responses": {
           "201": {
-            "description": "Created. Body: { user, initialPassword } — the password is shown here and never again."
+            "description": "Created. Body: { user, initialPassword } \u2014 the password is shown here and never again."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."

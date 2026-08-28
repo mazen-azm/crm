@@ -307,3 +307,22 @@ is still 401". Every request in that suite comes from one socket peer, and the
 only way to vary `req.ip` is `app.set('trust proxy')` plus a forwarded header —
 which the same plan explicitly forbids, correctly. The isolation belongs in the
 throttle's unit test, where the address is just a string.
+
+## L-23 — A contract check has a direction, and the missing one is the dangerous one
+
+**Rule:** when a check compares code to a document, say out loud which way it
+reads. "Everything documented is real" and "everything real is documented" are
+two checks, and a plan that names one and relies on the other is trusting a
+guard that is not there. For response statuses the second direction cannot be
+had statically — nothing tells you what a handler throws — so it has to be
+bought at run time: record the `(method, path, status)` the suite actually
+observes and assert each one is documented.
+
+**Paid for by:** CRM-47's plan said the OpenAPI contract test "runs on every
+build and reads this file; failing to update it will break it". It does not.
+Deleting the new `429` from `api/openapi.json` left all four contract tests
+green, because the suite checks routes served-versus-documented in both
+directions but statuses in one — documented statuses must be in E-2's
+catalogue, and that is all. The `429` entry is therefore correct and entirely
+unenforced. Found by deleting it and watching for red, which is [[L-16]] doing
+its job on a guard rather than on a feature.

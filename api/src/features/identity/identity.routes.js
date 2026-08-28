@@ -10,8 +10,12 @@ export function identityRouter({ db, secret, now }) {
   const service = createIdentityService({ db, secret, now });
   const router = express.Router();
 
+  // req.ip is the socket peer: app.js sets no `trust proxy`, by decision, so
+  // behind a reverse proxy every caller would look like the proxy and the
+  // address ceiling would throttle the whole world at once. Wiring proxy trust
+  // from configuration belongs to a platform story, not to this one.
   router.post('/sign-in', (req, res) => {
-    res.json(service.signIn(req.body ?? {}));
+    res.json(service.signIn(req.body ?? {}, { address: req.ip ?? null }));
   });
 
   // Whoever the bearer token resolves to. The guard has already refused an
