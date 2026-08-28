@@ -7,6 +7,7 @@ Entry point for the **audit** feature. Stories execute in order by their `NN` pr
 | NN | File | Title | Tracker id | Depends on |
 |----|------|-------|------------|------------|
 | _add rows as stories are planned_ |
+| 20 | `20-story-crm-133.md` | AUDIT-1-API system — every change writes an audit row | CRM-133 | — |
 
 ## Dependency notes
 

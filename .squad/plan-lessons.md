@@ -326,3 +326,36 @@ directions but statuses in one — documented statuses must be in E-2's
 catalogue, and that is all. The `429` entry is therefore correct and entirely
 unenforced. Found by deleting it and watching for red, which is [[L-16]] doing
 its job on a guard rather than on a feature.
+
+## L-24 — A guarantee checked against a hand-written list is a guarantee the next author opts out of by forgetting
+
+**Rule:** when the criterion is "anything added later that breaks this rule is
+caught", the set of things checked has to be **derived from the system**, not
+typed into the test. The author who forgets the rule is the same author who
+forgets to add their case to the list, so a hand-written set makes the check
+depend on exactly the memory it was written to replace. Walk the router, read
+the directory, enumerate the exports — then assert the derived set equals the
+covered set, and fail naming both directions.
+
+**Paid for by:** CRM-133's plan proved BR-2 by driving the four mutating routes
+that exist today, listed by hand. A fifth route added next sprint would have
+been audited by nobody and reported by nothing, while the suite stayed green and
+the story's own acceptance criterion — "a new mutating route that does not write
+an audit row fails a check" — read as satisfied. The walker to derive it from
+already existed: `collectRoutes` in `api/src/platform/http/route-table.js`,
+extracted by PLATFORM-7-API for the OpenAPI contract check.
+
+## L-25 — A guard on one path to a resource is a guard with a second door
+
+**Rule:** before trusting an interceptor, enumerate every way the thing it
+guards can be reached. A wrapper around one method of an object is not a
+wrapper around the object. Name the doors in a comment, and make the guard
+classify traffic through all of them identically — or say in writing which door
+is deliberately unguarded and why.
+
+**Paid for by:** CRM-133's plan wrapped `db.prepare(...).run(...)` to classify
+mutations, and read `db.exec` only for `BEGIN`/`COMMIT`/`ROLLBACK`. But `exec`
+takes arbitrary SQL: `db.exec('DELETE FROM users WHERE …')` inside an open
+transaction is a mutation that never touches `prepare`, so it would have
+committed unaudited through a guard written specifically to make that
+impossible. Both doors now get the same classifier.
