@@ -62,6 +62,129 @@
           }
         }
       }
+    },
+    "/api/v1/accounts": {
+      "post": {
+        "summary": "Create a staff account. Answers with the account and, once, the password it was given.",
+        "responses": {
+          "201": {
+            "description": "Created. Body: { user, initialPassword } — the password is shown here and never again."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "409": {
+            "description": "The address already belongs to an account, live or disabled."
+          },
+          "422": {
+            "description": "The body was the wrong shape. It names the fields and never their values."
+          }
+        }
+      },
+      "get": {
+        "summary": "The live staff accounts, paginated.",
+        "responses": {
+          "200": {
+            "description": "Body: { items, total, limit, offset }."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, not clamped."
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/role": {
+      "patch": {
+        "summary": "Set an account's role.",
+        "responses": {
+          "200": {
+            "description": "Body: { user, changed }. changed is false when the role was already that."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "404": {
+            "description": "No live account with that id."
+          },
+          "409": {
+            "description": "It would leave the system with no administrator."
+          },
+          "422": {
+            "description": "The role is not one this system has."
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/disable": {
+      "post": {
+        "summary": "Disable an account. Nothing is deleted; the row keeps its history.",
+        "responses": {
+          "200": {
+            "description": "Body: { user }, with deletedAt set."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "404": {
+            "description": "No account with that id."
+          },
+          "409": {
+            "description": "Already disabled, or it would leave the system with no administrator."
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/re-enable": {
+      "post": {
+        "summary": "Re-enable a disabled account. It is the same row it always was.",
+        "responses": {
+          "200": {
+            "description": "Body: { user }, with deletedAt cleared."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "404": {
+            "description": "No account with that id."
+          },
+          "409": {
+            "description": "Already live, or the address was taken by a live account while this one was disabled."
+          }
+        }
+      }
     }
   }
 }
