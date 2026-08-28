@@ -3,6 +3,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+// The bare app: this file tests the walker, not the contract. Feeding it the
+// production composition would make every new feature route rewrite these
+// assertions for no gain.
 import { createApp } from '../../app.js';
 import { collectRoutes } from './route-table.js';
 import { API_V1_PREFIX } from './prefix.js';

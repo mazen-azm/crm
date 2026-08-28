@@ -46,8 +46,14 @@ export function createApp(deps = {}) {
   const v1 = express.Router();
   v1.use(healthRouter());
   v1.use(openapiRouter());
-  // Features mount here in a later story. Tests use the same seam to mount a
-  // throwing route without polluting the production tree.
+  // Features mount here. app.js imports none of them by name — a feature
+  // arrives through deps, so the composition root stays platform-only and a
+  // test can build an app with no features at all.
+  if (typeof deps.mountFeatures === 'function') {
+    deps.mountFeatures(v1);
+  }
+  // Tests use this seam to mount a throwing route without polluting the
+  // production tree. It stays after the features so a test can shadow one.
   if (typeof deps.mountTestRoutes === 'function') {
     deps.mountTestRoutes(v1);
   }

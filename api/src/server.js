@@ -1,11 +1,15 @@
-import { createApp } from './app.js';
+import { composeApp } from './compose.js';
+import { config } from './platform/config/index.js';
+import { openDatabase } from './platform/db/connection.js';
 
 // The server file starts what the composition root builds — and nothing else.
 // PORT is read here, not in config: the config module is single-purpose on
 // purpose, and the next story that needs the port in two places moves it.
 const port = process.env.PORT ?? 3000;
 
-const app = createApp();
+// One database handle for the process, handed to whatever needs one.
+const db = openDatabase(config.dbPath);
+const app = composeApp({ db, secret: config.signInTokenSecret });
 const server = app.listen(port, () => {
   console.log(`api listening on ${port}`);
 });
