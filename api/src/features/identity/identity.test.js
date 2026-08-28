@@ -143,3 +143,94 @@ test('a token outlives its account by nothing at all', async () => {
   const res = await fetch(`${url}/api/v1/me`, { headers: { Authorization: `Bearer ${token}` } });
   assert.equal(res.status, 401);
 });
+
+// --- IDENTITY-4-API (CRM-47): failed sign-ins are throttled ------------------
+
+test('repeated wrong passwords throttle the account, even once the password is right', async () => {
+  const { url, adminEmail, adminPassword } = start();
+
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal((await post(url, { email: adminEmail, password: 'wrong' })).status, 401);
+  }
+
+  // The right password now. The throttle sits in front of the credential
+  // check, so knowing it does not buy a way past the ceiling.
+  const res = await post(url, { email: adminEmail, password: adminPassword });
+  assert.equal(res.status, 429);
+  const body = await res.json();
+  assert.equal(body.code, 'RATE_LIMITED');
+  assert.deepEqual(Object.keys(body).sort(), ['code', 'requestId']);
+});
+
+test('one host failing many accounts is throttled on the address alone', async () => {
+  const { url } = start();
+
+  // Twenty distinct unknown accounts, one failure each: every account stays at
+  // one, well under its own ceiling of five, so only the address counter can
+  // be what refuses the twenty-first.
+  for (let i = 0; i < 20; i += 1) {
+    assert.equal((await post(url, { email: `u${i}@support-desk.local`, password: 'wrong' })).status, 401);
+  }
+
+  const res = await post(url, { email: 'fresh@support-desk.local', password: 'wrong' });
+  assert.equal(res.status, 429);
+  assert.equal((await res.json()).code, 'RATE_LIMITED');
+});
+
+test('the throttled answer keeps the 401 silence', async () => {
+  const { url, adminEmail } = start();
+  const known = await post(url, { email: adminEmail, password: 'wrong' });
+  const knownBody = await known.json();
+
+  for (let i = 0; i < 5; i += 1) await post(url, { email: 'ghost@support-desk.local', password: 'wrong' });
+  const throttled = await post(url, { email: 'ghost@support-desk.local', password: 'wrong' });
+  // Without this the test compares a 401 to a 401 and passes with no throttle
+  // in the codebase at all.
+  assert.equal(throttled.status, 429);
+  const throttledBody = await throttled.json();
+
+  // Same keys as the 401, and nothing that says whether the account is real.
+  assert.deepEqual(Object.keys(throttledBody).sort(), Object.keys(knownBody).sort());
+  assert.equal(throttledBody.fields, undefined);
+  assert.ok(!JSON.stringify(throttledBody).includes('ghost@support-desk.local'));
+});
+
+test('the window elapses by the clock, with nothing sweeping it', async () => {
+  let time = 1_000_000;
+  const { url, adminEmail, adminPassword } = start({ now: () => time });
+
+  for (let i = 0; i < 5; i += 1) await post(url, { email: adminEmail, password: 'wrong' });
+  assert.equal((await post(url, { email: adminEmail, password: adminPassword })).status, 429);
+
+  time += 15 * 60 + 1;
+  assert.equal((await post(url, { email: adminEmail, password: adminPassword })).status, 200);
+});
+
+test('a success clears the account counter for the next round of mistyping', async () => {
+  const { url, adminEmail, adminPassword } = start();
+
+  for (let i = 0; i < 4; i += 1) await post(url, { email: adminEmail, password: 'wrong' });
+  assert.equal((await post(url, { email: adminEmail, password: adminPassword })).status, 200);
+
+  // Four more. Without the reset that would be eight, past the ceiling of five.
+  for (let i = 0; i < 4; i += 1) {
+    assert.equal((await post(url, { email: adminEmail, password: 'wrong' })).status, 401);
+  }
+
+  // The contrast is the test. On a second app with no success in the middle,
+  // the same eight failures do trip the ceiling — otherwise the assertions
+  // above are equally true of a codebase with no throttle in it.
+  const other = start();
+  for (let i = 0; i < 8; i += 1) await post(other.url, { email: other.adminEmail, password: 'wrong' });
+  assert.equal((await post(other.url, { email: other.adminEmail, password: other.adminPassword })).status, 429);
+});
+
+test('a malformed body cannot be used to flood the counters', async () => {
+  const { url, adminEmail, adminPassword } = start();
+
+  // Ten 422s. The throttle sits behind the shape check, so none of them count.
+  for (let i = 0; i < 10; i += 1) {
+    assert.equal((await post(url, { email: 123, password: null })).status, 422);
+  }
+  assert.equal((await post(url, { email: adminEmail, password: adminPassword })).status, 200);
+});

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { verifyPassword, hashPassword, DUMMY_PASSWORD_HASH } from '../../shared/password.js';
+import { createSignInThrottle } from './identity.throttle.js';
 import {
   countLiveAdmins,
   countLiveUsers,
@@ -40,6 +41,10 @@ const publicShape = (row) => ({
 export function createIdentityService({ db, secret, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
 
+  // One throttle per service instance, so every composeApp — and so every
+  // test — starts with empty counters and cannot inherit another test's.
+  const throttle = createSignInThrottle({ now });
+
   // Every mutation writes its audit row inside the same transaction. An audit
   // trail with gaps in it is worse than none, because it is believed.
   const record = (actor, { entity, entityId, verb, before, after, at }) =>
@@ -59,14 +64,21 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
     row.role === 'admin' && becomingRole !== 'admin' && countLiveAdmins(db) === 1;
 
   return {
-    signIn({ email, password }) {
+    signIn({ email, password }, { address = null } = {}) {
       // The shape of the request and the truth of the credential are separate
       // questions, asked in that order. A malformed body is 422 naming the
       // fields; only a well-formed one can be wrong.
       const invalid = validateCredentials({ email, password });
       if (invalid.length > 0) throw unprocessable(invalid);
 
-      const row = findLiveUserByEmail(db, normaliseEmail(email));
+      const key = normaliseEmail(email);
+
+      // 422, then 429, then 401. The shape check comes first so garbage cannot
+      // be used to fill the counters; the throttle comes before the credential
+      // check so a 429 is the same answer whether the account exists or not.
+      throttle.checkAllowed({ email: key, address });
+
+      const row = findLiveUserByEmail(db, key);
 
       // When no account matched we still hash the candidate, against a dummy.
       // DO NOT DELETE: without it the unknown-email path returns faster than
@@ -77,7 +89,14 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       // One answer for a wrong password, an unknown address, and a
       // soft-deleted account. A response that told them apart would be a
       // directory of the staff.
-      if (!row || !correct) throw new HttpError(401, 'UNAUTHENTICATED');
+      if (!row || !correct) {
+        throttle.recordFailure({ email: key, address });
+        throw new HttpError(401, 'UNAUTHENTICATED');
+      }
+
+      // The account counter only. Clearing the address counter here would let
+      // one landed guess buy a fresh sweep budget for the host that made it.
+      throttle.recordSuccess({ email: key });
 
       return {
         token: signToken(
