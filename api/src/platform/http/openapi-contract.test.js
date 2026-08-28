@@ -4,13 +4,28 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createApp } from '../../app.js';
+import { composeApp } from '../../compose.js';
+import { openDatabase } from '../db/connection.js';
+import { runMigrations } from '../db/migrate.js';
+
+// The application as production composes it — the document describes what is
+// served, so the check has to look at the same arrangement.
+const createApp = (deps = {}) => {
+  const db = openDatabase(':memory:');
+  runMigrations(db);
+  return composeApp({ db, secret: 'contract-test-secret', ...deps });
+};
 import { collectRoutes } from './route-table.js';
 import { API_V1_PREFIX } from './prefix.js';
 import { OPENAPI_DOCUMENT } from './openapi.js';
 import { DOCUMENTED } from './errors.js';
 
 const METHODS = ['get', 'put', 'post', 'delete', 'patch', 'options', 'head'];
+
+// OpenAPI names a path parameter {id}; Express names it :id. Both describe the
+// same route, so the comparison speaks one of them — the document keeps the
+// standard spelling and the served table is translated into it.
+const toOpenApiPath = (path) => path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
 
 function documentedRoutes() {
   const out = [];
@@ -24,12 +39,14 @@ function documentedRoutes() {
 
 test('every served route appears in the document', () => {
   const documented = new Set(documentedRoutes());
-  const missing = collectRoutes(createApp(), API_V1_PREFIX).filter((r) => !documented.has(r));
+  const missing = collectRoutes(createApp(), API_V1_PREFIX)
+    .map(toOpenApiPath)
+    .filter((r) => !documented.has(r));
   assert.deepEqual(missing, [], `served but not documented: ${missing.join(', ')}`);
 });
 
 test('every documented route is actually served', () => {
-  const served = new Set(collectRoutes(createApp(), API_V1_PREFIX));
+  const served = new Set(collectRoutes(createApp(), API_V1_PREFIX).map(toOpenApiPath));
   const stale = documentedRoutes().filter((r) => !served.has(r));
   assert.deepEqual(stale, [], `documented but not served: ${stale.join(', ')}`);
 });

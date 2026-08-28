@@ -34,7 +34,7 @@ is why a plan may contain no "consider", no "might", and no invented path.
 ## What the tool does not know
 
 squad-kit models *unplanned* and *planned* and stops there. Nothing in it knows
-whether anybody built the thing. `scripts/plan-status.mjs` derives that from the
+whether anybody built the thing. `scripts/plan-status.mjs` (planned) derives that from the
 `## Done Criteria` checklist in each plan, which is what an implementer ticks as
 they go.
 

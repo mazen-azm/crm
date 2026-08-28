@@ -9,7 +9,9 @@
       "get": {
         "summary": "Liveness probe. Public, and says nothing but whether the service is up.",
         "responses": {
-          "200": { "description": "The service is up." }
+          "200": {
+            "description": "The service is up."
+          }
         }
       }
     },
@@ -17,7 +19,192 @@
       "get": {
         "summary": "This contract, served by the running application.",
         "responses": {
-          "200": { "description": "The OpenAPI document." }
+          "200": {
+            "description": "The OpenAPI document."
+          }
+        }
+      }
+    },
+    "/api/v1/sign-in": {
+      "post": {
+        "summary": "Sign in with an email and a password; answers with a bearer token and the account's public fields.",
+        "responses": {
+          "200": {
+            "description": "Signed in. Body: { token, user: { id, role, name } }."
+          },
+          "400": {
+            "description": "The body was not JSON."
+          },
+          "401": {
+            "description": "Wrong password, unknown address, or a soft-deleted account \u2014 the body does not distinguish them."
+          },
+          "422": {
+            "description": "Well-formed JSON, but the credentials were the wrong shape. The body names the fields and never their values."
+          },
+          "429": {
+            "description": "Too many failed sign-ins for this account or from this network address. The body does not say which, because which one it was would say whether the account exists."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "summary": "Whoever the bearer token resolves to. Guarded.",
+        "responses": {
+          "200": {
+            "description": "Body: { id, role, name }."
+          },
+          "401": {
+            "description": "No token, or one that is malformed, tampered with, expired, foreign-signed, or issued to an account since removed."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/accounts": {
+      "post": {
+        "summary": "Create a staff account. Answers with the account and, once, the password it was given.",
+        "responses": {
+          "201": {
+            "description": "Created. Body: { user, initialPassword } \u2014 the password is shown here and never again."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "409": {
+            "description": "The address already belongs to an account, live or disabled."
+          },
+          "422": {
+            "description": "The body was the wrong shape. It names the fields and never their values."
+          }
+        }
+      },
+      "get": {
+        "summary": "The live staff accounts, paginated.",
+        "responses": {
+          "200": {
+            "description": "Body: { items, total, limit, offset }."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, not clamped."
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/role": {
+      "patch": {
+        "summary": "Set an account's role.",
+        "responses": {
+          "200": {
+            "description": "Body: { user, changed }. changed is false when the role was already that."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "404": {
+            "description": "No live account with that id."
+          },
+          "409": {
+            "description": "It would leave the system with no administrator."
+          },
+          "422": {
+            "description": "The role is not one this system has."
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/disable": {
+      "post": {
+        "summary": "Disable an account. Nothing is deleted; the row keeps its history.",
+        "responses": {
+          "200": {
+            "description": "Body: { user }, with deletedAt set."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "404": {
+            "description": "No account with that id."
+          },
+          "409": {
+            "description": "Already disabled, or it would leave the system with no administrator."
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/re-enable": {
+      "post": {
+        "summary": "Re-enable a disabled account. It is the same row it always was.",
+        "responses": {
+          "200": {
+            "description": "Body: { user }, with deletedAt cleared."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "The subject is not an admin. The service is never entered."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "404": {
+            "description": "No account with that id."
+          },
+          "409": {
+            "description": "Already live, or the address was taken by a live account while this one was disabled."
+          }
+        }
+      }
+    },
+    "/api/v1/assignees": {
+      "get": {
+        "summary": "The live staff a ticket can be assigned to. Any signed-in staff member may read it \u2014 an agent who cannot see the list cannot hand a ticket over.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each item is { id, name, role } \u2014 no address, no timestamps, nothing about the password."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, never clamped (BR-4)."
+          },
+          "500": {
+            "description": "Internal."
+          }
         }
       }
     }

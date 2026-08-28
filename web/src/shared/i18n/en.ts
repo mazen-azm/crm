@@ -8,7 +8,15 @@ export const en = {
     emailLabel: 'Email',
     passwordLabel: 'Password',
     submit: 'Sign in',
-    stubNotice: 'Real sign-in is not implemented yet — IDENTITY-1-API replaces this stub.',
+    submitting: 'Signing in…',
+    // Keyed by the code the API answers with. The API deliberately gives one
+    // refusal for a wrong password, an unknown address and a disabled
+    // account, so there is one sentence for all three — being more specific
+    // here would undo on the screen what the API refused to reveal.
+    errorUnauthenticated: 'That email and password do not match an account.',
+    errorValidationFailed: 'Check the highlighted fields and try again.',
+    errorInternal: 'Something went wrong at our end. Try again.',
+    errorUnknown: 'Sign-in failed.',
   },
   home: {
     heading: 'Support Desk',
@@ -19,7 +27,25 @@ export const en = {
 // The value types are widened to string on purpose. With `as const` the
 // literal "Sign in" becomes the type, and the Arabic file would then be
 // required to contain the English words — a type that enforces sameness
-// instead of completeness. What must match is the key set, and this does that.
+// instead of completeness. What must match is the key set.
 export type Messages = {
   [Section in keyof typeof en]: { [Key in keyof (typeof en)[Section]]: string };
 };
+
+// Messages alone catches a MISSING key: a required property cannot be absent.
+// It does not catch an EXTRA one, because a wider object still satisfies a
+// narrower type — and an extra key is a translator's typo that then never
+// renders anywhere, in any language.
+//
+// A generic sees the literal shape of what was passed, which a type
+// annotation cannot, so the surplus keys can be named and forbidden.
+export function defineLocale<T extends Messages>(
+  locale: T & Record<Exclude<keyof T, keyof Messages>, never> & {
+    [Section in keyof Messages]: Record<
+      Exclude<keyof T[Section], keyof Messages[Section]>,
+      never
+    >;
+  },
+): Messages {
+  return locale;
+}

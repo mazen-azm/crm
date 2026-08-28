@@ -10,7 +10,8 @@ import path from 'node:path';
 import { scryptSync } from 'node:crypto';
 
 import { openDatabase } from './connection.js';
-import { seed, hashPassword } from './seed.js';
+import { seed } from './seed.js';
+import { hashPassword } from '../../shared/password.js';
 import { staff, customers, categories, slaTargets } from './seed.data.js';
 
 const TABLES = ['users', 'customers', 'ticket_categories', 'sla_targets'];

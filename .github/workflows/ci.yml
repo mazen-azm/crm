@@ -1,0 +1,124 @@
+name: ci
+
+# Every push on every branch, and every pull request into main. The push
+# trigger is what makes a branch's own history visible while it is being
+# worked on; the pull_request trigger is the one a branch-protection rule
+# binds to. Protection cannot be declared here — see BRANCH_PROTECTION.md.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+# A fast follow-up push should not queue behind the run it supersedes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# This workflow reads code, runs suites and reports. It writes nothing.
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: api
+    runs-on: ubuntu-latest
+    # A kill switch for a wedged runner, and NOT the answer to the hanging
+    # test the criteria describe — that is the per-test ceiling below. A job
+    # timeout kills the run and reports nothing, which is the opposite of
+    # "it reports itself".
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned to 26 deliberately. api/package.json says >=22.13, which is a
+      # floor and not a version this suite has ever been run on; node:sqlite's
+      # DatabaseSync is the only database access the API has and is young
+      # enough that a different major is a different product.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - run: npm ci
+
+      # --test-timeout is per test: a hung test is failed at 30s and named,
+      # and the rest of the run continues. node --test prints duration_ms per
+      # test and a total, which is the duration the criteria ask for.
+      - name: api suite
+        run: npm test -- --test-reporter=spec --test-timeout=30000
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      # vitest prints a per-file duration table and a total.
+      - name: web suite
+        id: suite
+        run: npm test -- --testTimeout=30000
+
+      # A green suite is not a passing build: vitest does not typecheck, and
+      # this suite once sat on top of five type errors. `npm run build` is
+      # `tsc -b && vite build` and both halves must pass.
+      #
+      # It runs even when the suite is red so one push reports both, but not
+      # when install failed — there would be nothing to build and the error
+      # would be about node_modules rather than about the code.
+      - name: web build
+        if: success() || steps.suite.conclusion == 'failure'
+        run: npm run build
+
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # No npm ci here on purpose: these scripts import nothing outside the
+      # standard library, and there is no package.json at the repository root.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
+      # Each runs even after an earlier one is red. A push that breaks three
+      # things should say so once, not over three round trips.
+      - name: verify backlog
+        run: node scripts/verify-backlog.mjs
+
+      - name: verify taxonomy
+        if: always()
+        run: node scripts/verify-taxonomy.mjs
+
+      - name: verify docs
+        if: always()
+        run: node scripts/verify-docs.mjs
+
+      # verify-plan looks Jira keys up when .squad/secrets.yaml is present and
+      # warns rather than failing when it is not. That file is gitignored and
+      # is absent here by design: every other check inside the script — ids,
+      # citations, dialect, statuses, casing, duplicates, heading numbers, the
+      # first-plan claim — needs no credential, and putting a live Atlassian
+      # token into a second system to strengthen one check in a third is a
+      # trade this repository does not make.
+      - name: verify plan
+        if: always()
+        run: node scripts/verify-plan.mjs

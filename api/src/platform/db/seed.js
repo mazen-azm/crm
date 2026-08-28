@@ -1,9 +1,10 @@
 import { fileURLToPath } from 'node:url';
-import { randomBytes, randomUUID, scryptSync } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 
 import { config } from '../config/index.js';
 import { openDatabase } from './connection.js';
 import { runMigrations } from './migrate.js';
+import { hashPassword } from '../../shared/password.js';
 import { staff, customers, categories, slaTargets } from './seed.data.js';
 
 // The seed is a second composition root, on purpose (docs/architecture.md).
@@ -30,13 +31,6 @@ export function seed(db, {
   seedSlaTargets(db, { now, newId });
 
   return { adminEmail: staff[0].email, adminPassword };
-}
-
-// scrypt from node:crypto — no bcrypt, no argon2, no dependency. The salt is
-// stored beside the hash because a hash without its salt cannot be checked.
-export function hashPassword(plaintext) {
-  const salt = randomBytes(16);
-  return `${salt.toString('hex')}:${scryptSync(plaintext, salt, 64).toString('hex')}`;
 }
 
 function seedStaff(db, adminPassword, { now, newId, newPassword }) {
