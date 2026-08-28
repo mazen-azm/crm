@@ -1,0 +1,25 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Support Desk API",
+    "version": "1"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "Liveness probe. Public, and says nothing but whether the service is up.",
+        "responses": {
+          "200": { "description": "The service is up." }
+        }
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "summary": "This contract, served by the running application.",
+        "responses": {
+          "200": { "description": "The OpenAPI document." }
+        }
+      }
+    }
+  }
+}

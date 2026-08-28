@@ -1,0 +1,7 @@
+{
+  "name": "Support Desk — smoke",
+  "requests": [
+    { "name": "health", "method": "GET", "path": "/api/v1/health" },
+    { "name": "openapi", "method": "GET", "path": "/api/v1/openapi.json" }
+  ]
+}

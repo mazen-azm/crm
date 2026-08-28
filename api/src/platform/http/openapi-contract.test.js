@@ -1,0 +1,55 @@
+// The headline of scripts/criteria/platform.md section PLATFORM-7-API: the
+// document cannot drift, because the suite compares it to the router. Both
+// directions fail, and each failure names the route rather than counting.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { createApp } from '../../app.js';
+import { collectRoutes } from './route-table.js';
+import { API_V1_PREFIX } from './prefix.js';
+import { OPENAPI_DOCUMENT } from './openapi.js';
+import { DOCUMENTED } from './errors.js';
+
+const METHODS = ['get', 'put', 'post', 'delete', 'patch', 'options', 'head'];
+
+function documentedRoutes() {
+  const out = [];
+  for (const [path, operations] of Object.entries(OPENAPI_DOCUMENT.paths ?? {})) {
+    for (const method of Object.keys(operations)) {
+      if (METHODS.includes(method)) out.push(`${method.toUpperCase()} ${path}`);
+    }
+  }
+  return out.sort();
+}
+
+test('every served route appears in the document', () => {
+  const documented = new Set(documentedRoutes());
+  const missing = collectRoutes(createApp(), API_V1_PREFIX).filter((r) => !documented.has(r));
+  assert.deepEqual(missing, [], `served but not documented: ${missing.join(', ')}`);
+});
+
+test('every documented route is actually served', () => {
+  const served = new Set(collectRoutes(createApp(), API_V1_PREFIX));
+  const stale = documentedRoutes().filter((r) => !served.has(r));
+  assert.deepEqual(stale, [], `documented but not served: ${stale.join(', ')}`);
+});
+
+test('every documented status is one the API is allowed to answer', () => {
+  const allowed = new Set(Object.keys(DOCUMENTED));
+  for (const [path, operations] of Object.entries(OPENAPI_DOCUMENT.paths ?? {})) {
+    for (const [method, operation] of Object.entries(operations)) {
+      for (const status of Object.keys(operation.responses ?? {})) {
+        // 2xx is a success the route decides; everything else must be one of
+        // rule E-2's eight, which is what DOCUMENTED holds (L-11).
+        const ok = /^2\d\d$/.test(status) || allowed.has(status);
+        assert.ok(ok, `${method.toUpperCase()} ${path} documents ${status}, which rule E-2 does not allow`);
+      }
+    }
+  }
+});
+
+test('every documented path is under the versioned prefix', () => {
+  for (const path of Object.keys(OPENAPI_DOCUMENT.paths ?? {})) {
+    assert.ok(path.startsWith(API_V1_PREFIX), `${path} is outside ${API_V1_PREFIX}`);
+  }
+});
