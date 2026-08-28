@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from './require-auth';
+import { DeskShell } from './desk-shell';
 import { SignInPage } from '../pages/sign-in/SignInPage';
 import { HomePage } from '../pages/home/HomePage';
 
@@ -14,8 +15,14 @@ export function AppRoutes() {
       <Route
         path="/"
         element={
+          // The shell sits INSIDE RequireAuth, so an unauthenticated
+          // visitor is redirected before a navigation bar can render.
+          // Sign-in is deliberately not wrapped: it has nothing to navigate
+          // to and nobody to greet.
           <RequireAuth>
-            <HomePage />
+            <DeskShell>
+              <HomePage />
+            </DeskShell>
           </RequireAuth>
         }
       />

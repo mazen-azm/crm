@@ -47,6 +47,23 @@
   --duration-fast: 120ms;
 }
 
+/* The second palette. It lives here, in the same file and under the same
+   property names, because tokens.css is the one place a colour may appear —
+   a theme is different values, never a colour somewhere new. Selected by
+   data-theme on <html>, which the theme provider sets. */
+:root[data-theme="dark"] {
+  --color-bg-page: #0d1117;
+  --color-bg-surface: #161b22;
+  --color-text-primary: #e6edf3;
+  --color-text-muted: #9da7b1;
+  --color-border-subtle: #30363d;
+  --color-border-strong: #8b949e;
+  --color-accent: #4c8dff;
+  --color-accent-contrast: #0d1117;
+  --color-danger: #ff6a5a;
+  --color-focus-ring: #4c8dff;
+}
+
 /*
  * The base document. Every rule below uses logical properties — inline-start,
  * padding-inline, text-align: start — so one stylesheet serves both writing
