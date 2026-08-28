@@ -179,3 +179,28 @@ application searched the file for `'app.js'` and matched the comment saying
 "it imports nothing from app.js". The test failed on the sentence documenting
 that it passes. Reading only the `import … from '…'` specifiers fixed it —
 and the same shape had already been forbidden once, in L-10.
+
+## L-14 — A plan's version numbers are stale the moment it is written
+
+**Rule:** a plan that stands up a new toolchain names the **packages**, not
+their versions. Let the package manager resolve, then record what actually
+landed in the commit message. A pinned major in a plan is a guess about the
+day the plan runs, and following it installs an old world on purpose.
+
+**Paid for by:** the CRM-24 plan specified React 18, react-router v6, Vite 5
+and TypeScript 5. Installing without pins gave React 19, router 7, Vite 8 and
+TypeScript 7 — four majors ahead across the board. Two of those gaps had
+teeth: Vitest 4 needs `defineConfig` from `vitest/config`, not from `vite`,
+and the plan's config would not have typechecked.
+
+## L-15 — A test suite passing is not the build passing
+
+**Rule:** a story that adds a typed root runs the **build** as its own
+verification step, not only the tests. A test runner transpiles per file and
+does not typecheck the project; `tsc -b` reads the whole graph and sees what
+the runner never looks at.
+
+**Paid for by:** the CRM-24 web tests went 14/14 green while `npm run build`
+failed on five type errors in one of those very test files — a caught error
+typed `unknown` that every assertion then read fields off. The suite was
+green about code that does not compile.
