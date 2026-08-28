@@ -14,6 +14,7 @@ Entry point for the **platform** feature. Stories execute in order by their `NN`
 | 06 | `06-story-CRM-20.md` | PLATFORM-5-API client — every failure returns its documented code and one shape | CRM-20 | 04 (`04-story-CRM-18.md`) |
 | 07 | `07-story-CRM-21.md` | PLATFORM-6-API system — /api/v1, a maximum page size, health, and structured logging | CRM-21 | — |
 | 08 | `08-story-CRM-22.md` | PLATFORM-7-API system — an API document checked against the routes actually served | CRM-22 | — |
+| 09 | `09-story-CRM-23.md` | PLATFORM-8-API system — the seed fills reference data and can be run twice | CRM-23 | — |
 
 ## Dependency notes
 
