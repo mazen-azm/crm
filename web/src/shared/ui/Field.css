@@ -1,0 +1,15 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: start;
+}
+
+.field__label {
+  color: var(--color-text-primary);
+}
+
+.field__error {
+  margin: 0;
+  color: var(--color-danger);
+}

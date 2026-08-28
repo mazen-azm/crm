@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../app/auth-context';
+import { useTranslation } from '../../shared/i18n';
+import { Button, Card, Field, Heading, Stack, Text } from '../../shared/ui';
 
-// Unstyled on purpose: the tokens and primitives arrive with PLATFORM-10-WEB,
-// and inventing a colour here would be the first literal outside the file that
-// is meant to own every one of them.
+// Assembled from primitives: no spacing, radius or type scale is restated
+// here. Designed empty, loading and error states are PLATFORM-16-WEB.
 export function SignInPage() {
   const { signIn } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,32 +23,35 @@ export function SignInPage() {
   }
 
   return (
-    <main>
-      <h1>Sign in</h1>
-      <form onSubmit={onSubmit}>
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+    <Stack as="main" gap={5}>
+      <Card>
+        <Stack as="form" gap={4} {...{ onSubmit }}>
+          <Heading level={1}>{t.signIn.heading}</Heading>
 
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <Field
+            id="email"
+            label={t.signIn.emailLabel}
+            name="email"
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-        <button type="submit">Sign in</button>
-      </form>
-      <p>Real sign-in is not implemented yet — IDENTITY-1-API replaces this stub.</p>
-    </main>
+          <Field
+            id="password"
+            label={t.signIn.passwordLabel}
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <Button type="submit">{t.signIn.submit}</Button>
+          <Text variant="muted">{t.signIn.stubNotice}</Text>
+        </Stack>
+      </Card>
+    </Stack>
   );
 }

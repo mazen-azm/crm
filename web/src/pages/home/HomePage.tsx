@@ -1,17 +1,22 @@
 import { useAuth } from '../../app/auth-context';
+import { useTranslation } from '../../shared/i18n';
+import { Button, Heading, Stack } from '../../shared/ui';
 
-// The authenticated landing. Feature screens arrive in their own stories and
-// mount around this; today it exists so the guard has somewhere to let a
-// visitor through to.
+// The authenticated landing. Feature screens mount around this in their own
+// stories; today it proves the guard lets someone through and that a screen
+// composes from primitives alone.
 export function HomePage() {
   const { signOut } = useAuth();
+  const { t } = useTranslation();
 
   return (
-    <main>
-      <h1>Support Desk</h1>
-      <button type="button" onClick={signOut}>
-        Sign out
-      </button>
-    </main>
+    <Stack as="main" gap={5}>
+      <Heading level={1}>{t.home.heading}</Heading>
+      <Stack direction="row" gap={2} align="start">
+        <Button variant="secondary" onClick={signOut}>
+          {t.home.signOut}
+        </Button>
+      </Stack>
+    </Stack>
   );
 }

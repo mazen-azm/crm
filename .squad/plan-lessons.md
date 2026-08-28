@@ -204,3 +204,18 @@ the runner never looks at.
 failed on five type errors in one of those very test files — a caught error
 typed `unknown` that every assertion then read fields off. The suite was
 green about code that does not compile.
+
+## L-16 — Prove a guard fails before believing it passes
+
+**Rule:** a story whose deliverable is a check does not ship on a green run.
+Break the invariant on purpose, watch the check go red and name the offender,
+put the file back, and only then tick the box. A green check and an absent
+check look identical from the outside.
+
+**Paid for by:** twice in one sprint, in opposite directions. CRM-22's
+contract check was broken deliberately in both directions and named the
+route each time — that is what a working guard looks like. CRM-25's
+colour-literal guard passed a file containing `background: #ff0000` because
+its regex anchored each declaration to the start of a line, so every rule
+written on one line was invisible to it. It had been green all along, over
+nothing.

@@ -1,0 +1,72 @@
+/*
+ * The one palette. Every colour the web root uses is defined in this file and
+ * nowhere else. A primitive reads var(--…); it never writes a hex, an rgb(),
+ * an hsl() or a named colour. That is rule D-1 (scripts/rules.txt line 40),
+ * and the check in tokens.test.ts is what keeps it true.
+ *
+ * The tokens are semantic — bg-page, text-muted, border-subtle — not named
+ * after what they look like. A screen asks for the role it needs, so a second
+ * palette can be added under a selector later without touching a primitive.
+ * Dark mode is deliberately not that second palette yet: nobody has decided it.
+ */
+:root {
+  /* Colour. Raw values appear only in this block. */
+  --color-bg-page: #ffffff;
+  --color-bg-surface: #f7f7f8;
+  --color-text-primary: #111418;
+  --color-text-muted: #55606c;
+  --color-border-subtle: #d9dde2;
+  --color-border-strong: #6b7683;
+  --color-accent: #1f6feb;
+  --color-accent-contrast: #ffffff;
+  --color-danger: #b42318;
+  --color-focus-ring: #1f6feb;
+
+  /* Spacing scale — Stack, Card and Field read these; no component invents a gap. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Radius scale. */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Type scale. */
+  --font-family-base: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size-body: 14px;
+  --font-size-heading-1: 24px;
+  --font-size-heading-2: 20px;
+  --line-height-body: 1.5;
+  --line-height-heading: 1.25;
+
+  /* Motion. */
+  --duration-fast: 120ms;
+}
+
+/*
+ * The base document. Every rule below uses logical properties — inline-start,
+ * padding-inline, text-align: start — so one stylesheet serves both writing
+ * directions. A [dir="rtl"] override block would be a second copy of the
+ * layout, which is the thing the direction criterion exists to prevent.
+ */
+html,
+body {
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
