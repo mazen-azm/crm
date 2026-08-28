@@ -41,8 +41,29 @@ for intake in .squad/stories/*/CRM-*/intake.md; do
     exit 0
   fi
   echo "[$(date '+%F %T')] planning $key"
-  out=$(squad new-plan --api -y "$intake" 2>&1)
-  echo "$out" | tail -3
+  # squad-kit caps the planner at 40 model turns. An INTERACTIVE run is offered
+  # "continue — extend limits for this run" and carries on; a run started with
+  # -y gets decideOnLimit = undefined and returns with no plan at all
+  # (cli.js: `const interactive = !opts.yes && Boolean(process.stdin.isTTY)`).
+  # Unattended planning has to pass -y, so it cannot be offered that choice —
+  # it can only be given another go. Whether a run hits the ceiling varies:
+  # CRM-27 died at it once and finished the next time with no change at all.
+  #
+  # Retry only the ceiling. Retrying a usage limit just spends the next window
+  # discovering the window is still closed.
+  attempt=1
+  while : ; do
+    out=$(squad new-plan --api -y "$intake" 2>&1)
+    echo "$out" | tail -3
+    case "$out" in
+      *"maximum number of turns"*)
+        if [ "$attempt" -ge 2 ]; then break; fi
+        attempt=$((attempt + 1))
+        echo "[$(date '+%F %T')] $key hit the turn ceiling — attempt $attempt"
+        ;;
+      *) break ;;
+    esac
+  done
   if ls .squad/plans/*/ 2>/dev/null | grep -qi "story-${key}"; then
     # squad-kit lowercases the id; the console and its own lookup are
     # case-sensitive, so fix it here rather than leaving the story unplanned.
