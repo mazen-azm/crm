@@ -16,6 +16,7 @@ Entry point for the **platform** feature. Stories execute in order by their `NN`
 | 08 | `08-story-CRM-22.md` | PLATFORM-7-API system — an API document checked against the routes actually served | CRM-22 | — |
 | 09 | `09-story-CRM-23.md` | PLATFORM-8-API system — the seed fills reference data and can be run twice | CRM-23 | — |
 | 10 | `10-story-CRM-24.md` | PLATFORM-9-WEB developer — a React skeleton: router, auth context, client, loading hook | CRM-24 | — |
+| 11 | `11-story-CRM-25.md` | PLATFORM-10-WEB developer — one palette, one file: tokens and primitives, both directions | CRM-25 | — |
 
 ## Dependency notes
 

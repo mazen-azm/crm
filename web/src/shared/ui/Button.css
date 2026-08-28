@@ -1,0 +1,27 @@
+/* Padding on the block and inline axes, so the button is identical in both
+   writing directions without a mirrored rule set. */
+.button {
+  padding-block: var(--space-2);
+  padding-inline: var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.button--primary {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.button--secondary {
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-subtle);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
