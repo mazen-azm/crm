@@ -26,7 +26,13 @@ const BLOCK = `${MARK}
 - **Structure:** \`docs/taxonomy.md\` (names), \`docs/architecture.md\` (where code
   goes), \`docs/git.md\` (branches and commits) — cite them, do not restate them.
 - **Nothing committed may mention AI assistance** — commits, docs, or ignore-file
-  entries. Verification steps must include the grep that proves it.`
+  entries. Verification steps must include the grep that proves it.
+- **The package manager is npm**, and there is no workspace root. Commands run
+  from the package directory: \`cd api && npm test\`, \`cd web && npm run build\`.
+  Not pnpm, not yarn, no \`--filter\`, no \`--prefix\` — three plans in a row
+  reached for pnpm, so every command in their verification steps was wrong.
+- **The web suite does not typecheck.** \`npm test\` is vitest; \`npm run build\` is
+  \`tsc -b && vite build\`. A change only vitest has seen is not verified.`
 
 let s = readFileSync(path, 'utf8')
 if (s.includes(MARK)) { console.log('standing hints already present'); process.exit(0) }
