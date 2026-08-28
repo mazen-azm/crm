@@ -16,16 +16,20 @@ import './DeskShell.css';
 // <html> and every rule below uses logical properties, so Arabic mirrors this
 // layout without a second copy of it.
 export function DeskShell({ children }: { children: ReactNode }) {
-  const { t } = useTranslation();
+  const { t, language, toggleLanguage } = useTranslation();
   const { signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const themeLabel = theme === 'dark' ? t.shell.switchToLight : t.shell.switchToDark;
+  const languageLabel = language === 'ar' ? t.shell.switchToEnglish : t.shell.switchToArabic;
 
   return (
     <div className="desk-shell">
       <header className="desk-shell__header">
         <Heading level={1}>{t.home.heading}</Heading>
         <Stack direction="row" gap={2} align="start">
+          <Button variant="secondary" onClick={toggleLanguage}>
+            {languageLabel}
+          </Button>
           <Button variant="secondary" onClick={toggleTheme}>
             {themeLabel}
           </Button>

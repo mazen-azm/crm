@@ -20,6 +20,11 @@ export const ar = defineLocale({
     navHome: 'الرئيسية',
     switchToDark: 'الوضع الداكن',
     switchToLight: 'الوضع الفاتح',
+    // Each language is named in its own words, in BOTH files on purpose: the
+    // button says which language you would switch TO, so it reads the same
+    // whichever way round you are. Do not "translate" these.
+    switchToArabic: 'العربية',
+    switchToEnglish: 'English',
   },
   home: {
     heading: 'مكتب الدعم',
