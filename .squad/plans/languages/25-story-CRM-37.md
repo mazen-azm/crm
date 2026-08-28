@@ -203,13 +203,13 @@ Enumerate CSS files with `fs.readdirSync` recursively from `web/src/` (or `impor
 
 ## Done Criteria
 
-- [ ] Switching from English flips text, `<html dir>`, and alignment in the same render, with no route change and no reload.
-- [ ] The chosen language survives a full page reload (persisted in `localStorage` under `support-desk.language`).
-- [ ] No stylesheet in `web/src` contains a `[dir=` selector, a physical direction property, or `text-align: left|right`; a Vitest guard proves it and passes on the current tree (including the commented reference in `web/src/shared/ui/tokens.css:73`).
-- [ ] `I18nProvider` still accepts `language` as an initial-value override; `web/src/testing/render.tsx` and every dependent test are unchanged.
-- [ ] `<html lang>` is set alongside `<html dir>` in the same effect.
-- [ ] The switcher label lives in `en.ts` **and** `ar.ts`; no user-visible string is hardcoded in `DeskShell.tsx` (BR-6).
-- [ ] `pnpm build` and `pnpm test` in `web/` are green.
-- [ ] No commit, comment, or file mentions AI assistance (grep in step 6 returns empty).
+- [x] Switching from English flips text, `<html dir>`, and alignment in the same render, with no route change and no reload.
+- [x] The chosen language survives a full page reload (persisted in `localStorage` under `support-desk.language`).
+- [x] No stylesheet in `web/src` contains a `[dir=` selector, a physical direction property, or `text-align: left|right`; a Vitest guard proves it and passes on the current tree (including the commented reference in `web/src/shared/ui/tokens.css:73`).
+- [x] `I18nProvider` still accepts `language` as an initial-value override; `web/src/testing/render.tsx` and every dependent test are unchanged.
+- [x] `<html lang>` is set alongside `<html dir>` in the same effect.
+- [x] The switcher label lives in `en.ts` **and** `ar.ts`; no user-visible string is hardcoded in `DeskShell.tsx` (BR-6).
+- [x] `pnpm build` and `pnpm test` in `web/` are green.
+- [x] No commit, comment, or file mentions AI assistance (grep in step 6 returns empty).
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next languages story (LANGUAGES-3-WEB / CRM-39).**

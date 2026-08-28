@@ -25,6 +25,11 @@ export const en = {
     navHome: 'Home',
     switchToDark: 'Dark theme',
     switchToLight: 'Light theme',
+    // Each language is named in its own words, in BOTH files on purpose: the
+    // button says which language you would switch TO, so it reads the same
+    // whichever way round you are. Do not "translate" these.
+    switchToArabic: 'العربية',
+    switchToEnglish: 'English',
   },
   home: {
     heading: 'Support Desk',

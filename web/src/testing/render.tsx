@@ -25,7 +25,12 @@ type Options = Omit<RenderOptions, 'wrapper'> & {
 };
 
 export function renderWithProviders(ui: ReactElement, options: Options = {}): RenderResult {
-  const { route, initialEntries, language = 'en', signedIn, ...rest } = options;
+  // No default for `language`. App.tsx passes none, so the harness passing
+  // 'en' would not be mirroring it — and because an explicit prop beats
+  // storage, a defaulted one means no test could ever exercise the stored
+  // choice. Undefined here is the honest translation of "the caller did not
+  // say".
+  const { route, initialEntries, language, signedIn, ...rest } = options;
 
   // Seeded before the render, not after: AuthProvider reads storage on its
   // first render, so a token written afterwards would arrive too late to make
