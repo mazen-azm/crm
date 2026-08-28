@@ -1,0 +1,7 @@
+.error-state {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-lg);
+  padding-block: var(--space-5);
+  padding-inline: var(--space-5);
+}

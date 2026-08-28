@@ -13,6 +13,17 @@ type SignInResponse = { token: string; user: { id: string; role: string; name: s
 // The screen shows the code the API gave, translated in the resource files
 // rather than in this file. Designed empty, loading and error states as a
 // system are PLATFORM-16-WEB.
+// Sign-in does NOT read t.errors, and that is deliberate — do not "simplify"
+// this into the shared map.
+//
+// IDENTITY-1-API answers 401 UNAUTHENTICATED for a wrong password, an unknown
+// address and a disabled account alike, so the response is not a directory of
+// who works here; it spends a dummy hash computation keeping the timings equal
+// too. One sentence covering all three is how this screen keeps that promise.
+//
+// t.errors.UNAUTHENTICATED says "your session has ended", which is what every
+// other screen means by that code and would be a lie here. One map cannot say
+// both things.
 function messageFor(code: string | undefined, t: Messages): string {
   switch (code) {
     case 'UNAUTHENTICATED':

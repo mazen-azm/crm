@@ -28,12 +28,13 @@ const traverse = (_traverse as unknown as { default?: typeof _traverse }).defaul
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // 'app' is scanned because the desk shell lives there and renders labels a
-// person reads. A guard whose scope excludes a rendering surface is not a
+// person reads; 'shared/ui' because the state primitives do. Both were added
+// when the surface was, rather than after a literal shipped in one. A guard whose scope excludes a rendering surface is not a
 // guard (L-6) — and the whole directory rather than just the shell's folder,
 // because scoping it to one folder means the next surface added under app/
 // reopens the gap with the suite still green. It costs nothing: everything
 // else in app/ is already free of user-facing literals.
-const SCANNED = ['pages', 'features', 'app'];
+const SCANNED = ['pages', 'features', 'app', 'shared/ui'];
 
 // Attributes whose value is read aloud or shown. Every other attribute —
 // className, id, name, type, role, href, htmlFor, data-* — is machinery.

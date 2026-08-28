@@ -21,6 +21,8 @@
   --color-accent-contrast: #ffffff;
   --color-danger: #b42318;
   --color-focus-ring: #1f6feb;
+  /* The reserved block a loading state draws. */
+  --color-skeleton: #e6e8eb;
 
   /* Spacing scale — Stack, Card and Field read these; no component invents a gap. */
   --space-1: 4px;
@@ -62,6 +64,7 @@
   --color-accent-contrast: #0d1117;
   --color-danger: #ff6a5a;
   --color-focus-ring: #4c8dff;
+  --color-skeleton: #21262d;
 }
 
 /*
