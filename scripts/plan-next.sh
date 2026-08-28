@@ -8,6 +8,12 @@
 # had something caught at one of them.
 set -u
 cd /Users/mazen/Developer/projects/learning/crm/support-desk || exit 1
+
+# --dry says what WOULD be planned and stops. It exists because asking the
+# question by running the script spends the quota answering it, which is what
+# happened the first time somebody wanted to know.
+DRY=0
+[ "${1:-}" = "--dry" ] && DRY=1
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 
 # One planner at a time. The three firing times are a retry, not a fan-out: a
@@ -30,6 +36,10 @@ trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
 for intake in .squad/stories/*/CRM-*/intake.md; do
   key=$(basename "$(dirname "$intake")")            # CRM-47
   if ls .squad/plans/*/ 2>/dev/null | grep -qi "story-${key}.md"; then continue; fi
+  if [ "$DRY" = "1" ]; then
+    echo "[$(date '+%F %T')] would plan $key"
+    exit 0
+  fi
   echo "[$(date '+%F %T')] planning $key"
   squad new-plan --api -y "$intake" 2>&1 | tail -3
   if ls .squad/plans/*/ 2>/dev/null | grep -qi "story-${key}"; then
