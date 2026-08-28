@@ -18,6 +18,12 @@ export const en = {
     errorInternal: 'Something went wrong at our end. Try again.',
     errorUnknown: 'Sign-in failed.',
   },
+  shell: {
+    navLabel: 'Primary',
+    navHome: 'Home',
+    switchToDark: 'Dark theme',
+    switchToLight: 'Light theme',
+  },
   home: {
     heading: 'Support Desk',
     signOut: 'Sign out',

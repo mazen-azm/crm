@@ -476,15 +476,15 @@ The routing test at `web/src/app/routing.test.tsx:20 and :30` looks up **`{ name
 
 ## Done Criteria
 
-- [ ] Every authenticated desk screen renders inside `DeskShell`; `SignInPage` does not.
-- [ ] `ThemeProvider` reads `support-desk.theme` from `localStorage` synchronously, sets `<html data-theme="…">`, and the choice survives a page reload.
-- [ ] The shell renders no direction logic; `dir` and `lang` on `<html>` continue to come from `I18nProvider`.
-- [ ] `web/src/shared/ui/tokens.css` contains a second `:root[data-theme="dark"]` block; every `--color-*` name from the light block is redeclared with a dark value.
-- [ ] No colour literal exists in `web/src/app/desk-shell/DeskShell.css` or anywhere else outside `tokens.css` — proved by `tokens.test.ts`.
-- [ ] `no-hardcoded-strings.test.ts` `SCANNED` array includes the shell's directory; a temporary literal in the shell is caught, then removed.
-- [ ] `en.ts` and `ar.ts` both gain the same `shell` section; the TypeScript build passes (`defineLocale` proves parity).
-- [ ] `routing.test.tsx` still passes; new tests cover "sign-in not wrapped" and "theme survives reload".
-- [ ] No new runtime dependency added to `web/package.json`; no `api/` or `android/` file changed.
-- [ ] Commit message, docs and ignore files contain no AI-assistance mention (grep from step 7 above returns nothing).
+- [x] Every authenticated desk screen renders inside `DeskShell`; `SignInPage` does not.
+- [x] `ThemeProvider` reads `support-desk.theme` from `localStorage` synchronously, sets `<html data-theme="…">`, and the choice survives a page reload.
+- [x] The shell renders no direction logic; `dir` and `lang` on `<html>` continue to come from `I18nProvider`.
+- [x] `web/src/shared/ui/tokens.css` contains a second `:root[data-theme="dark"]` block; every `--color-*` name from the light block is redeclared with a dark value.
+- [x] No colour literal exists in `web/src/app/desk-shell/DeskShell.css` or anywhere else outside `tokens.css` — proved by `tokens.test.ts`.
+- [x] `no-hardcoded-strings.test.ts` `SCANNED` array includes the shell's directory; a temporary literal in the shell is caught, then removed.
+- [x] `en.ts` and `ar.ts` both gain the same `shell` section; the TypeScript build passes (`defineLocale` proves parity).
+- [x] `routing.test.tsx` still passes; new tests cover "sign-in not wrapped" and "theme survives reload".
+- [x] No new runtime dependency added to `web/package.json`; no `api/` or `android/` file changed.
+- [x] Commit message, docs and ignore files contain no AI-assistance mention (grep from step 7 above returns nothing).
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

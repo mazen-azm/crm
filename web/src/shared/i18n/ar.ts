@@ -15,6 +15,12 @@ export const ar = defineLocale({
     errorInternal: 'حدث خطأ عندنا. حاول مرة أخرى.',
     errorUnknown: 'فشل تسجيل الدخول.',
   },
+  shell: {
+    navLabel: 'التنقل الرئيسي',
+    navHome: 'الرئيسية',
+    switchToDark: 'الوضع الداكن',
+    switchToLight: 'الوضع الفاتح',
+  },
   home: {
     heading: 'مكتب الدعم',
     signOut: 'تسجيل الخروج',
