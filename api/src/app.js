@@ -7,6 +7,8 @@ import { attachSubject } from './platform/http/permission.js';
 import { jsonBodyErrors } from './platform/http/json-errors.js';
 import { requestLogger } from './platform/http/request-logger.js';
 import { healthRouter } from './platform/http/health.js';
+import { openapiRouter } from './platform/http/openapi.js';
+import { API_V1_PREFIX } from './platform/http/prefix.js';
 
 // The composition root: every injection happens here, and nothing here
 // listens. No database is opened in this story — the first feature that needs
@@ -43,12 +45,13 @@ export function createApp(deps = {}) {
   // to v2 later moves one line.
   const v1 = express.Router();
   v1.use(healthRouter());
+  v1.use(openapiRouter());
   // Features mount here in a later story. Tests use the same seam to mount a
   // throwing route without polluting the production tree.
   if (typeof deps.mountTestRoutes === 'function') {
     deps.mountTestRoutes(v1);
   }
-  app.use('/api/v1', v1);
+  app.use(API_V1_PREFIX, v1);
 
   // Anything off the prefix falls through to here and gets the documented 404.
   app.use(notFoundHandler());
