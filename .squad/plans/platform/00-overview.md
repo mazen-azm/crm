@@ -18,6 +18,7 @@ Entry point for the **platform** feature. Stories execute in order by their `NN`
 | 10 | `10-story-CRM-24.md` | PLATFORM-9-WEB developer — a React skeleton: router, auth context, client, loading hook | CRM-24 | — |
 | 11 | `11-story-CRM-25.md` | PLATFORM-10-WEB developer — one palette, one file: tokens and primitives, both directions | CRM-25 | — |
 | 12 | `12-story-CRM-26.md` | PLATFORM-11-WEB developer — the web application has a test setup and its first tests | CRM-26 | — |
+| 13 | `13-story-CRM-29.md` | PLATFORM-14-ALL developer — the backlog, its rules and every cited path are checked by a script | CRM-29 | — |
 
 ## Dependency notes
 
