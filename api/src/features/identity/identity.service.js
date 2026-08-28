@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { verifyPassword, hashPassword, DUMMY_PASSWORD_HASH } from '../../shared/password.js';
+import { createAuditWriter } from '../audit/index.js';
 import { createSignInThrottle } from './identity.throttle.js';
 import {
   countLiveAdmins,
@@ -10,7 +11,6 @@ import {
   findAnyUserByEmail,
   findAnyUserById,
   findLiveUserByEmail,
-  insertAuditEvent,
   insertUser,
   listLiveUsers,
   reEnableUser,
@@ -57,16 +57,12 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
 
   // Every mutation writes its audit row inside the same transaction. An audit
   // trail with gaps in it is worse than none, because it is believed.
-  const record = (actor, { entity, entityId, verb, before, after, at }) =>
-    insertAuditEvent(db, {
-      id: randomUUID(),
-      actorId: actor?.id ?? null,
-      entity,
-      entityId,
-      verb,
-      at,
-      diff: JSON.stringify({ before, after }),
-    });
+  //
+  // The writer itself belongs to the audit feature, not to this one: BR-2 is a
+  // rule about every mutation in the system, and a rule that global cannot be
+  // owned by whichever feature happened to need it first.
+  const audit = createAuditWriter({ db });
+  const record = (actor, event) => audit.record(actor, event);
 
   // The system must never be left with nobody who can administer it — the
   // seed guarantees one admin at boot and this keeps that true afterwards.

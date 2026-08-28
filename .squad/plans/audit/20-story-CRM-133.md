@@ -240,18 +240,18 @@ State this explicitly in the diff: `compose.js` still constructs `composeApp({ d
 
 ## Done Criteria
 
-- [ ] `api/src/features/audit/` exists with `audit.repository.js`, `audit.service.js`, `audit.guard.js`, `index.js`.
-- [ ] `insertAuditEvent` has been removed from `api/src/features/identity/identity.repository.js` and now lives only in `api/src/features/audit/audit.repository.js`.
-- [ ] `api/src/features/identity/identity.service.js` imports `createAuditWriter` from `../audit/index.js` and its four `record(actor, …)` call sites keep the same arguments, transaction frames, and behaviour.
-- [ ] `accounts.test.js` and `audit_events.test.js` pass **unmodified**.
-- [ ] A mutation that fails leaves no audit row and no change (proved by test #4).
-- [ ] A mutation done with nobody signed in records `actor_id = NULL` (proved by unit test #2).
-- [ ] A new mutating route added later that skips the audit call is caught at COMMIT by `wrapDbWithAuditGuard` — demonstrated by the "prove it goes red" step in Verification.
-- [ ] The set of mutating routes the guarantee test exercises is **derived from the router** via `collectRoutes`, not hand-listed, and a served mutating route missing from it fails the suite by name (L-24).
-- [ ] The guard classifies `db.exec` payloads as well as prepared `.run` statements, so a mutation issued through `exec` inside a transaction is caught too (L-25).
-- [ ] Audit rows carry no password, no token, no secret — proved by test #5.
-- [ ] Audit ordering assertions in any new test use `ORDER BY rowid`, never `ORDER BY at` (L-19).
-- [ ] `api/package.json` has no new dependency; `api/package-lock.json` is unchanged except for regeneration if a version pin moved.
-- [ ] No commit, doc, or ignore-file entry mentions AI assistance (grep in Verification #6 clean).
+- [x] `api/src/features/audit/` exists with `audit.repository.js`, `audit.service.js`, `audit.guard.js`, `index.js`.
+- [x] `insertAuditEvent` has been removed from `api/src/features/identity/identity.repository.js` and now lives only in `api/src/features/audit/audit.repository.js`.
+- [x] `api/src/features/identity/identity.service.js` imports `createAuditWriter` from `../audit/index.js` and its four `record(actor, …)` call sites keep the same arguments, transaction frames, and behaviour.
+- [x] `accounts.test.js` and `audit_events.test.js` pass **unmodified**.
+- [x] A mutation that fails leaves no audit row and no change (proved by test #4).
+- [x] A mutation done with nobody signed in records `actor_id = NULL` (proved by unit test #2).
+- [x] A new mutating route added later that skips the audit call is caught at COMMIT by `wrapDbWithAuditGuard` — demonstrated by the "prove it goes red" step in Verification.
+- [x] The set of mutating routes the guarantee test exercises is **derived from the router** via `collectRoutes`, not hand-listed, and a served mutating route missing from it fails the suite by name (L-24).
+- [x] The guard classifies `db.exec` payloads as well as prepared `.run` statements, so a mutation issued through `exec` inside a transaction is caught too (L-25).
+- [x] Audit rows carry no password, no token, no secret — proved by test #5.
+- [x] Audit ordering assertions in any new test use `ORDER BY rowid`, never `ORDER BY at` (L-19).
+- [x] `api/package.json` has no new dependency; `api/package-lock.json` is unchanged except for regeneration if a version pin moved.
+- [x] No commit, doc, or ignore-file entry mentions AI assistance (grep in Verification #6 clean).
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 02 (AUDIT-2-API / CRM-134, the read side).**
