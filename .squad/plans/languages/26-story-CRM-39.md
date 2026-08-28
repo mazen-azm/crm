@@ -189,17 +189,17 @@ No schema or config migration. Rollback = delete `format.ts`, `useFormatters.ts`
 
 ## Done Criteria
 
-- [ ] `web/src/shared/i18n/format.ts` exports `localeTag`, `formatDate`, `formatNumber`, `formatRelativeTime`, each using the corresponding `Intl.*` constructor — no hand-written date or number patterns anywhere in the diff.
-- [ ] `'ar'` maps to `'ar-EG'` in exactly one place, with the measurement comment intact.
-- [ ] `useFormatters()` reads the active `Language` from the existing i18n context without modifying that context's shape.
-- [ ] Arabic number output uses Arabic-Indic digits **and** grouping separators, proven by property assertions (not equality).
-- [ ] Durations are produced by `Intl.RelativeTimeFormat`; **no** `hoursAgo`/`minutesAgo` keys were added to `en.ts` or `ar.ts`.
-- [ ] No new npm dependency; `web/package.json` unchanged except possibly barrel re-exports.
-- [ ] No screen, page, or component was changed to consume the formatters (utility ships without a caller by design).
-- [ ] No test asserts an exact `ar-EG` formatted string; the "why" comment is present in the test file.
-- [ ] `formatDate` has an inline comment stating the browser's timezone is the default and a fixed display timezone is a later story.
-- [ ] All verification steps above pass locally and in CI.
-- [ ] No AI-attribution grep hit anywhere in commits, docs, or ignore files.
+- [x] `web/src/shared/i18n/format.ts` exports `localeTag`, `formatDate`, `formatNumber`, `formatRelativeTime`, each using the corresponding `Intl.*` constructor — no hand-written date or number patterns anywhere in the diff.
+- [x] `'ar'` maps to `'ar-EG'` in exactly one place, with the measurement comment intact.
+- [x] `useFormatters()` reads the active `Language` from the existing i18n context without modifying that context's shape.
+- [x] Arabic number output uses Arabic-Indic digits **and** grouping separators, proven by property assertions (not equality).
+- [x] Durations are produced by `Intl.RelativeTimeFormat`; **no** `hoursAgo`/`minutesAgo` keys were added to `en.ts` or `ar.ts`.
+- [x] No new npm dependency; `web/package.json` unchanged except possibly barrel re-exports.
+- [x] No screen, page, or component was changed to consume the formatters (utility ships without a caller by design).
+- [x] No test asserts an exact `ar-EG` formatted string; the "why" comment is present in the test file.
+- [x] `formatDate` has an inline comment stating the browser's timezone is the default and a fixed display timezone is a later story.
+- [x] All verification steps above pass locally and in CI.
+- [x] No AI-attribution grep hit anywhere in commits, docs, or ignore files.
 
 ---
 
