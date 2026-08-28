@@ -247,3 +247,18 @@ went red — correctly. The test built `createApp()` with no features, so the tw
 documented routes were "documented but not served". Feeding the test the
 production composition was the fix; teaching the document to expect a
 featureless app would have been the bug.
+
+## L-19 — A timestamp is not an order
+
+**Rule:** an audit trail, an event log or anything else that must be read "in
+the order it happened" needs a monotonic key, not a clock. A second-resolution
+timestamp cannot order two rows written in the same second, and a
+millisecond one cannot order two written in the same millisecond. In SQLite
+the insertion order is `rowid` and it is free; a table that will be read in
+order should say so, in the query and in a comment.
+
+**Paid for by:** CRM-44's audit assertion read "the latest row for this
+account" as `ORDER BY at DESC LIMIT 1` and got the creation row instead of the
+role change — both happened inside one second, so the timestamps were equal
+and the order was whatever the engine felt like. The test looked wrong and the
+data was right.

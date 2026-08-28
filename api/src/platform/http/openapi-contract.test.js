@@ -22,6 +22,11 @@ import { DOCUMENTED } from './errors.js';
 
 const METHODS = ['get', 'put', 'post', 'delete', 'patch', 'options', 'head'];
 
+// OpenAPI names a path parameter {id}; Express names it :id. Both describe the
+// same route, so the comparison speaks one of them — the document keeps the
+// standard spelling and the served table is translated into it.
+const toOpenApiPath = (path) => path.replace(/:([A-Za-z0-9_]+)/g, '{$1}');
+
 function documentedRoutes() {
   const out = [];
   for (const [path, operations] of Object.entries(OPENAPI_DOCUMENT.paths ?? {})) {
@@ -34,12 +39,14 @@ function documentedRoutes() {
 
 test('every served route appears in the document', () => {
   const documented = new Set(documentedRoutes());
-  const missing = collectRoutes(createApp(), API_V1_PREFIX).filter((r) => !documented.has(r));
+  const missing = collectRoutes(createApp(), API_V1_PREFIX)
+    .map(toOpenApiPath)
+    .filter((r) => !documented.has(r));
   assert.deepEqual(missing, [], `served but not documented: ${missing.join(', ')}`);
 });
 
 test('every documented route is actually served', () => {
-  const served = new Set(collectRoutes(createApp(), API_V1_PREFIX));
+  const served = new Set(collectRoutes(createApp(), API_V1_PREFIX).map(toOpenApiPath));
   const stale = documentedRoutes().filter((r) => !served.has(r));
   assert.deepEqual(stale, [], `documented but not served: ${stale.join(', ')}`);
 });

@@ -20,6 +20,11 @@
       "name": "me (guarded)",
       "method": "GET",
       "path": "/api/v1/me"
+    },
+    {
+      "name": "accounts (admin list)",
+      "method": "GET",
+      "path": "/api/v1/accounts"
     }
   ]
 }

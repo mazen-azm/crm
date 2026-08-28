@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 // The pure part of identity: no database, no request, no response. Everything
 // here is a function of its arguments, which is what makes it testable without
@@ -63,3 +63,26 @@ export function validateCredentials({ email, password }) {
 }
 
 export const normaliseEmail = (email) => email.trim().toLowerCase();
+
+// Two roles, named once. A third would be a decision, not a string.
+export const ROLES = Object.freeze(['admin', 'agent']);
+export const isRole = (value) => ROLES.includes(value);
+
+export function validateNewAccount({ email, name, role }) {
+  const wrong = [];
+  if (typeof email !== 'string' || !email.includes('@') || email.length > 254) wrong.push('email');
+  if (typeof name !== 'string' || name.trim().length === 0 || name.length > 200) wrong.push('name');
+  if (!isRole(role)) wrong.push('role');
+  return wrong;
+}
+
+export function validateRoleChange({ role }) {
+  return isRole(role) ? [] : ['role'];
+}
+
+// Returned once in the create response and never stored in plaintext. The
+// admin hands it over and the person changes it; IDENTITY-6-API replaces this
+// with a proper set-password flow.
+export function generateInitialPassword() {
+  return randomBytes(18).toString('base64url');
+}
