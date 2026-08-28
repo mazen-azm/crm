@@ -20,15 +20,16 @@ describe('the router', () => {
     expect(await screen.findByRole('heading', { name: 'Support Desk' })).toBeInTheDocument();
   });
 
-  test('signing in reaches the desk, and signing out returns to sign-in', async () => {
+  test('signing out returns to sign-in and forgets the session', async () => {
+    // Signing in now calls the API; that whole path is exercised in
+    // pages/sign-in/SignInPage.test.tsx. What belongs here is the routing:
+    // a session ends and the guard takes over again.
     const user = userEvent.setup();
-    renderWithProviders(<AppRoutes />);
+    renderWithProviders(<AppRoutes />, { signedIn: true });
 
-    await user.click(await screen.findByRole('button', { name: 'Sign in' }));
     expect(await screen.findByRole('heading', { name: 'Support Desk' })).toBeInTheDocument();
-    expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBe('stub-token');
-
     await user.click(screen.getByRole('button', { name: 'Sign out' }));
+
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
     expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBeNull();
   });
