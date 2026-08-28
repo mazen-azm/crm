@@ -313,15 +313,15 @@ Each rule test also covers the **L-16 rehearsal**: introduce a concrete violatio
 
 ## Done Criteria
 
-- [ ] `scripts/verify-architecture.mjs` exists, is executable, and implements the eleven checks R1–R11.
-- [ ] Script has no runtime dependencies beyond Node’s standard library; no `package.json` was added or modified.
-- [ ] Every in-force rule reports `pass` on today’s tree.
-- [ ] Every rule that reads zero files reports `not in force` in a visible block; the block is not a green tick.
-- [ ] `SQL_EXEMPTIONS` lists every legitimate SQL-outside-repository site with a `why` string; `audit.guard.js`, `migrate.js`, `seed.js`, `*.test.js`, and `migrations/*.sql` are all covered.
-- [ ] The file header comment cites `scripts/criteria/platform.md` lines 177–196, `docs/architecture.md` lines 88–89 and 115, and lessons L-6, L-13, L-16.
-- [ ] `scripts/verify-architecture.test.mjs` covers every rule with at least one passing and one failing fixture; the CI-step assertion is present.
-- [ ] `.github/workflows/ci.yml` `checks` job invokes `node scripts/verify-architecture.mjs` and nothing else in that file changed.
-- [ ] Every L-16 rehearsal listed under Verification Steps has been performed and its exact message recorded in the PR.
-- [ ] No commit, comment, doc, or file introduced by this story mentions AI assistance.
+- [x] `scripts/verify-architecture.mjs` exists, is executable, and implements the eleven checks R1–R11.
+- [x] Script has no runtime dependencies beyond Node’s standard library; no `package.json` was added or modified.
+- [x] Every in-force rule reports `pass` on today’s tree.
+- [x] Every rule that reads zero files reports `not in force` in a visible block; the block is not a green tick.
+- [x] `SQL_EXEMPTIONS` lists every legitimate SQL-outside-repository site with a `why` string; `audit.guard.js`, `migrate.js`, `seed.js`, `*.test.js`, and `migrations/*.sql` are all covered.
+- [x] The file header comment cites `scripts/criteria/platform.md` lines 177–196, `docs/architecture.md` lines 88–89 and 115, and lessons L-6, L-13, L-16.
+- [x] `scripts/verify-architecture.test.mjs` covers every rule with at least one passing and one failing fixture; the CI-step assertion is present.
+- [x] `.github/workflows/ci.yml` `checks` job invokes `node scripts/verify-architecture.mjs` and nothing else in that file changed.
+- [x] Every L-16 rehearsal listed under Verification Steps has been performed and its exact message recorded in the PR.
+- [x] No commit, comment, doc, or file introduced by this story mentions AI assistance.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

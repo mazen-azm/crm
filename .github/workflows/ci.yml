@@ -122,3 +122,7 @@ jobs:
       - name: verify plan
         if: always()
         run: node scripts/verify-plan.mjs
+
+      - name: verify architecture
+        if: always()
+        run: node scripts/verify-architecture.mjs
