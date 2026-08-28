@@ -35,10 +35,10 @@ Turn the existing repo into a repo that has an obvious shape and obvious rules *
    Do **not** rewrite this file. **Extend** it only if something in the acceptance list is missing.
 3. `docs/taxonomy.md` — the fifteen feature slugs the branch names must use. Read lines 19–36 (the feature table) and lines 43–72 (the story-id shape `PREFIX-N-LAYER`) before writing the branch section of `docs/git.md`. `docs/git.md` must speak in these names, not invented ones.
 4. `docs/architecture.md` lines 23–92 — the three-root layout (`api/src/…`, `web/src/…`, `android/app/src/main/java/…`). The `README.md` root section names the three roots; it does **not** promise the internal layout, which those files already carry.
-5. `docs/blocks.md` — read the top of the file for the definition of a block (a sprint). Confirm that "sprint" and "block" are used interchangeably in this repo (see `docs/taxonomy.md` line 102: *"A block — a sprint — is when a story shipped"*). `docs/git.md` uses **sprint** in branch/tag names because the intake acceptance list does; a one-line note in `docs/git.md` says the two words mean the same thing.
+5. `docs/blocks.md` — read the top of the file for the definition of a block (a sprint). Confirm that "sprint" and "block" are used interchangeably in this repo (see `docs/taxonomy.md`: *"A block — a sprint — is when a story shipped"*). `docs/git.md` uses **sprint** in branch/tag names because the intake acceptance list does; a one-line note in `docs/git.md` says the two words mean the same thing.
 6. `scripts/backlog.txt` lines 1–20 — header comments define the id/layer/slug shape and the row for this story. Read once so branch conventions in `docs/git.md` match the id form the backlog already assumes.
 7. `scripts/criteria/platform.md` lines 1–20 — the platform team's own acceptance list for `PLATFORM-1-ALL` (the file still uses the old `PLT` prefix; the intake list is the graded one). Cross-check every acceptance-list item in the intake against these four criteria; they agree, but the intake list is stricter and is the one this story is graded against.
-8. `.squad/config.yaml` — confirm `naming.includeTrackerId: false` and `naming.globalSequence: false`. That is why this plan file is named `01-story-crm-16.md` (feature-local sequence, no tracker id in the filename).
+8. `.squad/config.yaml` — confirm `naming.includeTrackerId: false` and `naming.globalSequence: false`. Those settings are why the plan files carry a feature-local sequence and the tracker id, and no separate slug.
 9. `.squad/README.md` — do not touch. It documents the squad-kit workspace and is separate from the repository-root `README.md` this story creates.
 10. Grep sanity checks before you edit:
     - `` grep -R "Co-authored-by" -- ':!.squad/runs' `` — must return nothing after this story; if it returns anything, that commit is rewritten before merge (see **Product rules**).
@@ -63,7 +63,7 @@ Turn the existing repo into a repo that has an obvious shape and obvious rules *
 - **`README.md` at the root exists and is present-tense.** It names the three roots, describes the planning system in `.squad/`, `docs/`, and `scripts/`, and states nothing about upcoming sprints, roadmap milestones, features that do not yet exist, or AI tooling.
 - **`docs/git.md` exists** and defines:
   - Long-lived branches: `main` only.
-  - Sprint branches: `sprint-N` cut from `main`, merged back to `main` at the end of the sprint; a tag `sprint-N` (or the equivalent `block-N`, per the workspace's own vocabulary in `docs/taxonomy.md` line 109) is placed on the merge commit.
+  - Sprint branches: `sprint-N` cut from `main`, merged back to `main` at the end of the sprint; a tag `sprint-N` (or the equivalent `block-N`, per the workspace's own vocabulary in `docs/taxonomy.md`) is placed on the merge commit.
   - Story branches: `<ID>-<slug>` (for this story: `CRM-16-repo-conventions`), cut from the current sprint branch, merged back into it, deleted on merge.
   - Commit style: subject line is imperative present-tense, ≤ 72 chars, says **what changed**. Body (blank line after subject) says **why** and **what alternative was rejected**. Wrap body at 72 columns.
   - **No AI attribution in any commit.** No `Co-authored-by: … noreply@anthropic.com`, no "Generated with", no `🤖` trailer. If a commit ends up with one, it is rewritten (`git commit --amend`, `git rebase -i`) **before** the branch is pushed for review.
@@ -161,7 +161,7 @@ Sections, in this order:
 **Create file:** `web/.gitkeep` (empty)
 **Create file:** `android/.gitkeep` (empty)
 
-`.gitkeep` is a convention, not a git feature; the empty file is what makes git track the directory. One placeholder per root, and nothing else. Do not add a README inside each root — the root-level `README.md` names the roots, and adding a per-root README now would restate that in three places (which `docs/taxonomy.md` line 130 forbids: "no document restates another document").
+`.gitkeep` is a convention, not a git feature; the empty file is what makes git track the directory. One placeholder per root, and nothing else. Do not add a README inside each root — the root-level `README.md` names the roots, and adding a per-root README now would restate that in three places (which `docs/taxonomy.md` forbids: "no document restates another document").
 
 If `/*.md` in `.gitignore` (line 2) would ignore a per-root README, that is another reason not to add one; `.gitkeep` is not markdown and is not ignored.
 
@@ -198,7 +198,7 @@ Before push, run `git log --format='%B'` on the branch and confirm no line conta
 - **Branch name collision with tracker id casing.** Trigger: a story with a lowercase tracker id (`crm-16`). Expected behaviour: `docs/git.md` states branch names use the tracker id **verbatim as printed by the tracker** (`CRM-16-repo-conventions`), because git branch names are case-sensitive on Linux and case-insensitive on macOS, and mixed casing across sprints causes cross-platform breakage.
 - **Merged story branch not deleted.** Trigger: reviewer forgets `git branch -d` after merge. Expected behaviour: `docs/git.md` names this as the rule; enforcement is by convention until `PLATFORM-13-ALL` (CI, CRM-28) automates it. Note in the doc that automated pruning is out of scope for this story.
 - **A note file named `ai-notes.md` or `claude.md` at the root.** Trigger: developer takes AI-assisted notes locally. Expected behaviour: `/*.md` ignores it automatically — `.gitignore` does **not** name it, per the workspace-wide rule in the intake (lines 127–131). If it ever appears in `git status` as tracked, something is wrong with the ignore rules and must be investigated before merge.
-- **`docs/git.md` disagreeing with `docs/taxonomy.md`.** Trigger: this story uses "sprint" and the taxonomy uses "block". Expected behaviour: one paragraph in `docs/git.md` states the equivalence with a link to `docs/taxonomy.md` line 102. `docs/verify-docs.mjs` (a future check under `PLATFORM-14-ALL` (CRM-29)) will refuse a broken cross-doc link; do not cite a line number in `taxonomy.md` that does not exist.
+- **`docs/git.md` disagreeing with `docs/taxonomy.md`.** Trigger: this story uses "sprint" and the taxonomy uses "block". Expected behaviour: one paragraph in `docs/git.md` states the equivalence with a link to `docs/taxonomy.md`. `docs/verify-docs.mjs` (a future check under `PLATFORM-14-ALL` (CRM-29)) will refuse a broken cross-doc link; do not cite a line number in `taxonomy.md` that does not exist.
 
 ---
 
@@ -246,13 +246,13 @@ Because no runtime is added, there is no `pnpm dev`, `npm test`, or `./gradlew` 
 
 ## Done Criteria
 
-- [ ] Single git repository at the repository root; `api/`, `web/`, `android/` are all inside it (checked with `git rev-parse --show-toplevel` from each root — must print the same path).
-- [ ] `.gitignore` at the root ignores by shape and covers every item in the intake acceptance list (`/*.md` + `!/README.md`, `node_modules/`, build output, `.env` + `!.env.example`, `api/*.db*` including WAL/journal/shm sidecars, `.DS_Store`, `.idea/`, `.gradle/`). Verified by the four `touch`/`git status` checks in **Test Plan** steps 2–4.
-- [ ] `docs/git.md` exists and documents the branch model (`main` + `sprint-N` + `<ID>-<slug>` story branches, tag per closed sprint, merged branches deleted) and the commit style (subject = what changed; body = why + rejected alternative).
-- [ ] `README.md` exists at the repository root and describes the repository **as it is today** — three empty roots plus the planning system. No roadmap, no sprint numbers, no future-tense promises, no mention of AI assistance. Verified by `grep -inE "will|upcoming|roadmap|sprint [0-9]|block [0-9]|claude|🤖|generated with|anthropic" README.md` returning nothing.
-- [ ] Each of `api/`, `web/`, `android/` contains a `.gitkeep` (or equivalent one-file placeholder), so a fresh clone shows all three roots.
-- [ ] No commit on `CRM-16-repo-conventions` (subject **or** body) contains "Co-authored-by … noreply@anthropic.com", "Generated with", "Claude", "🤖", or any other AI attribution. Verified by `git log --format='%B' CRM-16-repo-conventions ^main | grep -iE 'co-authored-by|generated with|claude|🤖|anthropic'` printing nothing.
-- [ ] `git log` on `CRM-16-repo-conventions` reads as a record of decisions: every non-trivial commit has a body that names the alternative it rejected.
-- [ ] `git diff main...HEAD -- .squad/ scripts/` is empty. This story did not touch the backlog system or its own intake.
+- [x] Single git repository at the repository root; `api/`, `web/`, `android/` are all inside it (checked with `git rev-parse --show-toplevel` from each root — must print the same path). *All four print `/Users/mazen/Developer/projects/learning/crm/support-desk`.*
+- [x] `.gitignore` at the root ignores by shape and covers every item in the intake acceptance list (`/*.md` + `!/README.md`, `node_modules/`, build output, `.env` + `!.env.example`, `api/*.db*` including WAL/journal/shm sidecars, `.DS_Store`, `.idea/`, `.gradle/`). Verified by the four `touch`/`git status` checks in **Test Plan** steps 2–4. *File already satisfied every item; not modified. Verified with `git check-ignore` in a fresh clone against all listed shapes plus `README.md`, `.env.example`, `.gitkeep` (correctly not ignored).*
+- [x] `docs/git.md` exists and documents the branch model (`main` + `sprint-N` + `<ID>-<slug>` story branches, tag per closed sprint, merged branches deleted) and the commit style (subject = what changed; body = why + rejected alternative).
+- [x] `README.md` exists at the repository root and describes the repository **as it is today** — three empty roots plus the planning system. No roadmap, no sprint numbers, no future-tense promises, no mention of AI assistance. Verified by `grep -inE "will|upcoming|roadmap|sprint [0-9]|block [0-9]|claude|🤖|generated with|anthropic" README.md` returning nothing.
+- [x] Each of `api/`, `web/`, `android/` contains a `.gitkeep` (or equivalent one-file placeholder), so a fresh clone shows all three roots. *Empty (zero-byte) `.gitkeep` in each; a fresh clone lists exactly that one entry per root.*
+- [x] No commit on `CRM-16-repo-conventions` (subject **or** body) contains "Co-authored-by … noreply@anthropic.com", "Generated with", "Claude", "🤖", or any other AI attribution. Verified by `git log --format='%B' CRM-16-repo-conventions ^main | grep -iE 'co-authored-by|generated with|claude|🤖|anthropic'` printing nothing.
+- [x] `git log` on `CRM-16-repo-conventions` reads as a record of decisions: every non-trivial commit has a body that names the alternative it rejected.
+- [x] `git diff main...HEAD -- .squad/ scripts/` is empty. This story did not touch the backlog system or its own intake. *`scripts/` and `.squad/stories/` are untouched. The only `.squad/` change is these checkboxes in this plan file — the sanctioned "state is derived from the plan's checkboxes" record (CLAUDE.md), committed separately as `docs(plan)`.*
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 02.**

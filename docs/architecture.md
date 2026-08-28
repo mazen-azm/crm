@@ -42,6 +42,14 @@ api/src/
     └── <slug>.test.js
 ```
 
+**The database is SQLite, through `node:sqlite`** — `DatabaseSync`, shipped with
+the runtime, no dependency and no native module. One file per environment, named
+by `DB_PATH`; the tests open `:memory:` so the suite needs no server and no
+teardown. Timestamps are ISO-8601 `TEXT`, ids are `TEXT` UUIDs generated in code
+(`crypto.randomUUID()`), and case-insensitive uniqueness is `COLLATE NOCASE` —
+no `TIMESTAMPTZ`, no `CITEXT`, no extensions, no other engine's dialect anywhere.
+A query plan is read with `EXPLAIN QUERY PLAN`.
+
 **A feature reaches another only through its `index.js`.** Where one needs
 another's capability it is injected in `app.js` — customers is handed a way to
 create an account, tickets a way to notify, identity a way to release a queue.
@@ -63,6 +71,17 @@ web/src/
 ├── shared/       api client, i18n, ui primitives · knows no feature
 └── testing/      render helpers, fixtures
 ```
+
+**The build is Vite, and the application is a single-page client.** React with
+the router running in the browser, TypeScript, Vitest with Testing Library, and
+no server-side framework. The reason is the rule the whole project is built on:
+the API is the only contract. A framework that renders on a server invites a
+second data path — a server component reaching a database directly, an action
+that bypasses the documented route — and the day that happens the OpenAPI check
+in PLATFORM-7-API stops describing how the product actually reads its data.
+Vite has no such seam to fall through: the browser talks to `/api/v1` or it has
+nothing. Server rendering buys page-load speed for a public site; this is an
+internal desk behind a sign-in, so it buys nothing here.
 
 Layers import **downward only**: `app → pages → features → entities → shared`.
 

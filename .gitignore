@@ -21,3 +21,6 @@ api/*.db
 api/*.db-journal
 api/*.db-shm
 api/*.db-wal
+
+# CRM-17 additions
+api/data/

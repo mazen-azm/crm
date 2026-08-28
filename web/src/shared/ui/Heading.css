@@ -1,0 +1,14 @@
+.heading {
+  margin: 0;
+  line-height: var(--line-height-heading);
+  color: var(--color-text-primary);
+  text-align: start;
+}
+
+.heading--1 {
+  font-size: var(--font-size-heading-1);
+}
+
+.heading--2 {
+  font-size: var(--font-size-heading-2);
+}

@@ -8,11 +8,16 @@ for it — never advice in general.
 
 **Rule:** cite other stories only by the id in `scripts/backlog.txt` (or the
 generated `BACKLOG.md`), with the Jira key beside it: `PLATFORM-13-ALL (CRM-28)`.
-Never take an id from `docs/`, from a criteria file, or from memory.
+Never take an id from `docs/`, from a criteria file, or from memory. And the id
+is the **slug spelled out in full** — the backlog's second column (`PLT`, `TCK`)
+and the criteria files' headings are internal plumbing; reproducing them in a
+plan resurrects the abbreviations this project killed.
 
-**Paid for by:** the CRM-16 plan cited `PLT-10-ALL` and `PLT-14-ALL` — ids from
-an abandoned naming scheme that stale docs still carried. Ten citations were
-wrong; two pointed at the wrong story entirely.
+**Paid for by:** twice. The CRM-16 plan cited `PLT-10-ALL` and `PLT-14-ALL` —
+ids from an abandoned naming scheme that stale docs still carried; ten
+citations were wrong, two pointed at the wrong story entirely. Then the CRM-18
+plan, reading the backlog faithfully, copied the prefix column into every
+citation and had to be de-abbreviated at review.
 
 ## L-2 — Do not assert your own filename
 
@@ -39,3 +44,178 @@ instead of re-creating.
 
 **Paid for by:** the first attempt's RPT-WEB plan burned its whole context
 hunting a field that did not exist, because nothing told it what to read.
+
+## L-5 — Name the engine before planning persistence
+
+**Rule:** any plan that touches the database states the engine and cites where
+`docs/architecture.md` declares it (SQLite via `node:sqlite`, `:memory:` in
+tests). A plan written in another engine's dialect is wrong in every line, not
+just one — types, locks, extensions, `EXPLAIN` syntax and the test harness all
+follow from the engine.
+
+**Paid for by:** the CRM-17 plan was written end-to-end for Postgres — `pg`
+pool, `TIMESTAMPTZ`, `CITEXT`, `pgcrypto`, advisory locks, `createdb` — because
+no committed document named the database, so the planner reached for the common
+default. The stack decision lived only in an ignored note the planner never
+reads. The fix was to the source, not the plan: architecture.md now names the
+engine and its idioms.
+
+## L-6 — A check's scope excludes the surfaces the rules exempt
+
+**Rule:** an automated guard must grep exactly the surface its rule governs.
+The no-AI-attribution rule governs code, docs and commit messages — NOT
+`.squad/` (the planning record is a scored deliverable whose generated headers
+name the planner model by design) and NOT the gitignored root notes. A guard
+scoped wider than its rule fails on day one and gets deleted instead of obeyed.
+
+**Paid for by:** the CRM-18 plan proposed a test that greps the whole working
+tree for assistant names — it would have failed immediately on `.squad/` plan
+headers and the ignored notes, on content the project's own rules permit.
+
+## L-7 — A ported document keeps its old world's ids
+
+**Rule:** before any plan cites `scripts/criteria/*.md`, the section id it
+cites must equal the story id in `scripts/backlog.txt` — not merely a section
+that exists. A document carried over from an earlier attempt keeps that
+attempt's numbering, and a citation into it is then wrong even though the
+file, the section and the line number are all real.
+
+**Paid for by:** `scripts/criteria/platform.md` was ported from the first
+attempt: fourteen sections for a nineteen-story feature, every id from
+section 4 onward pointing at a different story than the backlog's, and four
+stories — permission-middleware among them — with no criteria at all. The
+CRM-19 plan had to invent its own acceptance criteria; it invented sensible
+ones, which is luck, not process. The same half-migration hid in
+`verify-backlog.mjs`: ids went full-name at the naming pivot, needs stayed
+prefixed, and the check had been failing with 166 errors that nobody saw
+because nobody ran it. A check that is not run is not a check.
+
+## L-8 — Never compute a tracker key
+
+**Rule:** `scripts/backlog.txt` and `BACKLOG.md` contain no `CRM-N` keys, so a
+key can only be **looked up in Jira**, never derived by counting rows. Cite a
+future story by its full id alone (`IDENTITY-1-API`) and append the key only
+when it came from the tracker or the intake.
+
+**Paid for by:** one story, three answers. The CRM-19 plan computed the
+sign-in story's key by counting and wrote CRM-24 (actually the React
+skeleton); the session that reviewed the plan re-counted and "corrected" it
+to CRM-39; Jira says CRM-41. Two different models both counted carefully and
+both were wrong — the tracker is the only source that knows.
+
+## L-9 — An error body names the field, never the value
+
+**Rule:** any plan for an error contract, a validation response, or a failure
+log states that the payload carries **identifiers only** — field names,
+paths, codes, request ids — and **never a value the caller submitted**. A
+value can be a password, a token, or personal data; echoing it to satisfy
+"tell me which field" sends it back to the client and writes it into every
+log that touches the response. The carrier type enforces this (keep only
+strings; drop objects and scalars), it is not left to the caller's goodwill.
+
+**Paid for by:** the CRM-20 plan's first draft shaped the 422 body's `fields`
+as `[{ field, message }]` and its e2e test threw
+`unprocessable([{ field: 'name', message: 'required' }])` — one careless
+future schema writing `message: \`got ${input.password}\`` would have leaked
+the password to the client and the logs. Gate 2 cut it to a list of names,
+with the `ValidationError` constructor filtering non-strings out.
+
+## L-10 — Do not hand-roll a source scan for an invariant a guard enforces
+
+**Rule:** when an invariant can be enforced **structurally** — a constructor
+that throws, a type that will not compile, a frozen map — the plan enforces
+it there and proves it with **one unit test on the guard**. It does not also
+propose a test that greps or parses source files for call sites. A
+text-scan check is brittle (misses a value built from a variable, a call
+split oddly across lines), and worse, file-content structure checks are a
+named story's job (**PLATFORM-15-ALL-structure-check, CRM-30**) — a plan that
+builds one early is doing another story's work with a weaker tool.
+
+**Paid for by:** the CRM-20 plan's first draft added
+`documented-codes.test.js`, a tree-walk over `api/src` regex-matching
+`new HttpError(<literal>` and asserting each status was in the catalogue —
+on top of a constructor that already throws on an undocumented status. Gate 2
+deleted the file, the acceptance-criteria bullet that demanded it, and the
+edge-case notes apologising for the regex's blind spots.
+
+## L-11 — A status outside rule E-2's catalogue is a promise the rules forbid
+
+**Rule:** rule E-2 names the whole catalogue — 400 401 403 404 409 422 429 500.
+Any other 4xx/5xx a plan promises is a rule violation wearing a number. If a
+story genuinely needs one (E-3's 501), the story that owns that rule extends
+the catalogue; every other plan stays inside it.
+
+**Paid for by:** two of them in one evening. The CRM-18 plan left a breadcrumb
+promising CRM-20 would map an oversized body to `413/PAYLOAD_TOO_LARGE` — 413
+is not in the catalogue, so honouring the promise breaks E-2 and ignoring it
+leaves a dead promise in the code. The CRM-19 draft would have let a strict
+catalogue guard block CHANNELS-2-API from ever throwing its 501. Both are now
+caught by `scripts/verify-plan.mjs` before a human reads the plan.
+
+## L-12 — When a mount moves, every test that uses the seam moves with it
+
+**Rule:** a plan that relocates a mount point must list **every** test file
+that reaches through it, not the one it happened to read. And after the move,
+check the tests that still pass: a test that asserts something true of every
+response — a header, a shape — keeps passing against a 404 and stops proving
+what it was written to prove.
+
+**Paid for by:** the CRM-21 plan enumerated thirteen URLs in `app.test.js`
+and missed `request-id.test.js` and `security-headers.test.js`, which mount
+through the same seam. The first went red immediately, which is the good
+case. The second stayed **green while asserting security headers on a 404** —
+it would have shipped as a test that could no longer fail for its own reason.
+
+## L-13 — A guard that reads source text must read its grammar, not its prose
+
+**Rule:** when a check has to inspect source (and L-10 says prefer not to),
+it parses the construct it governs — import specifiers, a call expression —
+never the whole file as a string. A file that explains a rule contains the
+words of the rule, and a substring search cannot tell an explanation from a
+violation.
+
+**Paid for by:** the CRM-23 test asserting the seed imports nothing from the
+application searched the file for `'app.js'` and matched the comment saying
+"it imports nothing from app.js". The test failed on the sentence documenting
+that it passes. Reading only the `import … from '…'` specifiers fixed it —
+and the same shape had already been forbidden once, in L-10.
+
+## L-14 — A plan's version numbers are stale the moment it is written
+
+**Rule:** a plan that stands up a new toolchain names the **packages**, not
+their versions. Let the package manager resolve, then record what actually
+landed in the commit message. A pinned major in a plan is a guess about the
+day the plan runs, and following it installs an old world on purpose.
+
+**Paid for by:** the CRM-24 plan specified React 18, react-router v6, Vite 5
+and TypeScript 5. Installing without pins gave React 19, router 7, Vite 8 and
+TypeScript 7 — four majors ahead across the board. Two of those gaps had
+teeth: Vitest 4 needs `defineConfig` from `vitest/config`, not from `vite`,
+and the plan's config would not have typechecked.
+
+## L-15 — A test suite passing is not the build passing
+
+**Rule:** a story that adds a typed root runs the **build** as its own
+verification step, not only the tests. A test runner transpiles per file and
+does not typecheck the project; `tsc -b` reads the whole graph and sees what
+the runner never looks at.
+
+**Paid for by:** the CRM-24 web tests went 14/14 green while `npm run build`
+failed on five type errors in one of those very test files — a caught error
+typed `unknown` that every assertion then read fields off. The suite was
+green about code that does not compile.
+
+## L-16 — Prove a guard fails before believing it passes
+
+**Rule:** a story whose deliverable is a check does not ship on a green run.
+Break the invariant on purpose, watch the check go red and name the offender,
+put the file back, and only then tick the box. A green check and an absent
+check look identical from the outside.
+
+**Paid for by:** twice in one sprint, in opposite directions. CRM-22's
+contract check was broken deliberately in both directions and named the
+route each time — that is what a working guard looks like. CRM-25's
+colour-literal guard passed a file containing `background: #ff0000` because
+its regex anchored each declaration to the start of a line, so every rule
+written on one line was invisible to it. It had been green all along, over
+nothing.
