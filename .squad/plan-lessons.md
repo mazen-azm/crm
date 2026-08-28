@@ -416,3 +416,28 @@ can afford it.
 
 **Related:** [[L-13]] is why comments are stripped at all; this is the other
 edge of the same knife.
+
+## L-29 — Two callers of one code can owe the reader different sentences
+
+**Rule:** before folding several call sites onto one shared message map, ask
+whether any of them says what it says **on purpose**. A screen that is
+deliberately vague — because the API refused to distinguish, and the screen
+must keep that refusal — is not a duplicate of a generic mapper. Consolidate the
+generic meaning, leave the deliberate one alone, and put a comment on it naming
+the rule and the story that set it, or the next reader deletes it as
+duplication.
+
+**Paid for by:** CRM-31's intake said sign-in's local `messageFor` was "the
+accidental version of this story" and should be lifted onto a shared map. It is
+the opposite. IDENTITY-1-API answers 401 `UNAUTHENTICATED` for a wrong
+password, an unknown address and a disabled account alike so the response is not
+a directory of who works here, and `t.signIn.errorUnauthenticated` is one
+sentence covering three truths to keep that promise on the screen. Every other
+screen means "your session ended" by the same code. One map cannot say both:
+folding them would have leaked the distinction the API spends a dummy hash
+computation to hide.
+
+**Where the steering came from matters here:** the wrong instruction was in the
+intake, written at gate 1, and the plan followed it faithfully. Gate 2 is the
+only thing that catches a gate-1 mistake, which is the argument for both gates
+being read by someone rather than one of them being trusted.

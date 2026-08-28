@@ -1,14 +1,14 @@
 {
   "stats": {
-    "turns": 30,
-    "inputTokens": 39,
-    "outputTokens": 22571,
-    "cacheCreationTokens": 43076,
-    "cacheReadTokens": 302759,
+    "turns": 9,
+    "inputTokens": 27,
+    "outputTokens": 18710,
+    "cacheCreationTokens": 32996,
+    "cacheReadTokens": 74792,
     "cacheHitRatio": 1,
-    "durationMs": 218592
+    "durationMs": 116865
   },
-  "completedAt": "2026-08-28T17:10:31.308Z",
+  "completedAt": "2026-08-28T17:29:54.074Z",
   "provider": "anthropic",
   "model": "claude-opus-4-7",
   "version": 1

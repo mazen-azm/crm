@@ -22,6 +22,7 @@ Entry point for the **platform** feature. Stories execute in order by their `NN`
 | 21 | `21-story-crm-28.md` | PLATFORM-13-ALL developer — the suite runs on every push and a red suite blocks a merge | CRM-28 | — |
 | 22 | `22-story-crm-27.md` | PLATFORM-12-WEB agent — the desk has one shell: navigation, header, theme | CRM-27 | — |
 | 23 | `23-story-crm-30.md` | PLATFORM-15-ALL developer — the structure rules are enforced by a script, in every root | CRM-30 | — |
+| 24 | `24-story-crm-31.md` | PLATFORM-16-WEB agent — empty, loading and error states are designed, not accidental | CRM-31 | — |
 
 ## Dependency notes
 
