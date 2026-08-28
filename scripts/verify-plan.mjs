@@ -147,6 +147,27 @@ function checkPlan(p) {
     say(at(body.indexOf(heading[0])), `titles itself "Story ${heading[1]}" but is ${fileNN[1]}- in the filename (L-21)`)
   }
 
+  // L-21, the other half. The heading number is checkable against the filename;
+  // so is the planner's habit of announcing it is the first plan in a folder it
+  // is not. Both are the same defect — the snapshot the planner read, written
+  // down as fact — and this one has shipped twice.
+  // Narrow on purpose: the claim is about PLANS in this folder, not about
+  // being first at anything. "if this is the first story of sprint 0" is a
+  // branch-bootstrap instruction and matched an earlier, looser version of
+  // this — and a check that cries wolf gets relaxed until it catches nothing.
+  const FIRST = /\bno other plans?\b|\bno existing plans?\b|\bthe first plan\b|\bfirst plan file\b|\bthe first entry in[^\n]{0,40}plans\//i
+  for (const [i, line] of body.split('\n').entries()) {
+    if (!FIRST.test(line)) continue
+    // A plan numbered 01 was plausibly first when it was written, and the
+    // folder filling up afterwards is not its fault. Anything else claiming to
+    // be first is describing a folder it can see is not empty.
+    if (/^0*1-story-/.test(p.file)) continue
+    const siblings = readdirSync(dirname(p.path)).filter((f) => /^\d+-story-/.test(f))
+    if (siblings.length > 1) {
+      say(i + 1, `claims to be the first plan in its folder, which holds ${siblings.length} (L-21)`)
+    }
+  }
+
   // L-2 — a plan never names its own file
   const selfIdx = body.indexOf(p.file)
   if (selfIdx !== -1) say(at(selfIdx), `names its own file (L-2)`)
