@@ -84,12 +84,3 @@ export function reEnableUser(db, { id, at }) {
     .prepare('UPDATE users SET deleted_at = NULL, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL')
     .run(at, id).changes;
 }
-
-export function insertAuditEvent(db, { id, actorId, entity, entityId, verb, at, diff }) {
-  return db
-    .prepare(`
-      INSERT INTO audit_events (id, actor_id, entity, entity_id, verb, at, diff)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `)
-    .run(id, actorId, entity, entityId, verb, at, diff);
-}
