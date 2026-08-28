@@ -165,3 +165,17 @@ and missed `request-id.test.js` and `security-headers.test.js`, which mount
 through the same seam. The first went red immediately, which is the good
 case. The second stayed **green while asserting security headers on a 404** —
 it would have shipped as a test that could no longer fail for its own reason.
+
+## L-13 — A guard that reads source text must read its grammar, not its prose
+
+**Rule:** when a check has to inspect source (and L-10 says prefer not to),
+it parses the construct it governs — import specifiers, a call expression —
+never the whole file as a string. A file that explains a rule contains the
+words of the rule, and a substring search cannot tell an explanation from a
+violation.
+
+**Paid for by:** the CRM-23 test asserting the seed imports nothing from the
+application searched the file for `'app.js'` and matched the comment saying
+"it imports nothing from app.js". The test failed on the sentence documenting
+that it passes. Reading only the `import … from '…'` specifiers fixed it —
+and the same shape had already been forbidden once, in L-10.
