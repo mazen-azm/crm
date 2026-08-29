@@ -12,8 +12,28 @@ cd /Users/mazen/Developer/projects/learning/crm/support-desk || exit 1
 # --dry says what WOULD be planned and stops. It exists because asking the
 # question by running the script spends the quota answering it, which is what
 # happened the first time somebody wanted to know.
+# --dry may come before or after the intake path: a caller asking "which story
+# would this plan?" should not have to remember an order.
 DRY=0
-[ "${1:-}" = "--dry" ] && DRY=1
+ARGS=""
+for a in "$@"; do
+  if [ "$a" = "--dry" ]; then DRY=1; else ARGS="$a"; fi
+done
+
+# An explicit intake path plans THAT story and nothing else. Without this the
+# script globs and takes the first unplanned intake it finds, which is
+# alphabetical and has nothing to do with dependency order — so a caller who
+# passed a path and believed they had chosen a story had in fact chosen
+# nothing. That happened: nine sprint-4 intakes were created at once and a
+# request to plan platform/CRM-32 planned customers/CRM-57 instead.
+ONLY=""
+if [ -n "$ARGS" ]; then
+  if [ ! -f "$ARGS" ]; then
+    echo "[$(date '+%F %T')] no such intake: $ARGS"
+    exit 1
+  fi
+  ONLY="$ARGS"
+fi
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 
 # One planner at a time. The three firing times are a retry, not a fan-out: a
@@ -33,7 +53,7 @@ if ! mkdir "$LOCK" 2>/dev/null; then
 fi
 trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
 
-for intake in .squad/stories/*/CRM-*/intake.md; do
+for intake in ${ONLY:-.squad/stories/*/CRM-*/intake.md}; do
   key=$(basename "$(dirname "$intake")")            # CRM-47
   if ls .squad/plans/*/ 2>/dev/null | grep -qi "story-${key}.md"; then continue; fi
   if [ "$DRY" = "1" ]; then
