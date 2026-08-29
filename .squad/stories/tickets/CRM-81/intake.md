@@ -182,6 +182,14 @@ trims and calls `'   '` empty (T-4). The screen must not send it and then
 translate the 422 — it must say so on the field, because a round-trip to be
 told what the screen already knew is a worse experience for the same answer.
 
+**The API client drops `allowed` today, and this story has to add it.**
+`web/src/shared/api/client.ts` builds an `ApiError` from `code`, `requestId`
+and `fields` only, and `web/src/shared/api/errors.ts:19–37` has no `allowed`
+field at all — so the array the API sends never reaches a screen. Add it the
+same way `fields` is added: parsed defensively (an array of strings or nothing),
+optional on the class, and set only when present. **Keep undefined apart from
+`[]`** for the reason the API keeps them apart — see the next paragraph.
+
 **`allowed: []` is present and meaningful** on a closed ticket: it is the
 answer "nothing", not a missing field. A screen that treats an empty array as
 "unknown, show everything" would offer moves that cannot happen.
