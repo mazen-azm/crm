@@ -687,3 +687,27 @@ Both went into the intake as findings before the plan was generated, so the plan
 was written to fix them rather than to describe the route it thought was there.
 A story that had been planned from the schema alone would have shipped a list
 endpoint and left both in place.
+
+## L-41 — A plan that says it could not read the files is a draft, not a plan
+
+**Rule:** read the plan's own generation header and preamble before acting on
+it. When the planner reports a tool failure or a budget cap — squad-kit writes
+this into the file — **every claim about the surroundings is a guess**, and the
+plan is a draft to be checked line by line rather than a specification to
+follow. Check each cited symbol, field name, file and API shape against the
+code, correct the plan in place with a note saying what the code actually does,
+and only then implement. Do not silently fix them while coding: the plan is a
+deliverable, and a plan that still contains the wrong claim teaches the next
+reader the wrong thing.
+
+**Where it came from:** CRM-72. The plan's first line was the planner saying it
+had hit a tool budget cap and would write from the intake's hints instead. Five
+claims were wrong: a pagination cursor the API does not send (it is
+`limit`/`offset`), a `retired` boolean the category list does not return
+(retired categories are simply absent), a `description` field the API calls
+`body`, a `CustomersPage.css` that does not exist (no page in the app has a
+stylesheet), and a `t('key')` function that is a plain object read as
+`t.customers.title`. Following any one of them would have shipped something
+that does not work; the `description` one would have made the 422's
+`fields: ['body']` name a field the form does not have, and marked the wrong
+input.
