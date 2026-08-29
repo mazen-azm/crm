@@ -11,7 +11,7 @@ import { scryptSync } from 'node:crypto';
 
 import { openDatabase } from './connection.js';
 import { seed } from './seed.js';
-import { hashPassword } from '../../shared/password.js';
+import { hashPassword, verifyPassword } from '../../shared/password.js';
 import { staff, customers, categories, slaTargets } from './seed.data.js';
 
 const TABLES = ['users', 'customers', 'ticket_categories', 'sla_targets'];
@@ -89,4 +89,29 @@ test('the seed is a second composition root — it reaches into no application c
     );
   }
   assert.ok(imported.length > 0, 'no imports were parsed — the check read nothing');
+});
+
+test('a second run says the admin password is unchanged, rather than inventing one', () => {
+  const db = openDatabase(':memory:');
+
+  const first = seed(db);
+  assert.equal(first.adminCreated, true);
+  // The password it reports on a fresh database is the one that works.
+  const stored = db.prepare('SELECT password_hash FROM users WHERE email = ?').get(first.adminEmail);
+  assert.ok(verifyPassword(first.adminPassword, stored.password_hash));
+
+  const second = seed(db);
+  // It still generates one — the row insert needs a hash to attempt — but it
+  // says the insert did nothing, and the CLI prints that instead of the string.
+  // Reporting it as the password cost an hour of looking for the wrong bug:
+  // sign-in answered 401 and the seed had said what to type.
+  assert.equal(second.adminCreated, false);
+  assert.ok(
+    !verifyPassword(second.adminPassword, stored.password_hash),
+    'the invented password does not work, which is exactly why it must not be printed',
+  );
+  // And the stored hash is untouched: the first password still signs in.
+  const after = db.prepare('SELECT password_hash FROM users WHERE email = ?').get(first.adminEmail);
+  assert.equal(after.password_hash, stored.password_hash);
+  assert.ok(verifyPassword(first.adminPassword, after.password_hash));
 });

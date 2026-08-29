@@ -617,3 +617,24 @@ plans this endpoint uses, filtered and unfiltered. So the clause is currently
 unobservable — and stays, because an engine's present kindness is not a
 contract. The comment beside it now says the rehearsal was run and what it
 showed, so nobody reads the green suite as permission.
+
+## L-38 — A caveat in a comment does not reach the person reading the terminal
+
+**Rule:** when a program prints something an operator will act on, the caveat
+belongs in the **output**, not in a comment beside the `console.log`. A comment
+reaches whoever opens that file; the person who needs it is looking at a
+terminal, at a line that reads like an answer. If a value is only sometimes
+meaningful, print which case you are in — or do not print it.
+
+**Paid for by:** `npm run seed` on an already-seeded database printed
+`admin password: <a fresh random string>`. The insert had done nothing —
+`ON CONFLICT … DO NOTHING`, which is what makes a second run safe and is a
+criterion — so the string had never been stored and did not sign anybody in.
+The file said so, three lines above the print, in a comment nobody in a
+terminal can see.
+
+It cost about an hour: sign-in answered 401, and I went looking at the token,
+the port and the throttle, because the seed had just told me what to type. The
+seed now reports whether the admin row was actually written and prints the
+password only then; otherwise it says the account already existed and nothing
+was rewritten. A test pins it, and reverting the check reddens that test alone.
