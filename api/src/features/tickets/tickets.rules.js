@@ -41,3 +41,28 @@ export const normaliseRaisedTicket = ({ subject, body, priority, categoryId }) =
   priority: priority ?? DEFAULT_PRIORITY,
   categoryId: categoryId ?? null,
 });
+
+// The sorts the queue names. Short on purpose: created_at is the only one any
+// criterion needs, so adding another is a decision that needs its own argument.
+// An unknown sort is refused rather than ignored — a queue in an order nobody
+// asked for looks like data loss.
+export const SORTS = Object.freeze(['created_at']);
+export const DEFAULT_SORT = 'created_at';
+
+// "unassigned", as a filter value. assignee_id IS NULL uses the partial index
+// on assignee, so this is a filter the schema already supports. A reserved
+// word rather than an id: assignee ids are UUIDs, so nothing can collide with
+// it, and the alternative — a separate boolean parameter — would make
+// "assigned to nobody" and "assigned to somebody" two different shapes of
+// request for one question.
+export const UNASSIGNED = 'none';
+
+export function validateQueueQuery({ status, priority, assigneeId, categoryId, sort }) {
+  const fields = [];
+  if (status !== undefined && !STATUSES.includes(status)) fields.push('status');
+  if (priority !== undefined && !PRIORITIES.includes(priority)) fields.push('priority');
+  if (assigneeId !== undefined && assigneeId !== UNASSIGNED && !present(assigneeId)) fields.push('assigneeId');
+  if (categoryId !== undefined && !present(categoryId)) fields.push('categoryId');
+  if (sort !== undefined && !SORTS.includes(sort)) fields.push('sort');
+  return fields;
+}

@@ -241,16 +241,16 @@ Do **not** add tests that exercise the state-machine, assignment, or breach — 
 
 ## Done Criteria
 
-- [ ] `GET /tickets` returns `{ items, total, limit, offset }` for the whole non-deleted queue and works for any signed-in subject (SC-1).
-- [ ] Filters `status`, `priority`, `assigneeId` (including sentinel `none`), `categoryId` narrow both `items` and `total`; unknown enum values return 422 naming the field.
-- [ ] `sort` accepts only the whitelisted names (`created_at`); anything else is 422 naming `sort`. Default is `created_at DESC` with a `rowid ASC` tiebreaker.
-- [ ] Pagination is delegated to `readPagination`; above-ceiling requests are refused, not clamped (BR-4).
-- [ ] Soft-deleted tickets are absent from both `items` and `total`.
-- [ ] Each item carries `revision` (BR-5 hand-off) — same shape TICKETS-1-API returns.
-- [ ] The page query and the count share **one** WHERE clause in the repository (CRM-55 pattern).
-- [ ] `GET /tickets` performs **no** audit write.
-- [ ] No new migration; no fifth index; the four existing partial indexes are named in a repository comment with the measurement note from the intake.
-- [ ] `openapi.json` documents the new operation, including the `assigneeId=none` sentinel and the `sort` enum.
-- [ ] `cd api && npm test` is green; the AI-attribution grep in step 5 is empty.
+- [x] `GET /tickets` returns `{ items, total, limit, offset }` for the whole non-deleted queue and works for any signed-in subject (SC-1).
+- [x] Filters `status`, `priority`, `assigneeId` (including sentinel `none`), `categoryId` narrow both `items` and `total`; unknown enum values return 422 naming the field.
+- [x] `sort` accepts only the whitelisted names (`created_at`); anything else is 422 naming `sort`. Default is `created_at DESC` with a `rowid ASC` tiebreaker.
+- [x] Pagination is delegated to `readPagination`; above-ceiling requests are refused, not clamped (BR-4).
+- [x] Soft-deleted tickets are absent from both `items` and `total`.
+- [x] Each item carries `revision` (BR-5 hand-off) — same shape TICKETS-1-API returns.
+- [x] The page query and the count share **one** WHERE clause in the repository (CRM-55 pattern).
+- [x] `GET /tickets` performs **no** audit write.
+- [x] No new migration; no fifth index; the four existing partial indexes are named in a repository comment with the measurement note from the intake.
+- [x] `openapi.json` documents the new operation, including the `assigneeId=none` sentinel and the `sort` enum.
+- [x] `cd api && npm test` is green; the AI-attribution grep in step 5 is empty.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

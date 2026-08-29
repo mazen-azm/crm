@@ -289,6 +289,23 @@
             "description": "Internal."
           }
         }
+      },
+      "get": {
+        "summary": "The queue. Every signed-in staff member sees every ticket in it \u2014 there is one organisation and one queue, so it is not scoped to the caller. Filters combine; assigneeId=none means unassigned; the only sort is created_at, newest first, and an unknown one is refused rather than ignored.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each item is the ticket shape POST returns, including revision \u2014 a caller that later writes sends that value back (BR-5). total counts the matches, not the page."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "422": {
+            "description": "A status, priority or sort the API does not name, an empty assigneeId or categoryId, or a limit above the ceiling. The body names the parameters, never their values."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
       }
     }
   }
