@@ -27,6 +27,12 @@ export type Ticket = {
   // refused rather than allowed to overwrite somebody else's change — so a
   // screen that means to write has to carry it.
   revision: number;
+  // The moves that are legal from where this ticket is, sent with the ticket
+  // and derived server-side from the same table a refusal reads. The screen
+  // offers these and no others, which is what keeps the 409 a backstop rather
+  // than the interface — and keeps one product rule in one place.
+  allowedTransitions: string[];
+  resolutionNote: string | null;
   createdAt: string;
   updatedAt: string;
 };

@@ -59,7 +59,7 @@ export async function request<T>(
   // something that is not the documented shape, and the client still has to
   // produce an ApiError rather than a parse exception.
   const requestId = response.headers.get('x-request-id');
-  let body: { code?: unknown; requestId?: unknown; fields?: unknown } = {};
+  let body: { code?: unknown; requestId?: unknown; fields?: unknown; allowed?: unknown } = {};
   try {
     body = await response.json();
   } catch {
@@ -71,6 +71,11 @@ export async function request<T>(
     code: typeof body.code === 'string' ? body.code : 'INTERNAL',
     requestId: typeof body.requestId === 'string' ? body.requestId : requestId,
     fields: Array.isArray(body.fields) ? body.fields.filter((f): f is string => typeof f === 'string') : undefined,
+    // Parsed the same defensive way, but kept when empty: on a closed ticket
+    // the whole answer is [].
+    allowed: Array.isArray(body.allowed)
+      ? body.allowed.filter((s): s is string => typeof s === 'string')
+      : undefined,
   });
 
   // A 401 from the sign-in request is a wrong password, not an expired

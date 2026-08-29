@@ -32,12 +32,19 @@ export class ApiError extends Error {
   // Field NAMES only, never a submitted value: the API refuses to send values
   // and the client has no business inventing them.
   readonly fields?: string[];
+  // The statuses that WOULD have been legal, on a refused status change. An
+  // empty array is an answer — "nothing would have worked", which is what a
+  // closed ticket says — and an absent one means the question does not arise,
+  // as on a stale revision. The two are kept apart here for the same reason
+  // the API keeps them apart.
+  readonly allowed?: string[];
 
   constructor(init: {
     status: number;
     code: string;
     requestId: string | null;
     fields?: string[];
+    allowed?: string[];
   }) {
     super(init.code);
     this.name = 'ApiError';
@@ -45,5 +52,7 @@ export class ApiError extends Error {
     this.code = init.code;
     this.requestId = init.requestId;
     if (init.fields) this.fields = init.fields;
+    // Presence, not truthiness: [] must survive.
+    if (init.allowed !== undefined) this.allowed = init.allowed;
   }
 }

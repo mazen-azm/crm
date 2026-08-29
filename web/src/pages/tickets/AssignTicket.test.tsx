@@ -23,6 +23,8 @@ const TICKET: Ticket = {
   assigneeId: null,
   categoryId: null,
   revision: 1,
+  allowedTransitions: ['open', 'pending', 'resolved'],
+  resolutionNote: null,
   createdAt: '2026-08-01T00:00:00.000Z',
   updatedAt: '2026-08-01T00:00:00.000Z',
 };
