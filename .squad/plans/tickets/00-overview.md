@@ -17,6 +17,7 @@ Entry point for the **tickets** feature. Stories execute in order by their `NN` 
 | 40 | `40-story-crm-74.md` | TICKETS-2-WEB agent — I filter and sort the queue; an agent sees all of it | CRM-74 | — |
 | 41 | `41-story-crm-77.md` | TICKETS-3-WEB agent — I assign a ticket | CRM-77 | — |
 | 42 | `42-story-crm-81.md` | TICKETS-5-WEB agent — resolving a ticket needs a note | CRM-81 | — |
+| 49 | `49-story-crm-83.md` | TICKETS-7-API agent — I read the whole history in order | CRM-83 | — |
 
 ## Dependency notes
 
