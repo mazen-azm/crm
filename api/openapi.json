@@ -335,7 +335,7 @@
     },
     "/api/v1/tickets/{id}/status": {
       "patch": {
-        "summary": "Move a ticket to another status. The legal moves are a table, not a chain of checks, so a refusal can name what would have worked (T-7). new to resolved is legal: a request answered on the spot should not have to be opened first. closed is the end of the line — reopening lives inside a 14-day window that has passed by the time a ticket is closed. The caller sends the revision it read (BR-5), and the move is audited with the status before and after.",
+        "summary": "Move a ticket to another status. The legal moves are a table, not a chain of checks, so a refusal can name what would have worked (T-7). new to resolved is legal: a request answered on the spot should not have to be opened first. closed is the end of the line — reopening lives inside a 14-day window that has passed by the time a ticket is closed. Resolving also requires a note, and it is stored trimmed and readable afterwards — a requirement to write something that is then discarded is theatre. No other move asks for one, and a note sent on another move is ignored rather than stored. The note survives reopening and closing. The caller sends the revision it read (BR-5), and the move is audited with the status before and after.",
         "responses": {
           "200": {
             "description": "The ticket at its new status, with its revision one higher. That new revision is what the next write on this ticket must send."
@@ -350,7 +350,7 @@
             "description": "One of three, told apart by the code. ILLEGAL_TRANSITION: the move is not in the table, and `allowed` lists the statuses that were legal from where the ticket is — an empty array when the ticket is closed, which is an answer and not a missing field. STATUS_UNCHANGED: the ticket already has that status, and `allowed` is present for the same reason. REVISION_MISMATCH: the move was legal but the revision was stale; `allowed` is absent, because nothing else the caller could have asked for would have worked either. Nothing is written in any of the three."
           },
           "422": {
-            "description": "A status outside the six, or a missing or malformed revision. The body names the fields, never their values."
+            "description": "A status outside the six, a missing or malformed revision, or a resolve with no note — a note that is only whitespace is no note. The body names the fields, never their values. This is 422 and not 409 on purpose: resolving is a legal move, so a missing note is a malformed request and not an illegal transition."
           },
           "500": {
             "description": "Internal."

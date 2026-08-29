@@ -1,0 +1,17 @@
+-- T-4: resolving a ticket requires a resolution note. A requirement to write
+-- something that is then discarded is theatre, so the note has to survive being
+-- read back — which is what makes this a column and not a validation rule.
+--
+-- The note is a field on the ticket, not the first message of the resolution.
+-- The product model does have a conversation, and that is where a resolution
+-- would eventually live, but CONVERSATION-1-API has not been built: putting the
+-- note in `messages` would mean building half of that feature to satisfy one
+-- rule here, and a story that swallows its neighbour leaves neither one
+-- properly done. This is a decision with a date on it, not an oversight — if
+-- the conversation arrives and the note moves, this comment is the record of
+-- why it was ever here.
+--
+-- Nullable with no default. A ticket that has never been resolved has no note,
+-- and NULL is that absence; an empty string would be a note that says nothing,
+-- which is the thing T-4 refuses.
+ALTER TABLE tickets ADD COLUMN resolution_note TEXT;

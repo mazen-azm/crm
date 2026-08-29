@@ -638,3 +638,24 @@ the port and the throttle, because the seed had just told me what to type. The
 seed now reports whether the admin row was actually written and prints the
 password only then; otherwise it says the account already existed and nothing
 was rewritten. A test pins it, and reverting the check reddens that test alone.
+
+## L-39 — "absent" and "empty" are two answers; a plan that flattens them loses one
+
+**Rule:** when a plan adds an optional key to a response, decide separately what
+an **empty** value means and what a **missing** key means. If both can occur and
+they say different things, the render condition is presence (`!== undefined`),
+never truthiness or `.length > 0`. Write which is which in the code, because the
+next reader will copy the nearest sibling and the nearest sibling is usually the
+other rule.
+
+**Where it came from:** CRM-79. T-7 requires an illegal status change to name
+the statuses that were legal, so the plan added `allowed` to the 409 body and —
+copying `ValidationError`'s `fields`, three lines above it — rendered it only
+when `length > 0`. That works everywhere except the one case it exists for: a
+`closed` ticket has no legal moves, so `allowed` is `[]`, so the key vanishes,
+so the response becomes byte-identical to a stale-revision refusal, which is a
+different failure with a different fix. The copied condition was right for
+`fields`, where an empty list carries nothing, and wrong here, where an empty
+list is the entire answer. Caught at plan review by noticing the plan's own test
+("409 with `allowed: []`") could not pass against the plan's own middleware
+rule. Three tests now fail on the flattening.

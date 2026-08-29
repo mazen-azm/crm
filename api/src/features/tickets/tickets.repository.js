@@ -1,7 +1,7 @@
 // The only file in this feature with SQL, which verify-architecture enforces.
 const PROJECTION = `
   id, customer_id, category_id, assignee_id, status, priority,
-  subject, body, revision, created_at, updated_at
+  subject, body, revision, resolution_note, created_at, updated_at
 `;
 
 export function insertTicket(db, { id, customerId, categoryId, subject, body, priority, status, at }) {
@@ -154,12 +154,20 @@ export function findLiveAssigneeId(db, { assigneeId }) {
 // The second BR-5 write, and a deliberate copy of assignTicket rather than a
 // shared helper: two callers is not yet a pattern, and the comment above that
 // function is the one place the reasoning lives.
-export function updateTicketStatus(db, { id, status, revision, at }) {
+export function updateTicketStatus(db, { id, status, revision, at, resolutionNote }) {
   return db
     .prepare(
+      // Only the resolve edge writes the note, and the CASE says so in SQL
+      // rather than relying on the caller to pass the existing value back.
+      // Writing it unconditionally would clobber the note on the way to
+      // reopened or closed, and "the note is readable afterwards" is the
+      // acceptance criterion that would then quietly stop being true.
       `UPDATE tickets
-          SET status = ?, revision = revision + 1, updated_at = ?
+          SET status = ?,
+              resolution_note = CASE WHEN ? = 'resolved' THEN ? ELSE resolution_note END,
+              revision = revision + 1,
+              updated_at = ?
         WHERE id = ? AND revision = ? AND deleted_at IS NULL`,
     )
-    .run(status, at, id, revision);
+    .run(status, status, resolutionNote, at, id, revision);
 }
