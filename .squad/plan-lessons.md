@@ -462,3 +462,26 @@ failure path catches a `.json()` error and falls back to an empty body, and the
 handler keys off the status, which survives. The first assertion about the
 response's `code` would have ended that, on a story that had nothing to do with
 the change.
+
+## L-31 — A global rule does not stop applying because one story's criteria forgot to repeat it
+
+**Rule:** when a plan declines a rule marked `global` in `scripts/rules.txt`,
+that is a defect however well it argues. The story's own acceptance criteria are
+a floor, not a fence: they say what this story must do, not what it is excused
+from. Check a plan's decisions against the global rules as well as against the
+criteria, and treat "this story's criteria do not mention it" as the shape of
+the mistake rather than the reason.
+
+**And distrust any reason that is a prediction about data.** "Small in this
+sprint" is a guess about volume made by somebody who will not be there when it
+is wrong. A ceiling that refuses exists precisely so nobody has to be right
+about that in advance.
+
+**Paid for by:** CRM-60's plan shipped an unbounded list of a customer's notes,
+reasoning that the criterion was "about order, not about paging" and that the
+volume would be small. BR-4 is global — "No unbounded list: paginated,
+filterable, sortable, with a maximum page size" — and every list this API
+serves already pages through one reader: `/accounts`, `/assignees`,
+`/customers`, three of three. The intake had also said to reuse
+`readPagination` if reading turned out to be in scope, which the same plan
+decided it was, two paragraphs earlier.
