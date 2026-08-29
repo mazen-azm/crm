@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { randomBytes, randomUUID } from 'node:crypto';
 
 import { config } from '../config/index.js';
@@ -103,27 +102,9 @@ function seedSlaTargets(db, { now, newId }) {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  console.log(`seeding ${config.dbPath}`);
-  const db = openDatabase(config.dbPath);
-  try {
-    const { adminEmail, adminPassword, adminCreated } = seed(db);
-    console.log(`seeded ${config.dbPath}`);
-    console.log(`admin email:    ${adminEmail}`);
-    if (adminCreated) {
-      console.log(`admin password: ${adminPassword}`);
-    } else {
-      // The knowledge that a re-run's password is meaningless used to live in a
-      // comment here, where only somebody reading this file would meet it —
-      // while the person who needs it is looking at a terminal, at a line that
-      // reads like an answer. Printing it cost an hour of looking for the
-      // wrong bug.
-      console.log('admin password: unchanged — this account already existed.');
-      console.log('                Nothing was rewritten, which is what makes a');
-      console.log('                second run safe. To start over, delete the');
-      console.log('                database file and seed again.');
-    }
-  } finally {
-    db.close();
-  }
-}
+// The CLI block that used to sit here moved to api/src/seed.js. It had to: the
+// demo half of seeding walks a ticket through the tickets service, and this
+// file may not know a feature's name (verify-architecture.mjs,
+// api-shared-platform-no-feature). What stays here is the reference data, which
+// needs no feature and is imported directly by every test that wants a database
+// without a demo queue.
