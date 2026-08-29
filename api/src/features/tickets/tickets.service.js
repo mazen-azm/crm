@@ -8,10 +8,13 @@ import {
   UNASSIGNED,
   normaliseRaisedTicket,
   validateQueueQuery,
+  validateAssignment,
   validateRaisedTicket,
 } from './tickets.rules.js';
 import {
+  assignTicket,
   countTickets,
+  findLiveAssigneeId,
   findLiveCustomerId,
   findTicketById,
   insertTicket,
@@ -124,6 +127,52 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         limit,
         offset,
       };
+    },
+
+    // Assigning, unassigning, and the first implementation of BR-5 in this
+    // product. Three more writes copy this shape — status, priority, article
+    // edit — so what is written here is what they will read.
+    assign(actor, { id, assigneeId, revision }) {
+      const invalid = validateAssignment({ assigneeId, revision });
+      if (invalid.length > 0) throw unprocessable(invalid);
+
+      const at = stamp();
+
+      return transact(db, () => {
+        // null is a ticket returning to nobody, which is an ordinary
+        // assignment and not a special case. Anything else must be somebody
+        // who still works here.
+        if (assigneeId !== null && !findLiveAssigneeId(db, { assigneeId })) {
+          throw unprocessable(['assigneeId']);
+        }
+
+        // Read before writing, because the audit row needs the previous
+        // assignee: a trail that records only who a ticket went to cannot
+        // answer "who took it off me".
+        const before = findTicketById(db, { id });
+        if (!before) throw new HttpError(404, 'NOT_FOUND');
+
+        const { changes } = assignTicket(db, { id, assigneeId, revision, at });
+        if (changes === 0) {
+          // The row was read a moment ago, in this transaction, on the only
+          // connection this app opens — so it is still there, and the revision
+          // is the only other thing the WHERE clause tests. No re-read: a
+          // branch for a case that cannot happen sends the next reader looking
+          // for a concurrent writer that does not exist.
+          throw new HttpError(409, 'REVISION_MISMATCH');
+        }
+
+        audit.record(actor, {
+          entity: 'ticket',
+          entityId: id,
+          verb: 'ticket.assign',
+          before: { assigneeId: before.assignee_id },
+          after: { assigneeId },
+          at,
+        });
+
+        return publicShape(findTicketById(db, { id }));
+      });
     },
   };
 }

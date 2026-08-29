@@ -112,3 +112,41 @@ export function countTickets(db, { filters }) {
   const { where, params } = queueFilter(filters);
   return db.prepare(`SELECT count(*) AS n FROM tickets WHERE ${where}`).get(...params).n;
 }
+
+// ── assignment ───────────────────────────────────────────────────────────────
+//
+// The revision is tested in the WHERE clause and bumped in the SET clause, and
+// both of those are deliberate. Reading the row, comparing the revision in
+// JavaScript and then writing is a check-then-act race that permits exactly
+// the overwrite BR-5 exists to forbid — measured on this engine:
+//
+//   two readers both see revision 1, both pass their check, both write
+//     -> {"assignee":"agent-B","revision":3}   the first write vanished
+//
+//   UPDATE … revision = revision + 1 WHERE id = ? AND revision = ?
+//     writer A { changes: 1 } · writer B { changes: 0 }
+//
+// `revision = revision + 1` for the same reason: a number worked out in code
+// and written back is the same race in different clothes.
+export function assignTicket(db, { id, assigneeId, revision, at }) {
+  return db
+    .prepare(`
+      UPDATE tickets
+         SET assignee_id = ?, revision = revision + 1, updated_at = ?
+       WHERE id = ? AND revision = ? AND deleted_at IS NULL
+    `)
+    .run(assigneeId, at, id, revision);
+}
+
+// The schema cannot check this and says so: 0002__tickets.sql gives
+// assignee_id no foreign key, because SQLite cannot add a constraint to an
+// existing table, so "assignee integrity is enforced by the service".
+//
+// Read from this feature, as the customer lookup above is: identity/index.js
+// publishes a router and a subject resolver, so its assignee list is not
+// reachable without widening another feature's surface for one caller.
+export function findLiveAssigneeId(db, { assigneeId }) {
+  return db
+    .prepare('SELECT id FROM users WHERE id = ? AND deleted_at IS NULL')
+    .get(assigneeId);
+}
