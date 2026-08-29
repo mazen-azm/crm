@@ -38,7 +38,7 @@ function messageFor(code: string | undefined, t: Messages): string {
 }
 
 export function SignInPage() {
-  const { signIn } = useAuth();
+  const { signIn, sessionEnded, dismissSessionEnded } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -49,10 +49,15 @@ export function SignInPage() {
     event.preventDefault();
     try {
       const { token } = await run(() =>
-        request<SignInResponse>('/sign-in', {
-          method: 'POST',
-          body: JSON.stringify({ email, password }),
-        }),
+        request<SignInResponse>(
+          '/sign-in',
+          { method: 'POST', body: JSON.stringify({ email, password }) },
+          // A 401 here means the password was wrong, which is this screen's
+          // normal business — not a session that ended. Without this the
+          // global handler would clear nothing, redirect us to the page we are
+          // on, and wipe the message below.
+          { suppressSessionExpiry: true },
+        ),
       );
       // The API's token, verbatim. Nothing here invents one.
       signIn(token);
@@ -72,6 +77,21 @@ export function SignInPage() {
         <Stack as="form" gap={4} {...{ onSubmit }}>
           <Heading level={1}>{t.signIn.heading}</Heading>
 
+          {/* Why a session ended, when one did. A separate element from the
+              wrong-password message below, and separate for a reason: that one
+              is t.signIn.errorUnauthenticated, one sentence standing in for a
+              wrong password, an unknown address and a disabled account alike,
+              because the API refuses to say which. This one is
+              t.errors.UNAUTHENTICATED — "your session has ended" — which is
+              true here and would be a lie there. Do not merge them. */}
+          {sessionEnded ? (
+            // role on the wrapper, not on Text: a primitive that takes text
+            // and a variant should not grow an ARIA surface for one caller.
+            <div role="status">
+              <Text variant="muted">{t.errors.UNAUTHENTICATED}</Text>
+            </div>
+          ) : null}
+
           <Field
             id="email"
             label={t.signIn.emailLabel}
@@ -80,7 +100,11 @@ export function SignInPage() {
             autoComplete="username"
             value={email}
             disabled={busy}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              // Typing is the reader moving on from what happened before.
+              dismissSessionEnded();
+              setEmail(e.target.value);
+            }}
           />
 
           <Field
@@ -91,7 +115,10 @@ export function SignInPage() {
             autoComplete="current-password"
             value={password}
             disabled={busy}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              dismissSessionEnded();
+              setPassword(e.target.value);
+            }}
           />
 
           <Button type="submit" disabled={busy}>
