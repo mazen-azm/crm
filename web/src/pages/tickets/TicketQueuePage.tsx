@@ -137,7 +137,7 @@ function Row({
           ].join(SEPARATOR)}
         </Text>
 
-        <Stack direction="row" gap={2} align="end">
+        <Stack direction="row" gap={2}>
           <Field id={`assignee-${ticket.id}`} label={t.ticketAssign.label}>
             {({ id }) => (
               <Select
@@ -193,7 +193,7 @@ function Row({
           <Text variant="muted">{t.ticketStatus.noMoves}</Text>
         ) : (
           <Stack gap={2}>
-            <Stack direction="row" gap={2} align="end">
+            <Stack direction="row" gap={2}>
               <Field id={`status-${ticket.id}`} label={t.ticketStatus.label}>
                 {({ id }) => (
                   <Select id={id} value={target} onChange={(event) => setTarget(event.target.value)}>
@@ -314,7 +314,6 @@ export function TicketQueuePage() {
         as="form"
         direction="row"
         gap={2}
-        align="end"
         onSubmit={(event) => {
           event.preventDefault();
           queue.apply(draft);

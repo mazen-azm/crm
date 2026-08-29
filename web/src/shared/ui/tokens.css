@@ -73,6 +73,22 @@
  * directions. A [dir="rtl"] override block would be a second copy of the
  * layout, which is the thing the direction criterion exists to prevent.
  */
+/*
+ * Padding and borders count INSIDE a declared width, everywhere.
+ *
+ * Without this, `inline-size: 100%` on a padded control means "the content is
+ * as wide as the container" and the padding and borders are added on top — so
+ * the control ends past the edge it was told to fit. It was: the ticket form's
+ * inputs finished two pixels beyond the column they sit in, and every future
+ * padded element with a percentage width would have done the same. Measured in
+ * a browser, not guessed; nothing in the suite can see two pixels.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body {
   background: var(--color-bg-page);

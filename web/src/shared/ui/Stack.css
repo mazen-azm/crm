@@ -9,6 +9,11 @@
 .stack--row {
   flex-direction: row;
   align-items: center;
+  /* Wraps rather than squeezing. A row of four filters and a button had no
+     room on a narrow viewport, so flex shrank the selects until "Any" read as
+     "An" with the chevron on top of it. Wrapping costs nothing when there IS
+     room. */
+  flex-wrap: wrap;
 }
 
 /* flex-start and flex-end follow the writing direction, so start really is
