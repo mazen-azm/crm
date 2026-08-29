@@ -61,7 +61,14 @@ const features = [], ids = new Set(), prefixes = new Map()
 }
 // Longest slug first so KNOWLEDGE-BASE wins over any shorter prefix of it.
 const SLUGS = features.map((f) => f.upper).sort((a, b) => b.length - a.length)
-const ID_RE = new RegExp(`\\b(${SLUGS.join('|')})-(\\d+)-(API|WEB|MOB|ALL)\\b`, 'g')
+// The number part is [A-Za-z0-9]+ rather than \d+ ON PURPOSE. This regex is
+// not parsing well-formed ids — it is catching malformed ones, and an id that
+// cannot match is an id that is never checked. CRM-81's plan invented
+// TICKETS-4B-API alongside TICKETS-4-WEB; the second was caught and the first
+// was invisible, because `4B` is not `\d+` so the match never started. A
+// recogniser stricter than the thing it is looking for finds only the mistakes
+// that were nearly right.
+const ID_RE = new RegExp(`\\b(${SLUGS.join('|')})-([A-Za-z0-9]+)-(API|WEB|MOB|ALL)\\b`, 'g')
 const ABBREV_RE = new RegExp(`\\b(${[...prefixes.keys()].join('|')})-(\\d+)-(API|WEB|MOB|ALL)\\b`, 'g')
 
 // ── the criteria file must speak the backlog's ids (L-7) ─────────────────────

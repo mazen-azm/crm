@@ -711,3 +711,25 @@ stylesheet), and a `t('key')` function that is a plain object read as
 that does not work; the `description` one would have made the 422's
 `fields: ['body']` name a field the form does not have, and marked the wrong
 input.
+
+## L-42 — A recogniser stricter than the mistake it hunts finds only near-misses
+
+**Rule:** when a check's job is to catch malformed input, the pattern that
+*finds candidates* must be **looser** than the thing it is validating, not the
+same shape. Match anything that looks like the construct, then judge it. A
+regex that only matches well-formed ids will report the invented ones that
+happen to be well-formed and stay silent on the rest — which is the worse half,
+because a wrong id that is nearly right is the one a reader would have spotted
+anyway.
+
+**Where it came from:** CRM-81's plan invented two story ids in adjacent lines:
+`TICKETS-4-WEB` and `TICKETS-4B-API`. `verify-plan.mjs` reported the first and
+said nothing about the second. Not because the second passed a check — because
+`ID_RE` was `(SLUG)-(\d+)-(API|WEB|MOB|ALL)` and `4B` is not `\d+`, so the match
+never began and no check ever ran on it. The fix is one character class:
+`([A-Za-z0-9]+)`, which finds the candidate and lets the existing
+`ids.has(...)` test decide. Three malformed shapes now redden it and the 42
+existing plans still pass, so the looser pattern costs no false positives.
+
+The general form of this is worth carrying: **a guard is only as good as what
+it can see.** Before trusting one, feed it the defect it is supposed to catch.
