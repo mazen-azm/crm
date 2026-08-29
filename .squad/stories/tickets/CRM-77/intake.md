@@ -187,7 +187,22 @@ control needs an explicit "Unassigned" option that sends `null` — distinct fro
 sending nothing, which is a missing field and a 422.
 
 **The list comes from `GET /api/v1/assignees`**, which already exists and is
-already paginated.
+already paginated. Each item is `{ id, name, role }`.
+
+**The queue screen currently shows a raw assignee id, and this story is where
+that gets fixed.** `TICKETS-2-WEB` shipped `TicketQueuePage.tsx` rendering
+`ticket.assigneeId ?? 'Unassigned'` — and the ticket the API returns carries an
+id and no name (`tickets.repository.js:3`, the PROJECTION). So a queue row
+today reads a UUID where a person's name belongs. It was not caught there
+because that story's criteria are about filtering and paging, and it is not
+worth a story of its own: this is the story that loads the names.
+
+Resolve ids to names **on the client, from the list this story already
+fetches** — do not add a join to the queue endpoint. The API deliberately
+returns ids, and the screen that needs names is the screen that has the list.
+Where a name cannot be resolved (a page of assignees not loaded, or an agent
+who has since left), fall back to the id rather than to a blank: a row that
+shows nothing is worse than a row that shows something unhelpful.
 
 ## Out of scope
 

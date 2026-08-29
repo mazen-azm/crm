@@ -23,6 +23,10 @@ export type Ticket = {
   priority: Priority;
   assigneeId: string | null;
   categoryId: string | null;
+  // BR-5's token. A write sends back the revision it read, and a mismatch is
+  // refused rather than allowed to overwrite somebody else's change — so a
+  // screen that means to write has to carry it.
+  revision: number;
   createdAt: string;
   updatedAt: string;
 };

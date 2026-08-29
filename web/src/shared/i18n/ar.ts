@@ -42,6 +42,9 @@ export const ar = defineLocale({
     VALIDATION_FAILED: 'راجع الحقول المطلوبة وحاول مرة أخرى.',
     RATE_LIMITED: 'محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.',
     INTERNAL: 'حدث خطأ عندنا. حاول مرة أخرى.',
+    REVISION_MISMATCH: 'غيّرها شخص آخر أثناء عملك. أعد التحميل لتراها ثم حاول من جديد.',
+    ILLEGAL_TRANSITION: 'هذه ليست نقلة ممكنة للتذكرة من حالتها الحالية.',
+    STATUS_UNCHANGED: 'التذكرة بالفعل في هذه الحالة.',
   },
   customers: {
     title: 'العملاء',
@@ -112,6 +115,14 @@ export const ar = defineLocale({
     priorityNormal: 'عادية',
     priorityHigh: 'عالية',
     priorityUrgent: 'عاجلة',
+  },
+  ticketAssign: {
+    label: 'أسنِد إلى',
+    submit: 'أسنِد',
+    assigning: 'جارٍ الإسناد…',
+    staleTitle: 'تغيّرت هذه التذكرة أثناء نظرك إليها',
+    reload: 'أعد تحميل الطابور',
+    failedTitle: 'لم يتم الإسناد',
   },
   states: {
     loading: 'جارٍ التحميل',

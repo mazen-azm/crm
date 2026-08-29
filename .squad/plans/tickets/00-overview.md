@@ -15,6 +15,7 @@ Entry point for the **tickets** feature. Stories execute in order by their `NN` 
 | 38 | `38-story-crm-82.md` | TICKETS-6-API agent — the categories are readable, so a form has something to offer | CRM-82 | — |
 | 39 | `39-story-crm-72.md` | TICKETS-1-WEB agent — I raise a ticket for a customer | CRM-72 | — |
 | 40 | `40-story-crm-74.md` | TICKETS-2-WEB agent — I filter and sort the queue; an agent sees all of it | CRM-74 | — |
+| 41 | `41-story-crm-77.md` | TICKETS-3-WEB agent — I assign a ticket | CRM-77 | — |
 
 ## Dependency notes
 

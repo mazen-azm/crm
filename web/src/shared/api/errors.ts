@@ -10,7 +10,17 @@ export type ApiErrorCode =
   | 'CONFLICT'
   | 'VALIDATION_FAILED'
   | 'RATE_LIMITED'
-  | 'INTERNAL';
+  | 'INTERNAL'
+  // The API sends a domain code at a documented status where the status alone
+  // would not say enough — errors.js puts it as "409 CONFLICT and 409
+  // REVISION_MISMATCH are both honest answers". These three are the ones it
+  // sends today, all 409s from tickets. They belong in this union because
+  // t.errors is `satisfies Record<ApiErrorCode, string>`: with the code named
+  // here, a missing sentence is a compile error instead of a screen that
+  // quietly reports somebody else's edit as our server failing.
+  | 'REVISION_MISMATCH'
+  | 'ILLEGAL_TRANSITION'
+  | 'STATUS_UNCHANGED';
 
 // The client surfaces the code. It does not translate it into a sentence —
 // that is the translations story's job, and a generic "something went wrong"
