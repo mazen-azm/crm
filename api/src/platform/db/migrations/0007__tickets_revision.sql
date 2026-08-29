@@ -1,0 +1,22 @@
+-- A version that counts, because a timestamp does not.
+--
+-- BR-5 says a write carries the revision it read and a mismatch returns 409.
+-- The first attempt at this product used `updated_at` as that token, and its
+-- own migration records what followed: two writes inside one millisecond share
+-- a timestamp, so a stale write whose version happened to equal the current one
+-- was accepted. It surfaced as a test that passed alone and failed about one
+-- run in five, which is what a race looks like from outside.
+--
+-- Here it would be worse, not better. This codebase stamps whole seconds —
+-- `new Date(Math.floor(Date.now() / 1000) * 1000).toISOString()`, so every
+-- timestamp ends `.000Z` — which is what makes the suite deterministic and
+-- would also mean ANY two writes in the same second collide, not any two in the
+-- same millisecond.
+--
+-- A counter cannot collide. It carries no other meaning and is not a date,
+-- which is the point: `updated_at` answers "when", and this answers "which".
+--
+-- DEFAULT 1 so a row that predates this column reads as revision 1 rather than
+-- null. There are no such rows today; the default is for the shape of the
+-- guarantee, not for a backfill.
+ALTER TABLE tickets ADD COLUMN revision INTEGER NOT NULL DEFAULT 1;

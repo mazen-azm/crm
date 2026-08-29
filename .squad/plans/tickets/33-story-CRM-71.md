@@ -293,16 +293,16 @@ Unit / integration tests, matching the shape of `customers.test.js` and `service
 
 ## Done Criteria
 
-- [ ] Migration `api/src/platform/db/migrations/0007__tickets_revision.sql` exists and adds `revision INTEGER NOT NULL DEFAULT 1` to `tickets`.
-- [ ] `api/src/features/tickets/` contains `index.js`, `tickets.repository.js`, `tickets.rules.js`, `tickets.rules.test.js`, `tickets.routes.js`, `tickets.service.js`, `tickets.test.js` matching the customers feature layout.
-- [ ] `POST /tickets` registered in `api/src/app.js` behind the same agent permission wrapper as `POST /customers/*`.
-- [ ] A raised ticket is stored with the customer, subject, body, priority and status `new` (T-1).
-- [ ] A stated priority outside `low | normal | high | urgent` returns **422 naming `priority`** and nothing is written; an absent priority defaults to `normal`.
-- [ ] A missing or soft-deleted customer returns **404** and nothing is written.
-- [ ] The audit row is written **in the same transaction** as the ticket (BR-2), with `entity = 'ticket'` and `verb = 'ticket.create'`; the audit census exercises the new route rather than merely listing it.
-- [ ] Both service-level clocks are started **in the same transaction** via `createServiceLevels(...).startClocks(...)` with `startedAt = createdAt` (S-1).
-- [ ] Response body includes `revision: 1` and does **not** include `number`, `response_due_at`, `resolution_due_at`, `organisation_id`, or `team_id` (SC-1 + intake).
-- [ ] `cd api && npm test` green; migration list assertion updated in `migrate.test.js`.
-- [ ] `git grep` for AI attribution across `api`, `docs`, `.squad` returns nothing new.
+- [x] Migration `api/src/platform/db/migrations/0007__tickets_revision.sql` exists and adds `revision INTEGER NOT NULL DEFAULT 1` to `tickets`.
+- [x] `api/src/features/tickets/` contains `index.js`, `tickets.repository.js`, `tickets.rules.js`, `tickets.rules.test.js`, `tickets.routes.js`, `tickets.service.js`, `tickets.test.js` matching the customers feature layout.
+- [x] `POST /tickets` registered in `api/src/app.js` behind the same agent permission wrapper as `POST /customers/*`.
+- [x] A raised ticket is stored with the customer, subject, body, priority and status `new` (T-1).
+- [x] A stated priority outside `low | normal | high | urgent` returns **422 naming `priority`** and nothing is written; an absent priority defaults to `normal`.
+- [x] A missing or soft-deleted customer returns **404** and nothing is written.
+- [x] The audit row is written **in the same transaction** as the ticket (BR-2), with `entity = 'ticket'` and `verb = 'ticket.create'`; the audit census exercises the new route rather than merely listing it.
+- [x] Both service-level clocks are started **in the same transaction** via `createServiceLevels(...).startClocks(...)` with `startedAt = createdAt` (S-1).
+- [x] Response body includes `revision: 1` and does **not** include `number`, `response_due_at`, `resolution_due_at`, `organisation_id`, or `team_id` (SC-1 + intake).
+- [x] `cd api && npm test` green; migration list assertion updated in `migrate.test.js`.
+- [x] `git grep` for AI attribution across `api`, `docs`, `.squad` returns nothing new.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 32.**
