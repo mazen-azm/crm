@@ -20,8 +20,9 @@ than by choosing:
 - `rules.txt` describes itself as "every rule the product promises", derived
   from the product brief. It is the requirement.
 - "fixed by the seed, by decision" is about **configurability** — there is no
-  admin screen for these — and `CLAUDE.md` records that reading. It never
-  meant that whatever the seed contains becomes the promise.
+  admin screen for these targets (the brief's built/not-built table lists SLA
+  screens under "specified only"). It never meant that whatever the seed
+  contains becomes the promise.
 - S-2 was written 2026-08-27 with the backlog. `seed.data.js` came 2026-08-28,
   a day later, and its plan justified the values as "the ones the criteria
   assume" — while PLATFORM-8-API's criteria say only that targets *exist*. No
@@ -31,10 +32,12 @@ So the seed was corrected, not the rule. `verify-backlog.mjs` now parses S-2
 and compares it to `seed.data.js`, because owning a rule means a story is
 answerable for it — not that the rule is true.
 
-**A related gap, unfixed:** the header of `scripts/rules.txt` names a product
-brief under docs as the source it derives from (not yet) — that file has never
-existed here, zero commits touch it. Thirty-one rules cite a source nobody can
-read.
+**The source itself is now committed.** `docs/product-brief.md` was ported
+2026-08-29 from the first attempt, where it was written as the requirements
+source; its service-levels table states these same four targets, so the fix is
+confirmed against the primary document rather than by provenance inference.
+The first attempt's own test harness seeded the correct numbers too — the
+wrong ones were never inherited from anywhere; the planner invented them.
 
 ## SERVICE-LEVELS-1-API
 

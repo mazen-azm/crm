@@ -508,3 +508,28 @@ meaning there is no admin screen for the targets. The rule predates the seed by
 a day, `rules.txt` calls itself the product's promises, and the seed's plan
 justified its numbers as "the ones the criteria assume" — while the criteria
 state no number at all. The seed had invented them.
+
+## L-33 — Whoever writes criteria is a planner too, and needs the same source in front of them
+
+**Rule:** acceptance criteria are steering, and steering written from intuition
+carries the same authority as steering written from the requirements — that is
+what makes it dangerous. Before a criteria file ships, every claim in it that
+the source document can answer must be checked against that document, and the
+document must be **committed in this repository** where both the person and the
+planner can read it. A requirements file that exists only in another repo is,
+for every practical purpose, a requirements file that does not exist (L-5's
+failure class, one level up).
+
+**Paid for by:** two findings in one deep check, both mine. `criteria/tickets.md`
+said an illegal status change answers 422 — written from intuition, when the
+brief's error contract routes "illegal state transition" to **409**, and
+`errors.js`'s own comment already anticipated 409 for exactly this. CRM-79
+would have been planned against the wrong code. And the same file hedged an
+assignee criterion as "422 or 404" — a criterion that offers a choice is a
+decision deferred to whoever implements it. Both were only found because the
+original brief was finally read; it had been sitting in the first attempt's
+repository the whole time, while `rules.txt` cited it as `docs/product-brief.md`
+— a path that had never existed here. The brief is now ported, adapted only in
+its structural references, and the SLA fix was re-confirmed against it: the
+first attempt's own harness seeded the correct numbers, so the wrong ones were
+never inherited — they were invented.

@@ -14,12 +14,13 @@ shipped by PLATFORM-2-API: `id, name, email, phone, address, created_at,
 updated_at, deleted_at`, with a partial unique index on `email` that lets two
 rows share an address once one is soft-deleted.
 
-**A discrepancy to settle before CUSTOMERS-6-API, not at plan time.**
-`scripts/rules.txt` line 31 (I-1) says "users and customers are two tables;
-`customers.user_id` is null until first sign-in". There is no `user_id` column
-in the table. Either the rule names a column that needs a migration when
-sign-in is granted to a customer, or the link belongs on `users` instead. It is
-recorded here so that story starts from a decision rather than from a surprise.
+**Settled 2026-08-29 against `docs/product-brief.md`** ("One person, two rows"):
+rule I-1's `customers.user_id` is the brief's own words — the link lives on
+`customers`, and it is null until that person first signs in. The column is not
+in `0001__customers.sql` because no story has needed it yet; CUSTOMERS-6-API
+(grant-sign-in) adds it with a migration. The earlier version of this note
+treated the rule as possibly wrong; the brief confirms the rule and dates the
+column.
 
 ## CUSTOMERS-1-API
 

@@ -55,8 +55,12 @@ An agent assigns a ticket.
 *Acceptance criteria*
 - Given an assignment, when it succeeds, then the ticket names the assignee and
   an audit row records who changed it, from what, to what (BR-2).
-- Given an assignee who is not live staff, then the answer is 422 or 404 and
-  nothing is written — the list of who may be assigned is IDENTITY-5-API's.
+- Given an assignee who is not live staff, then the answer is 422 naming
+  `assigneeId`, and nothing is written. 422 and not 404: the ticket — the
+  resource being acted on — exists; it is a value in the request that is
+  wrong, and the list of who may be assigned is IDENTITY-5-API's. (This file's
+  first version hedged "422 or 404"; a criterion that offers a choice is a
+  decision deferred to whoever implements it.)
 - Given an assignment, when the caller did not send the revision it read, or
   sent a stale one, then the answer is 409 and nothing is written (BR-5).
 - Given an unassignment, when it is asked for, then it is legal and audited the
@@ -67,10 +71,16 @@ An agent assigns a ticket.
 An illegal status change is refused, and the refusal names what is legal.
 
 *Acceptance criteria*
-- Given a status change that the machine does not allow, then the answer is 422
-  and its body names the statuses that **are** legal from where the ticket is
-  (T-7). A refusal that does not say what would have worked makes the caller
-  guess.
+- Given a status change that the machine does not allow, then the answer is
+  **409** and its body names the statuses that **are** legal from where the
+  ticket is (T-7). 409, not 422: the brief's error contract routes "illegal
+  state transition, or a stale write" to 409, and `errors.js` already
+  anticipates it ("409 CONFLICT and 409 REVISION_MISMATCH are both honest
+  answers"). The request was well-formed; the ticket's state is what refuses
+  it. The first version of this file said 422, written from intuition without
+  the brief — corrected 2026-08-29 against `docs/product-brief.md` before
+  TICKETS-4-API was planned. A refusal that does not say what would have
+  worked makes the caller guess.
 - Given `new` to `resolved`, then it is legal (T-3) — the obvious-looking path
   a state machine written from intuition tends to forbid.
 - Given a status change, when it succeeds, then an audit row records the move
