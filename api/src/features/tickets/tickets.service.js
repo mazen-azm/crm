@@ -3,8 +3,20 @@ import { randomUUID } from 'node:crypto';
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { createAuditWriter, transact } from '../audit/index.js';
 import { createServiceLevels } from '../service-levels/index.js';
-import { normaliseRaisedTicket, validateRaisedTicket } from './tickets.rules.js';
-import { findLiveCustomerId, findTicketById, insertTicket } from './tickets.repository.js';
+import {
+  DEFAULT_SORT,
+  UNASSIGNED,
+  normaliseRaisedTicket,
+  validateQueueQuery,
+  validateRaisedTicket,
+} from './tickets.rules.js';
+import {
+  countTickets,
+  findLiveCustomerId,
+  findTicketById,
+  insertTicket,
+  listTickets,
+} from './tickets.repository.js';
 
 const publicShape = (row) => ({
   id: row.id,
@@ -85,6 +97,33 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         // column, so the row is the only place it exists.
         return publicShape(findTicketById(db, { id }));
       });
+    },
+
+    // The queue every agent shares. It is NOT scoped to whoever is asking:
+    // "an agent sees all of it" is the story's own title, and SC-1 is one
+    // organisation, one queue. `actor` arrives because the route is guarded,
+    // not because it filters anything.
+    //
+    // A read writes no audit row.
+    list(actor, { status, priority, assigneeId, categoryId, sort, limit, offset }) {
+      const invalid = validateQueueQuery({ status, priority, assigneeId, categoryId, sort });
+      if (invalid.length > 0) throw unprocessable(invalid);
+
+      const filters = {};
+      if (status !== undefined) filters.status = status;
+      if (priority !== undefined) filters.priority = priority;
+      if (categoryId !== undefined) filters.categoryId = categoryId;
+      // null is how the repository spells "IS NULL"; the sentinel stops at
+      // this boundary and no SQL below knows the word.
+      if (assigneeId !== undefined) filters.assigneeId = assigneeId === UNASSIGNED ? null : assigneeId;
+
+      return {
+        items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map(publicShape),
+        // The matches, not the page.
+        total: countTickets(db, { filters }),
+        limit,
+        offset,
+      };
     },
   };
 }

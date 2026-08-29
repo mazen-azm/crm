@@ -598,3 +598,22 @@ all went back together. That test reddens on the hoist; nothing else did.
 **Related:** [[L-16]] is prove the guard fails. This is prove the *claim about*
 the guard fails — a sentence in a comment is a claim, and an unverified one
 teaches the next reader something untrue.
+
+## L-37 — Some guards cannot be rehearsed, and saying so is the honest move
+
+**Rule:** [[L-16]] says prove a guard fails. Sometimes it cannot be made to,
+because it defends against behaviour a dependency leaves *unspecified* and which
+currently happens to be benign. When that is the case: keep the guard, try the
+removal anyway, and write down that the suite stayed green. What you must not
+do is leave a test standing that passes either way while implying it is the
+proof — a reader who trusts it will delete the guard on the strength of a test
+that never watched it.
+
+**Paid for by:** the queue's `ORDER BY created_at DESC, rowid ASC`. The
+tiebreaker exists so tickets sharing a second cannot swap between pages (L-19).
+Deleting it and re-running the suite passed every test, and a direct probe
+confirmed why: SQLite returns equal keys in rowid order on both of the query
+plans this endpoint uses, filtered and unfiltered. So the clause is currently
+unobservable — and stays, because an engine's present kindness is not a
+contract. The comment beside it now says the rehearsal was run and what it
+showed, so nobody reads the green suite as permission.
