@@ -89,7 +89,15 @@ Points: 3 · Sprint: 4 · Layer: WEB
 *(Checklist, bullets, Gherkin, etc. Prefilled for Azure DevOps when the work item has acceptance criteria.)*
 
 ```
+From scripts/criteria/tickets.md, section TICKETS-7-WEB:
 
+- Given the history, when it renders, then each entry reads as a sentence a
+  person can follow, built from resource strings rather than the raw verb (BR-6).
+- Given a timestamp, when it is shown, then it is in the reader's locale, not the
+  stored UTC string (BR-3).
+- Given a ticket with no history yet, then the empty state says so (D-2).
+- Given the history, when it is paged, then the screen uses the API's paging and
+  adds none of its own (BR-4).
 ```
 
 ---
@@ -135,8 +143,56 @@ Place files in `attachments/` next to this `intake.md`, then list them here so t
 - **The web suite does not typecheck.** `npm test` is vitest; `npm run build` is
   `tsc -b && vite build`. A change only vitest has seen is not verified.
 
-- APIs, screens, services already discussed. Repos/roots: `api, web, android`. Primary language: `JavaScript`.
+- APIs, screens, services already discussed. Repos/roots: `api, web, android`. Primary language: `TypeScript`. **`web/` only — no `api/` file changes.**
+
+**The stack is Vite + React 19 + TypeScript, Vitest and Testing Library.**
+Read `web/src/pages/tickets/TicketQueuePage.tsx` and
+`web/src/pages/customers/CustomersPage.tsx` first and follow them. Everything
+this screen needs exists: `web/src/shared/ui/` has `Button, Card, EmptyState,
+ErrorState, Field, Heading, Input, Select, Skeleton, Stack, Text, TextArea`,
+and `useRequest` is the four-state hook every page uses. `Field` takes an
+optional render prop for a control that is not a text input.
+
+**BR-6.** Keys go into both `en.ts` and `ar.ts` in the same edit or
+`verify-i18n-parity.mjs` fails, and `no-hardcoded-strings.test.ts` catches a
+literal in JSX — **including a separator typed between tags**. Error sentences
+come from the shared `t.errors` map keyed by the API's code, which now names the
+three domain codes as well; never compose one from `fields`.
+
+**`request(path)` already prefixes `/api/v1`** (`base-url.ts:3`). Writing it
+again gives `/api/v1/api/v1/…`, which CRM-72's tests caught.
+
+**A fetch stub must build a fresh `Response` per call** (L-30): a body can be
+read once, and the symptom of getting this wrong is a test that times out
+rather than one that mentions bodies.
+
+**"Reads as a sentence" is the whole design problem.** The API returns a verb
+(`ticket.status`, `ticket.assign`) and a before/after pair. A screen that prints
+those is showing its database. What a person needs is *"Sofia moved this from
+New to Open"* — so there is a mapping from verb to a sentence with slots, and
+the slots are filled with values that are themselves translated (a status is a
+word from the resource file, not `pending`).
+
+**That mapping is the thing to get right, and Arabic is where a naive one
+breaks.** A sentence assembled by concatenating fragments works in English and
+produces nonsense in Arabic, where the order differs. So each verb gets a
+**whole sentence per language** with placeholders — not a noun glued to a verb
+glued to a value. Say in the plan how the placeholders are substituted; there is
+no i18n library here, so it is a small function, and it belongs next to the
+resource files rather than in the page.
+
+**An unknown verb must render as something.** A verb the screen has no sentence
+for should still produce a legible line rather than a blank or a crash — history
+is append-only and a future story will add verbs before it adds sentences.
+
+**The actor may be absent.** `audit_events.actor_id` is null when the system
+acted, deliberately and never invented. That reads as a named actor in the
+sentence, not as an empty space.
 
 ## Out of scope
 
 - What this story explicitly does **not** cover:
+
+- **Filtering the history** — nothing asks for it.
+- **A history for a customer or an article** — this screen is a ticket's.
+- **Any `api/` change**: the route arrives with `TICKETS-7-API` (CRM-83).

@@ -93,7 +93,16 @@ Points: 2 · Sprint: 4 · Layer: WEB
 *(Checklist, bullets, Gherkin, etc. Prefilled for Azure DevOps when the work item has acceptance criteria.)*
 
 ```
+From scripts/criteria/customers.md, section CUSTOMERS-4-WEB:
 
+- Given the form, when a field the API named is refused, then that field is
+  marked and the message is the shared one for the code.
+- Given a submission in flight, then the control cannot be pressed twice — this
+  request creates a row, so a second press is a second customer.
+- Given a created customer, then the screen shows the customer it created,
+  rather than a message saying it worked.
+- Given every string on the screen, then it came from a resource file, in both
+  languages (BR-6).
 ```
 
 ---
@@ -139,8 +148,46 @@ Place files in `attachments/` next to this `intake.md`, then list them here so t
 - **The web suite does not typecheck.** `npm test` is vitest; `npm run build` is
   `tsc -b && vite build`. A change only vitest has seen is not verified.
 
-- APIs, screens, services already discussed. Repos/roots: `api, web, android`. Primary language: `JavaScript`.
+- APIs, screens, services already discussed. Repos/roots: `api, web, android`. Primary language: `TypeScript`. **`web/` only — no `api/` file changes.**
+
+**The stack is Vite + React 19 + TypeScript, Vitest and Testing Library.**
+Read `web/src/pages/tickets/TicketQueuePage.tsx` and
+`web/src/pages/customers/CustomersPage.tsx` first and follow them. Everything
+this screen needs exists: `web/src/shared/ui/` has `Button, Card, EmptyState,
+ErrorState, Field, Heading, Input, Select, Skeleton, Stack, Text, TextArea`,
+and `useRequest` is the four-state hook every page uses. `Field` takes an
+optional render prop for a control that is not a text input.
+
+**BR-6.** Keys go into both `en.ts` and `ar.ts` in the same edit or
+`verify-i18n-parity.mjs` fails, and `no-hardcoded-strings.test.ts` catches a
+literal in JSX — **including a separator typed between tags**. Error sentences
+come from the shared `t.errors` map keyed by the API's code, which now names the
+three domain codes as well; never compose one from `fields`.
+
+**`request(path)` already prefixes `/api/v1`** (`base-url.ts:3`). Writing it
+again gives `/api/v1/api/v1/…`, which CRM-72's tests caught.
+
+**A fetch stub must build a fresh `Response` per call** (L-30): a body can be
+read once, and the symptom of getting this wrong is a test that times out
+rather than one that mentions bodies.
+
+**`RaiseTicketPage.tsx` is this screen's sibling and was written three stories
+ago.** Same four criteria almost word for word: mark the named field, disable
+while in flight, show the created thing. Follow it closely enough that a reader
+of one recognises the other — and if something there was awkward, fix it in both
+rather than diverging.
+
+**Email is optional here.** Leaving it blank must reach the API as an absent
+value, not `''` — the same distinction the ticket form draws between "no
+category" and an empty string. An address already on file comes back as a 422
+naming `email`; that marks the field and shows the shared sentence.
 
 ## Out of scope
 
 - What this story explicitly does **not** cover:
+
+- **Searching for a customer first** — the customers list already exists and
+  this is the add form.
+- **Editing a customer** — no story.
+- **Any `api/` change**: the route arrives with `CUSTOMERS-4-API` (CRM-62), and
+  this story waits on it.

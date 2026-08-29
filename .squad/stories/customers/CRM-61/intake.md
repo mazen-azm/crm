@@ -93,7 +93,16 @@ Points: 2 · Sprint: 4 · Layer: WEB
 *(Checklist, bullets, Gherkin, etc. Prefilled for Azure DevOps when the work item has acceptance criteria.)*
 
 ```
+From scripts/criteria/customers.md, section CUSTOMERS-3-WEB:
 
+- Given a note, when it is written, then it appears in the customer's notes
+  without the screen reloading everything it already had.
+- Given a blank or whitespace-only note, when it is submitted, then the screen
+  refuses it the way the API does and says so on the field.
+- Given the notes, when they are read, then the author and the time are shown,
+  because a note nobody can attribute is a note nobody trusts (BR-2, BR-3).
+- Given every string on the screen, then it came from a resource file, in both
+  languages (BR-6).
 ```
 
 ---
@@ -139,8 +148,61 @@ Place files in `attachments/` next to this `intake.md`, then list them here so t
 - **The web suite does not typecheck.** `npm test` is vitest; `npm run build` is
   `tsc -b && vite build`. A change only vitest has seen is not verified.
 
-- APIs, screens, services already discussed. Repos/roots: `api, web, android`. Primary language: `JavaScript`.
+- APIs, screens, services already discussed. Repos/roots: `api, web, android`. Primary language: `TypeScript`. **`web/` only — no `api/` file changes.**
+
+**The stack is Vite + React 19 + TypeScript, Vitest and Testing Library.**
+Read `web/src/pages/tickets/TicketQueuePage.tsx` and
+`web/src/pages/customers/CustomersPage.tsx` first and follow them. Everything
+this screen needs exists: `web/src/shared/ui/` has `Button, Card, EmptyState,
+ErrorState, Field, Heading, Input, Select, Skeleton, Stack, Text, TextArea`,
+and `useRequest` is the four-state hook every page uses. `Field` takes an
+optional render prop for a control that is not a text input.
+
+**BR-6.** Keys go into both `en.ts` and `ar.ts` in the same edit or
+`verify-i18n-parity.mjs` fails, and `no-hardcoded-strings.test.ts` catches a
+literal in JSX — **including a separator typed between tags**. Error sentences
+come from the shared `t.errors` map keyed by the API's code, which now names the
+three domain codes as well; never compose one from `fields`.
+
+**`request(path)` already prefixes `/api/v1`** (`base-url.ts:3`). Writing it
+again gives `/api/v1/api/v1/…`, which CRM-72's tests caught.
+
+**A fetch stub must build a fresh `Response` per call** (L-30): a body can be
+read once, and the symptom of getting this wrong is a test that times out
+rather than one that mentions bodies.
+
+**Both routes already exist**: `GET /customers/:id/notes` and
+`POST /customers/:id/notes` (`customers.routes.js:26,35`). Nothing in `api/`
+changes.
+
+**"Without reloading everything it already had" is the criterion with teeth.**
+The POST answers with the note it created, so append that to the list in hand
+rather than re-fetching the customer screen. A test can see the difference: count
+the requests after a successful write.
+
+**The whitespace test is applied before the request, and the API applies it
+again.** Same reasoning as the resolution note in CRM-81 — a round-trip to be
+told what the screen already knew is a worse experience for the same answer, and
+`customer_notes.body` is `TEXT NOT NULL` with the rules layer refusing empty
+before it (`0006__customer_notes.sql:24`).
+
+**The author is an id and the screen needs a name.** `customer_notes.author_id`
+is a user id, and `author_id` is null when the system wrote it — which must read
+as something, not as a blank. The assignee list (`GET /assignees`) is the same
+problem CRM-77 solved by resolving ids on the client; check whether the notes
+route already returns a name before adding a second fetch, and say what you
+found.
+
+**The time is shown in the reader's locale** (BR-3). `useFormatters` is the
+existing way; the stored value is UTC and must not be rendered raw.
 
 ## Out of scope
 
 - What this story explicitly does **not** cover:
+
+- **Editing or deleting a note.** The schema deliberately has no `updated_at`
+  and no `deleted_at` on notes, and its comment says why: those are decisions
+  nobody has written criteria for.
+- **Notes on a ticket** — these are notes about a customer. An internal note on
+  a conversation is `CONVERSATION-2-*`.
+- **Any `api/` change.**
