@@ -149,7 +149,13 @@ rule('api-sql-only-in-repository', 'SQL lives in a repository, or in a named exc
   return { files: files.length, findings }
 })
 
-const WEB_LAYERS = ['app', 'pages', 'shared']
+// The full order docs/architecture.md documents, not just the folders that
+// happen to exist. Two of these are empty today, and listing them costs
+// nothing — but leaving them out meant a file under web/src/features/ was
+// filtered out before it was judged, so the rule silently did not apply to a
+// layer the documentation says it applies to. Proved by putting a features/
+// file that imports upward in front of the old list and watching it pass.
+const WEB_LAYERS = ['app', 'pages', 'features', 'entities', 'shared']
 
 // Violations that exist today, each with what it is and what would end it.
 // Deliberately NOT a way to make the check green: an accepted entry is printed
