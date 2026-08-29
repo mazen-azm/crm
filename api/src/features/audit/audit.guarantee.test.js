@@ -67,6 +67,7 @@ const EXERCISED = new Set([
   'POST /api/v1/accounts/:id/disable',
   'POST /api/v1/accounts/:id/re-enable',
   'POST /api/v1/customers/:id/notes',
+  'POST /api/v1/tickets',
 ]);
 
 test('every mutating route the router serves is exercised by this file', async () => {
@@ -113,6 +114,11 @@ test('each mutating route writes exactly one audit row', async () => {
   const customer = (await (await call('/api/v1/customers?limit=1')).json()).items[0];
 
   const rest = [
+    ['POST /api/v1/tickets', () =>
+      call('/api/v1/tickets', {
+        method: 'POST',
+        body: { customerId: customer.id, subject: 'A raised ticket', body: 'So this route is driven.' },
+      })],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
         method: 'POST',

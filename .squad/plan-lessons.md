@@ -575,3 +575,26 @@ The same reading said what **not** to take: the old schema's human-readable
 ticket `number` is not in the brief, and its stored `response_due_at` /
 `resolution_due_at` contradict the derived deadlines SERVICE-LEVELS-1-API
 shipped here deliberately. Precedent is evidence, not instruction.
+
+## L-36 — A guard has a boundary, and describing it too strongly is how it gets trusted past it
+
+**Rule:** when you write a comment claiming a guard protects something, try the
+thing. The audit guard refuses a COMMIT that changed a table without recording
+it — inside a transaction. It is deliberately inert **outside** one, so the seed
+and the migration runner can write. So it catches "forgot the audit row"; it
+does not catch "took the whole block out of the transaction", which is the
+larger mistake. Counting rows cannot tell those apart either: hoisted code still
+writes both rows, so the counts agree and everything is green. Only forcing a
+failure **between** the two writes distinguishes atomic from merely-both.
+
+**Paid for by:** a comment I wrote in `tickets.service.js` — "hoisting any of
+this out would not simplify it, it would make the ticket disappear". It would
+not: the ticket would land, unaudited and unnoticed. Found by running the
+rehearsal that the comment implied would fail, and watching sixteen tests pass.
+The comment now says what the guard actually does and where it stops, and a test
+forces the audit write to throw and asserts the ticket, its clocks and its row
+all went back together. That test reddens on the hoist; nothing else did.
+
+**Related:** [[L-16]] is prove the guard fails. This is prove the *claim about*
+the guard fails — a sentence in a comment is a claim, and an unverified one
+teaches the next reader something untrue.
