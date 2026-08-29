@@ -26,9 +26,25 @@ planner:
     # (DEFAULT_PLANNER_MAX_ITERATIONS, which no flag or config key exposes).
     # Every file read costs a turn, so a read budget equal to the turn budget
     # can spend the whole allowance before the plan is written — which is how
-    # CRM-27's first attempt died. 24 leaves roughly a third of the turns for
-    # reasoning and writing, and matches the scout's own maxFiles.
-    maxFileReads: 24
+    # CRM-27's first attempt died. 24 left roughly a third of the turns for
+    # reasoning and writing, and matched the scout's own maxFiles.
+    #
+    # Raised to 30 on 2026-08-29, on evidence rather than a hunch: CRM-72 and
+    # CRM-74 both stopped at exactly 24 reads and both said so in their
+    # headers, and both still had turns left — each wrote a full plan
+    # afterwards, one in 17k output tokens. So the binding constraint was
+    # reads, not turns, and the repository has simply grown: a web story now
+    # has to read the primitives, the hooks, the two resource files, an
+    # example page, the routes, the criteria and the lessons before it can say
+    # anything true. CRM-72's plan is what 24 buys now — five invented facts,
+    # every one of them corrected at review.
+    #
+    # 30 leaves 10 turns. That is thinner than 16 and it is the thing to watch:
+    # if a plan starts arriving truncated or unfinished rather than
+    # under-researched, the turn ceiling is the one being hit and this number
+    # goes back down. The two failures look different in the header — reads
+    # exhausted says one, a stopped plan says the other.
+    maxFileReads: 30
     maxContextBytes: 150000
     maxDurationSeconds: 360
   cache:

@@ -14,3 +14,10 @@
 .input:hover {
   border-color: var(--color-border-strong);
 }
+
+/* A textarea is an input that grows downward. Only the two properties that
+   differ are set here; everything else is the .input rule above. */
+.input--multiline {
+  resize: vertical;
+  min-height: calc(var(--space-4) * 3);
+}

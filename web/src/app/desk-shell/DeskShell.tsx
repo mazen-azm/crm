@@ -51,6 +51,12 @@ export function DeskShell({ children }: { children: ReactNode }) {
         <Link to="/customers" className="desk-shell__nav-item">
           {t.shell.navCustomers}
         </Link>
+        <Link to="/tickets" className="desk-shell__nav-item">
+          {t.shell.navQueue}
+        </Link>
+        <Link to="/tickets/new" className="desk-shell__nav-item">
+          {t.shell.navRaiseTicket}
+        </Link>
       </nav>
 
       <main className="desk-shell__main">{children}</main>

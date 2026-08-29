@@ -5,6 +5,8 @@ export { ErrorState } from './ErrorState';
 export { Field } from './Field';
 export { Heading } from './Heading';
 export { Input } from './Input';
+export { Select } from './Select';
+export { TextArea } from './TextArea';
 export { Skeleton } from './Skeleton';
 export { Stack } from './Stack';
 export { Text } from './Text';

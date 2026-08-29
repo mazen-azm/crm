@@ -10,9 +10,20 @@ it: step 8 is as mandatory as the merge.
 ## 1. Find the next story
 
 Query Jira (project CRM) for Story issues with status "To Do", and pick the one
-that comes first by sprint label (sprint-0 before sprint-1) and, inside a sprint,
-by the order in `scripts/backlog.txt`. Tell the user which story you picked and
-why, then continue.
+that comes first by sprint label (sprint-0 before sprint-1) — then, inside a
+sprint, **by dependency before backlog order**.
+
+Backlog order is only the tie-break. `verify-backlog.mjs` refuses a dependency
+on a *later* sprint, so anything left inside one sprint is legal but not
+therefore free to build in file order: `TICKETS-1-API` needs `SLA-1-API`, both
+sit in sprint 3, and the tickets feature is written first in `backlog.txt`.
+Following file order there would have built a ticket that starts service-level
+clocks nothing had created yet.
+
+Run `node scripts/verify-backlog.mjs` and read its "ordering inside a block"
+section — it lists which units in a block wait on which. Pick from the ones
+with nothing left ahead of them. Tell the user which story you picked and why,
+then continue.
 
 ## 2. Fetch and prepare the intake
 

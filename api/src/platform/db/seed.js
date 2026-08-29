@@ -25,14 +25,22 @@ export function seed(db, {
   runMigrations(db);
 
   const adminPassword = newPassword();
-  seedStaff(db, adminPassword, { now, newId, newPassword });
+  const adminCreated = seedStaff(db, adminPassword, { now, newId, newPassword });
   seedCustomers(db, { now, newId });
   seedCategories(db, { now, newId });
   seedSlaTargets(db, { now, newId });
 
-  return { adminEmail: staff[0].email, adminPassword };
+  // adminCreated is the difference between "here is the password" and "here is
+  // a password that does nothing". On a second run the admin already exists,
+  // the insert does nothing, and adminPassword is a string this run invented
+  // and never stored. Callers must not print it without asking.
+  return { adminEmail: staff[0].email, adminPassword, adminCreated };
 }
 
+// Returns whether the admin row was actually written this run. The conflict
+// clause makes a second run harmless, and it also makes the generated password
+// meaningless — so whether the insert happened is the one thing a caller needs
+// to know before repeating it to anybody.
 function seedStaff(db, adminPassword, { now, newId, newPassword }) {
   const insert = db.prepare(`
     INSERT INTO users (id, email, password_hash, name, role, created_at, updated_at)
@@ -40,12 +48,15 @@ function seedStaff(db, adminPassword, { now, newId, newPassword }) {
     ON CONFLICT(email) WHERE deleted_at IS NULL DO NOTHING
   `);
   const at = now();
+  let adminCreated = false;
   staff.forEach((row, i) => {
     // Only the admin's password is the one the operator is told. The rest are
     // hashed and discarded, so no account ships with a password anyone knows.
     const plaintext = i === 0 ? adminPassword : newPassword();
-    insert.run(newId(), row.email, hashPassword(plaintext), row.name, row.role, at, at);
+    const { changes } = insert.run(newId(), row.email, hashPassword(plaintext), row.name, row.role, at, at);
+    if (i === 0) adminCreated = changes === 1;
   });
+  return adminCreated;
 }
 
 function seedCustomers(db, { now, newId }) {
@@ -96,13 +107,22 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log(`seeding ${config.dbPath}`);
   const db = openDatabase(config.dbPath);
   try {
-    const { adminEmail, adminPassword } = seed(db);
+    const { adminEmail, adminPassword, adminCreated } = seed(db);
     console.log(`seeded ${config.dbPath}`);
     console.log(`admin email:    ${adminEmail}`);
-    // On a second run the admin already exists, so this password was NOT
-    // stored — the printed line is the one this run generated, not the one
-    // that works. Re-seed a fresh database, or reset it through identity.
-    console.log(`admin password: ${adminPassword}`);
+    if (adminCreated) {
+      console.log(`admin password: ${adminPassword}`);
+    } else {
+      // The knowledge that a re-run's password is meaningless used to live in a
+      // comment here, where only somebody reading this file would meet it —
+      // while the person who needs it is looking at a terminal, at a line that
+      // reads like an answer. Printing it cost an hour of looking for the
+      // wrong bug.
+      console.log('admin password: unchanged — this account already existed.');
+      console.log('                Nothing was rewritten, which is what makes a');
+      console.log('                second run safe. To start over, delete the');
+      console.log('                database file and seed again.');
+    }
   } finally {
     db.close();
   }

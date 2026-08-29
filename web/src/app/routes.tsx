@@ -5,6 +5,8 @@ import { DeskShell } from './desk-shell';
 import { SignInPage } from '../pages/sign-in/SignInPage';
 import { HomePage } from '../pages/home/HomePage';
 import { CustomersPage } from '../pages/customers/CustomersPage';
+import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
+import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 
 // Routes import pages; nothing imports routes. The direction is
 // app -> pages -> features -> entities -> shared, and PLATFORM-15-ALL will
@@ -33,6 +35,26 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <CustomersPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/tickets"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <TicketQueuePage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/tickets/new"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <RaiseTicketPage />
             </DeskShell>
           </RequireAuth>
         }

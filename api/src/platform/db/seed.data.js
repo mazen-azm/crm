@@ -40,9 +40,18 @@ export const categories = [
 
 // Minutes. Urgent is answered inside a coffee break; low is answered inside a
 // working day, and resolved inside a working week.
+// The promise, in minutes, exactly as rule S-2 states it:
+//   urgent 1h/4h · high 4h/24h · normal 8h/72h · low 24h/168h
+//
+// These are not free numbers. S-2 is a requirement derived from the product
+// brief, and "fixed by the seed, by decision" means there is no admin screen
+// for them — not that whatever the seed happens to contain becomes the
+// promise. They disagreed until 2026-08-29, on all four priorities, because
+// this file was written a day after the rule and nobody compared the two.
+// scripts/verify-backlog.mjs now does.
 export const slaTargets = [
-  { priority: 'low', first_response_minutes: 1440, resolution_minutes: 5760 },
-  { priority: 'normal', first_response_minutes: 240, resolution_minutes: 1440 },
-  { priority: 'high', first_response_minutes: 60, resolution_minutes: 480 },
-  { priority: 'urgent', first_response_minutes: 15, resolution_minutes: 240 },
+  { priority: 'low', first_response_minutes: 24 * 60, resolution_minutes: 168 * 60 },
+  { priority: 'normal', first_response_minutes: 8 * 60, resolution_minutes: 72 * 60 },
+  { priority: 'high', first_response_minutes: 4 * 60, resolution_minutes: 24 * 60 },
+  { priority: 'urgent', first_response_minutes: 1 * 60, resolution_minutes: 4 * 60 },
 ];

@@ -485,3 +485,229 @@ serves already pages through one reader: `/accounts`, `/assignees`,
 `/customers`, three of three. The intake had also said to reuse
 `readPagination` if reading turned out to be in scope, which the same plan
 decided it was, two paragraphs earlier.
+
+## L-32 — Owning a rule is not the same as the rule being true
+
+**Rule:** a check that every rule has an owning story proves only that somebody
+is answerable for it. Where a rule's text carries **values** — durations,
+limits, thresholds, enumerations — something must compare those values to the
+code that implements them, or the two drift silently and the rule becomes
+decoration. Parse the rule, import the implementation, compare. And when a rule
+and the code disagree, settle it by **provenance** — which is older, which
+document claims to be the source, what the implementing story's plan actually
+cited — not by whichever is easier to change.
+
+**Paid for by:** rule S-2 states the SLA targets as urgent 1h/4h, high 4h/24h,
+normal 8h/72h, low 24h/168h. The seed shipped 15min/4h, 1h/8h, 4h/24h and
+24h/96h — every priority different. It went unnoticed for a day and a half
+while `verify-backlog` reported the rule as owned and green.
+
+The first reading of the clause "fixed by the seed, by decision" was that the
+seed was therefore authoritative. It is not: `CLAUDE.md` records that clause as
+meaning there is no admin screen for the targets. The rule predates the seed by
+a day, `rules.txt` calls itself the product's promises, and the seed's plan
+justified its numbers as "the ones the criteria assume" — while the criteria
+state no number at all. The seed had invented them.
+
+## L-33 — Whoever writes criteria is a planner too, and needs the same source in front of them
+
+**Rule:** acceptance criteria are steering, and steering written from intuition
+carries the same authority as steering written from the requirements — that is
+what makes it dangerous. Before a criteria file ships, every claim in it that
+the source document can answer must be checked against that document, and the
+document must be **committed in this repository** where both the person and the
+planner can read it. A requirements file that exists only in another repo is,
+for every practical purpose, a requirements file that does not exist (L-5's
+failure class, one level up).
+
+**Paid for by:** two findings in one deep check, both mine. `criteria/tickets.md`
+said an illegal status change answers 422 — written from intuition, when the
+brief's error contract routes "illegal state transition" to **409**, and
+`errors.js`'s own comment already anticipated 409 for exactly this. CRM-79
+would have been planned against the wrong code. And the same file hedged an
+assignee criterion as "422 or 404" — a criterion that offers a choice is a
+decision deferred to whoever implements it. Both were only found because the
+original brief was finally read; it had been sitting in the first attempt's
+repository the whole time, while `rules.txt` cited it as `docs/product-brief.md`
+— a path that had never existed here. The brief is now ported, adapted only in
+its structural references, and the SLA fix was re-confirmed against it: the
+first attempt's own harness seeded the correct numbers, so the wrong ones were
+never inherited — they were invented.
+
+## L-34 — "No dependency on a later sprint" says nothing about order inside one
+
+**Rule:** a check that dependencies never point at a future block is necessary
+and not sufficient. Two stories in one sprint may still have an order, and file
+order is not it. Before picking the next story, read which units in the block
+wait on which, and pick one with nothing left ahead of it. If that information
+is only derivable, derive it and print it — an ordering somebody has to notice
+is an ordering somebody will eventually not notice.
+
+**Paid for by:** the loop's own selection rule said "inside a sprint, by the
+order in `scripts/backlog.txt`". `TICKETS-1-API` needs `SERVICE-LEVELS-1-API`,
+both are block 3, and the tickets feature is written first in that file — so
+following the rule would have built a ticket that starts service-level clocks
+nothing had created. `verify-backlog` was green throughout, correctly: it
+refuses a dependency on a later block and same-block dependencies are legal.
+It now prints them, and the loop picks by dependency with backlog order as the
+tie-break. Checked backwards over sprints 0–2 as well; every story there had in
+fact been built in a legal order.
+
+## L-35 — The first attempt is a source, and its migrations are its confessions
+
+**Rule:** before building a feature this project has built once before, read the
+old repository's schema **and its migration comments**. A migration that adds a
+column later is a record of something learned the hard way, dated and explained
+by somebody who had already paid for it. Read them for what to copy and, just
+as carefully, for what not to: the old code also contains niceties nobody asked
+for, and porting those is scope arriving disguised as precedent.
+
+**Paid for by:** `tickets` here has no `revision` column, and BR-5 needs one for
+status change, assignment and priority change — two of which are stories later
+in this same sprint. The first attempt shipped without it too, used `updated_at`
+as the token, and wrote its own postmortem into
+`003_ticket_revision.sql`: two writes inside one millisecond share a timestamp,
+so a stale write whose version happened to match was accepted, and it showed up
+as "a test that passed alone and failed about one run in five". This repository
+was one story away from repeating it exactly.
+
+The same reading said what **not** to take: the old schema's human-readable
+ticket `number` is not in the brief, and its stored `response_due_at` /
+`resolution_due_at` contradict the derived deadlines SERVICE-LEVELS-1-API
+shipped here deliberately. Precedent is evidence, not instruction.
+
+## L-36 — A guard has a boundary, and describing it too strongly is how it gets trusted past it
+
+**Rule:** when you write a comment claiming a guard protects something, try the
+thing. The audit guard refuses a COMMIT that changed a table without recording
+it — inside a transaction. It is deliberately inert **outside** one, so the seed
+and the migration runner can write. So it catches "forgot the audit row"; it
+does not catch "took the whole block out of the transaction", which is the
+larger mistake. Counting rows cannot tell those apart either: hoisted code still
+writes both rows, so the counts agree and everything is green. Only forcing a
+failure **between** the two writes distinguishes atomic from merely-both.
+
+**Paid for by:** a comment I wrote in `tickets.service.js` — "hoisting any of
+this out would not simplify it, it would make the ticket disappear". It would
+not: the ticket would land, unaudited and unnoticed. Found by running the
+rehearsal that the comment implied would fail, and watching sixteen tests pass.
+The comment now says what the guard actually does and where it stops, and a test
+forces the audit write to throw and asserts the ticket, its clocks and its row
+all went back together. That test reddens on the hoist; nothing else did.
+
+**Related:** [[L-16]] is prove the guard fails. This is prove the *claim about*
+the guard fails — a sentence in a comment is a claim, and an unverified one
+teaches the next reader something untrue.
+
+## L-37 — Some guards cannot be rehearsed, and saying so is the honest move
+
+**Rule:** [[L-16]] says prove a guard fails. Sometimes it cannot be made to,
+because it defends against behaviour a dependency leaves *unspecified* and which
+currently happens to be benign. When that is the case: keep the guard, try the
+removal anyway, and write down that the suite stayed green. What you must not
+do is leave a test standing that passes either way while implying it is the
+proof — a reader who trusts it will delete the guard on the strength of a test
+that never watched it.
+
+**Paid for by:** the queue's `ORDER BY created_at DESC, rowid ASC`. The
+tiebreaker exists so tickets sharing a second cannot swap between pages (L-19).
+Deleting it and re-running the suite passed every test, and a direct probe
+confirmed why: SQLite returns equal keys in rowid order on both of the query
+plans this endpoint uses, filtered and unfiltered. So the clause is currently
+unobservable — and stays, because an engine's present kindness is not a
+contract. The comment beside it now says the rehearsal was run and what it
+showed, so nobody reads the green suite as permission.
+
+## L-38 — A caveat in a comment does not reach the person reading the terminal
+
+**Rule:** when a program prints something an operator will act on, the caveat
+belongs in the **output**, not in a comment beside the `console.log`. A comment
+reaches whoever opens that file; the person who needs it is looking at a
+terminal, at a line that reads like an answer. If a value is only sometimes
+meaningful, print which case you are in — or do not print it.
+
+**Paid for by:** `npm run seed` on an already-seeded database printed
+`admin password: <a fresh random string>`. The insert had done nothing —
+`ON CONFLICT … DO NOTHING`, which is what makes a second run safe and is a
+criterion — so the string had never been stored and did not sign anybody in.
+The file said so, three lines above the print, in a comment nobody in a
+terminal can see.
+
+It cost about an hour: sign-in answered 401, and I went looking at the token,
+the port and the throttle, because the seed had just told me what to type. The
+seed now reports whether the admin row was actually written and prints the
+password only then; otherwise it says the account already existed and nothing
+was rewritten. A test pins it, and reverting the check reddens that test alone.
+
+## L-39 — "absent" and "empty" are two answers; a plan that flattens them loses one
+
+**Rule:** when a plan adds an optional key to a response, decide separately what
+an **empty** value means and what a **missing** key means. If both can occur and
+they say different things, the render condition is presence (`!== undefined`),
+never truthiness or `.length > 0`. Write which is which in the code, because the
+next reader will copy the nearest sibling and the nearest sibling is usually the
+other rule.
+
+**Where it came from:** CRM-79. T-7 requires an illegal status change to name
+the statuses that were legal, so the plan added `allowed` to the 409 body and —
+copying `ValidationError`'s `fields`, three lines above it — rendered it only
+when `length > 0`. That works everywhere except the one case it exists for: a
+`closed` ticket has no legal moves, so `allowed` is `[]`, so the key vanishes,
+so the response becomes byte-identical to a stale-revision refusal, which is a
+different failure with a different fix. The copied condition was right for
+`fields`, where an empty list carries nothing, and wrong here, where an empty
+list is the entire answer. Caught at plan review by noticing the plan's own test
+("409 with `allowed: []`") could not pass against the plan's own middleware
+rule. Three tests now fail on the flattening.
+
+## L-40 — For a story about what already exists, run it before planning it
+
+**Rule:** when a story's premise is "expose something the schema already has",
+**exercise the existing behaviour first** — a throwaway script against an
+in-memory database, driving the real HTTP layer — and put what it actually did
+into the intake. Reading the schema tells you what is declared. Running it tells
+you what happens, and those are different answers wherever a guarantee is split
+between the database and the service.
+
+**Where it came from:** CRM-82. The intake said the story was "mostly about
+exposing what exists" and expected a small change. Twenty lines of throwaway
+script found two defects that no amount of reading would have shown, because
+both live in the gap between a declared constraint and the code above it:
+
+- A category id that does not exist returned **500 INTERNAL**. The foreign key
+  is declared, `PRAGMA foreign_keys = ON` is set, and SQLite refused the insert
+  exactly as intended — then its own error escaped the service unhandled. The
+  schema was right and the behaviour was wrong.
+- A **retired** category was accepted with 201. A foreign key can see that a row
+  exists; it cannot see that `deleted_at` took it off the list. The one thing
+  the story's acceptance criteria forbid was the one thing the constraint could
+  not enforce.
+
+Both went into the intake as findings before the plan was generated, so the plan
+was written to fix them rather than to describe the route it thought was there.
+A story that had been planned from the schema alone would have shipped a list
+endpoint and left both in place.
+
+## L-41 — A plan that says it could not read the files is a draft, not a plan
+
+**Rule:** read the plan's own generation header and preamble before acting on
+it. When the planner reports a tool failure or a budget cap — squad-kit writes
+this into the file — **every claim about the surroundings is a guess**, and the
+plan is a draft to be checked line by line rather than a specification to
+follow. Check each cited symbol, field name, file and API shape against the
+code, correct the plan in place with a note saying what the code actually does,
+and only then implement. Do not silently fix them while coding: the plan is a
+deliverable, and a plan that still contains the wrong claim teaches the next
+reader the wrong thing.
+
+**Where it came from:** CRM-72. The plan's first line was the planner saying it
+had hit a tool budget cap and would write from the intake's hints instead. Five
+claims were wrong: a pagination cursor the API does not send (it is
+`limit`/`offset`), a `retired` boolean the category list does not return
+(retired categories are simply absent), a `description` field the API calls
+`body`, a `CustomersPage.css` that does not exist (no page in the app has a
+stylesheet), and a `t('key')` function that is a plain object read as
+`t.customers.title`. Following any one of them would have shipped something
+that does not work; the `description` one would have made the 422's
+`fields: ['body']` name a field the form does not have, and marked the wrong
+input.
