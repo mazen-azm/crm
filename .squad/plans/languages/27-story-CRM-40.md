@@ -248,16 +248,16 @@ Do **not** add, remove, edit, or translate any dictionary value. If the new chec
 
 ## Done Criteria
 
-- [ ] `web/src/shared/i18n/parity.test.ts` exists with the three tests and the header comment naming `defineLocale` as primary.
-- [ ] An empty value in either dictionary makes `cd web && npm test` fail with the key path and file name.
-- [ ] An unintentional cross-language identical value (not on the allowlist) makes `cd web && npm test` fail with the key and both file names.
-- [ ] Passing runs print the compared-key count (**28 today**) and the full allowlist with `why` and review date.
-- [ ] `IDENTICAL_ALLOWLIST` covers exactly `shell.switchToArabic` and `shell.switchToEnglish`, with reasons and a dated review comment; the check enforces that allowlisted entries are actually identical.
-- [ ] `scripts/verify-i18n-parity.mjs` exists, imports no TypeScript, uses no regex on file contents, and prints per-root coverage using the `verify-architecture.mjs` verdict shape.
-- [ ] `api/` and `android/` report **not in force**; `web/` reports **in force**.
-- [ ] `.github/workflows/ci.yml` runs `node scripts/verify-i18n-parity.mjs` in the same job that runs `node scripts/verify-architecture.mjs`.
-- [ ] `defineLocale` is unchanged; no dictionary values were added, removed, or translated.
-- [ ] `cd web && npm run build`, `cd web && npm test`, `cd api && npm test`, and `node scripts/verify-i18n-parity.mjs` all pass.
-- [ ] No commit, file, or comment mentions AI assistance.
+- [x] `web/src/shared/i18n/parity.test.ts` exists with the three tests and the header comment naming `defineLocale` as primary.
+- [x] An empty value in either dictionary makes `cd web && npm test` fail with the key path and file name.
+- [x] An unintentional cross-language identical value (not on the allowlist) makes `cd web && npm test` fail with the key and both file names.
+- [x] Passing runs print the compared-key count (**28 today**) and the full allowlist with `why` and review date.
+- [x] `IDENTICAL_ALLOWLIST` covers exactly `shell.switchToArabic` and `shell.switchToEnglish`, with reasons and a dated review comment; the check enforces that allowlisted entries are actually identical.
+- [x] `scripts/verify-i18n-parity.mjs` exists, imports no TypeScript, uses no regex on file contents, and prints per-root coverage using the `verify-architecture.mjs` verdict shape.
+- [x] `api/` and `android/` report **not in force**; `web/` reports **in force**.
+- [x] `.github/workflows/ci.yml` runs `node scripts/verify-i18n-parity.mjs` in the same job that runs `node scripts/verify-architecture.mjs`.
+- [x] `defineLocale` is unchanged; no dictionary values were added, removed, or translated.
+- [x] `cd web && npm run build`, `cd web && npm test`, `cd api && npm test`, and `node scripts/verify-i18n-parity.mjs` all pass.
+- [x] No commit, file, or comment mentions AI assistance.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
