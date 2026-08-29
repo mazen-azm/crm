@@ -1,15 +1,17 @@
 import { randomUUID } from 'node:crypto';
 
-import { HttpError, unprocessable } from '../../platform/http/errors.js';
+import { ConflictError, HttpError, unprocessable } from '../../platform/http/errors.js';
 import { createAuditWriter, transact } from '../audit/index.js';
 import { createServiceLevels } from '../service-levels/index.js';
 import {
   DEFAULT_SORT,
   UNASSIGNED,
+  allowedFrom,
   normaliseRaisedTicket,
   validateQueueQuery,
   validateAssignment,
   validateRaisedTicket,
+  validateStatusChange,
 } from './tickets.rules.js';
 import {
   assignTicket,
@@ -19,6 +21,7 @@ import {
   findTicketById,
   insertTicket,
   listTickets,
+  updateTicketStatus,
 } from './tickets.repository.js';
 
 const publicShape = (row) => ({
@@ -168,6 +171,57 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           verb: 'ticket.assign',
           before: { assigneeId: before.assignee_id },
           after: { assigneeId },
+          at,
+        });
+
+        return publicShape(findTicketById(db, { id }));
+      });
+    },
+
+    // The second BR-5 write. It reads like assign because it is the same
+    // shape; what is different is that a refusal here has to explain itself.
+    changeStatus(actor, { id, status, revision }) {
+      const invalid = validateStatusChange({ status, revision });
+      if (invalid.length > 0) throw unprocessable(invalid);
+
+      const at = stamp();
+
+      return transact(db, () => {
+        const before = findTicketById(db, { id });
+        if (!before) throw new HttpError(404, 'NOT_FOUND');
+
+        // Both refusals below carry the legal moves from where the ticket
+        // IS, not from where the caller wanted it — the caller already knows
+        // the second one. This is T-7.
+        const legal = allowedFrom(before.status);
+
+        // Asking for the status a ticket already has is not a transition. It
+        // has to be refused rather than waved through: a no-op that bumps the
+        // revision and writes an audit row recording that nothing happened
+        // makes the trail lie, and makes every other caller's revision stale
+        // for free.
+        if (before.status === status) {
+          throw new ConflictError('STATUS_UNCHANGED', legal);
+        }
+
+        if (!legal.includes(status)) {
+          throw new ConflictError('ILLEGAL_TRANSITION', legal);
+        }
+
+        const { changes } = updateTicketStatus(db, { id, status, revision, at });
+        if (changes === 0) {
+          // No `allowed` here, and that is the point: the transition was
+          // legal. Nothing the caller could have asked for instead would have
+          // helped, so the question T-7 answers does not arise.
+          throw new HttpError(409, 'REVISION_MISMATCH');
+        }
+
+        audit.record(actor, {
+          entity: 'ticket',
+          entityId: id,
+          verb: 'ticket.status',
+          before: { status: before.status },
+          after: { status },
           at,
         });
 

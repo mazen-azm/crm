@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  ConflictError,
   HttpError,
   ValidationError,
   DOCUMENTED,
@@ -126,4 +127,44 @@ test('errorHandler omits fields when the list is empty', () => {
   errorHandler()(unprocessable([]), { id: 'req-1' }, res, () => {});
   assert.equal(res.statusCode, 422);
   assert.deepEqual(Object.keys(res.body).sort(), ['code', 'requestId']);
+});
+
+test('ConflictError is a 409 carrying the statuses that were legal', () => {
+  const err = new ConflictError('ILLEGAL_TRANSITION', ['open', 'pending']);
+  assert.ok(err instanceof HttpError);
+  assert.equal(err.status, 409);
+  assert.equal(err.code, 'ILLEGAL_TRANSITION');
+  assert.deepEqual(err.allowed, ['open', 'pending']);
+});
+
+test('ConflictError keeps only strings, for ValidationError\'s reason', () => {
+  assert.deepEqual(new ConflictError('X', ['open', 7, { s: 'open' }]).allowed, ['open']);
+  assert.deepEqual(new ConflictError('X', 'not-a-list').allowed, []);
+});
+
+test('an absent allowed and an empty one are different answers', () => {
+  // The distinction the whole subclass exists for: a closed ticket HAS an
+  // answer to "what would have worked" and it is "nothing"; a stale revision
+  // was never asked. Flatten one into the other and T-7 goes silent exactly
+  // where a caller needs it.
+  assert.equal(Object.hasOwn(new ConflictError('REVISION_MISMATCH'), 'allowed'), false);
+  assert.deepEqual(new ConflictError('ILLEGAL_TRANSITION', []).allowed, []);
+});
+
+test('the handler renders an empty allowed but omits an absent one', () => {
+  const render = (err) => {
+    const res = stubRes();
+    errorHandler()(err, { id: 'rq' }, res, () => {});
+    return res;
+  };
+
+  const empty = render(new ConflictError('ILLEGAL_TRANSITION', []));
+  assert.equal(empty.statusCode, 409);
+  assert.deepEqual(empty.body, { code: 'ILLEGAL_TRANSITION', requestId: 'rq', allowed: [] });
+
+  const absent = render(new ConflictError('REVISION_MISMATCH'));
+  assert.deepEqual(absent.body, { code: 'REVISION_MISMATCH', requestId: 'rq' });
+
+  const named = render(new ConflictError('ILLEGAL_TRANSITION', ['closed']));
+  assert.deepEqual(named.body.allowed, ['closed']);
 });

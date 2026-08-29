@@ -36,7 +36,7 @@
             "description": "The body was not JSON."
           },
           "401": {
-            "description": "Wrong password, unknown address, or a soft-deleted account \u2014 the body does not distinguish them."
+            "description": "Wrong password, unknown address, or a soft-deleted account — the body does not distinguish them."
           },
           "422": {
             "description": "Well-formed JSON, but the credentials were the wrong shape. The body names the fields and never their values."
@@ -71,7 +71,7 @@
         "summary": "Create a staff account. Answers with the account and, once, the password it was given.",
         "responses": {
           "201": {
-            "description": "Created. Body: { user, initialPassword } \u2014 the password is shown here and never again."
+            "description": "Created. Body: { user, initialPassword } — the password is shown here and never again."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."
@@ -191,10 +191,10 @@
     },
     "/api/v1/assignees": {
       "get": {
-        "summary": "The live staff a ticket can be assigned to. Any signed-in staff member may read it \u2014 an agent who cannot see the list cannot hand a ticket over.",
+        "summary": "The live staff a ticket can be assigned to. Any signed-in staff member may read it — an agent who cannot see the list cannot hand a ticket over.",
         "responses": {
           "200": {
-            "description": "{ items, total, limit, offset }. Each item is { id, name, role } \u2014 no address, no timestamps, nothing about the password."
+            "description": "{ items, total, limit, offset }. Each item is { id, name, role } — no address, no timestamps, nothing about the password."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."
@@ -210,7 +210,7 @@
     },
     "/api/v1/customers": {
       "get": {
-        "summary": "Find customers by name, email address or phone number, or list them when no term is given. Any signed-in staff member may read it \u2014 an agent who cannot find a customer cannot answer the phone.",
+        "summary": "Find customers by name, email address or phone number, or list them when no term is given. Any signed-in staff member may read it — an agent who cannot find a customer cannot answer the phone.",
         "responses": {
           "200": {
             "description": "{ items, total, limit, offset }. Each item is { id, name, email, phone, createdAt, updatedAt }. A term that matches nothing is an empty page with a total of zero, never a 404."
@@ -291,10 +291,10 @@
         }
       },
       "get": {
-        "summary": "The queue. Every signed-in staff member sees every ticket in it \u2014 there is one organisation and one queue, so it is not scoped to the caller. Filters combine; assigneeId=none means unassigned; the only sort is created_at, newest first, and an unknown one is refused rather than ignored.",
+        "summary": "The queue. Every signed-in staff member sees every ticket in it — there is one organisation and one queue, so it is not scoped to the caller. Filters combine; assigneeId=none means unassigned; the only sort is created_at, newest first, and an unknown one is refused rather than ignored.",
         "responses": {
           "200": {
-            "description": "{ items, total, limit, offset }. Each item is the ticket shape POST returns, including revision \u2014 a caller that later writes sends that value back (BR-5). total counts the matches, not the page."
+            "description": "{ items, total, limit, offset }. Each item is the ticket shape POST returns, including revision — a caller that later writes sends that value back (BR-5). total counts the matches, not the page."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."
@@ -322,10 +322,35 @@
             "description": "No such ticket, or one that has been removed."
           },
           "409": {
-            "description": "The revision sent is not the ticket's current one \u2014 somebody changed it since it was read. Nothing is written, and re-reading the ticket gives the revision to retry with."
+            "description": "The revision sent is not the ticket's current one — somebody changed it since it was read. Nothing is written, and re-reading the ticket gives the revision to retry with."
           },
           "422": {
             "description": "A missing or malformed revision, or an assigneeId that is not live staff. The body names the fields, never their values."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/status": {
+      "patch": {
+        "summary": "Move a ticket to another status. The legal moves are a table, not a chain of checks, so a refusal can name what would have worked (T-7). new to resolved is legal: a request answered on the spot should not have to be opened first. closed is the end of the line — reopening lives inside a 14-day window that has passed by the time a ticket is closed. The caller sends the revision it read (BR-5), and the move is audited with the status before and after.",
+        "responses": {
+          "200": {
+            "description": "The ticket at its new status, with its revision one higher. That new revision is what the next write on this ticket must send."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket, or one that has been removed."
+          },
+          "409": {
+            "description": "One of three, told apart by the code. ILLEGAL_TRANSITION: the move is not in the table, and `allowed` lists the statuses that were legal from where the ticket is — an empty array when the ticket is closed, which is an answer and not a missing field. STATUS_UNCHANGED: the ticket already has that status, and `allowed` is present for the same reason. REVISION_MISMATCH: the move was legal but the revision was stale; `allowed` is absent, because nothing else the caller could have asked for would have worked either. Nothing is written in any of the three."
+          },
+          "422": {
+            "description": "A status outside the six, or a missing or malformed revision. The body names the fields, never their values."
           },
           "500": {
             "description": "Internal."
