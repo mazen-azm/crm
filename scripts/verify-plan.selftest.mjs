@@ -11,26 +11,49 @@
 // reported. The last probe carries no defect and asserts silence — without it
 // a check that flags everything would pass every other probe.
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
+import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 // The probe has to look like a plan or the script will not pick it up:
-// planFiles matches /^\d{2,}-story-.+\.md$/ and refuses two files for one
-// story. So it borrows a story that has an intake and criteria but no plan yet
-// — CRM-32 — and is removed in a finally. While it exists, plan-next.sh would
-// consider CRM-32 planned and skip it; the window is one process and the lock
-// file makes a concurrent planner unlikely, but that is the trade being made.
-const DIR = join(ROOT, '.squad/plans/platform')
-const FILE = '99-story-CRM-32.md'
+// planFiles matches /^\d{2,}-story-.+\.md$/, and it refuses two files for one
+// story — so borrowing a FIXED story breaks the moment that story is really
+// planned. It was CRM-32, and the evening CRM-32 got its plan every "must stay
+// silent" probe failed on a duplicate-plan error that had nothing to do with
+// what was being tested.
+//
+// So the borrowed story is chosen now, at run time: one that has an intake and
+// criteria and no plan yet. Removed in a finally. While it exists plan-next.sh
+// would consider that story planned and skip it; the lock file makes a
+// concurrent planner unlikely, and that is the trade.
+function borrow() {
+  const stories = join(ROOT, '.squad/stories')
+  for (const feature of readdirSync(stories)) {
+    const dir = join(stories, feature)
+    if (!statSync(dir).isDirectory()) continue
+    for (const key of readdirSync(dir)) {
+      if (!/^[A-Z]+-\d+$/.test(key)) continue
+      if (!existsSync(join(dir, key, 'intake.md'))) continue
+      const plans = join(ROOT, '.squad/plans', feature)
+      const planned = existsSync(plans)
+        && readdirSync(plans).some((f) => f.toLowerCase().endsWith(`story-${key.toLowerCase()}.md`))
+      if (!planned) return { feature, key }
+    }
+  }
+  throw new Error('verify-plan.selftest: every story is planned — nothing to borrow')
+}
+
+const { feature: FEATURE, key: KEY } = borrow()
+const DIR = join(ROOT, '.squad/plans', FEATURE)
+const FILE = `99-story-${KEY}.md`
 const PATH = join(DIR, FILE)
 
 // A plan skeleton that passes on its own. The probes bolt one defect onto it,
 // so a failure is attributable to the probe and not to the scaffolding.
 const clean = (body) => `<!-- squad-kit: selftest -->
 
-# Story 99 — Selftest (Story: CRM-32)
+# Story 99 — Selftest (Story: ${KEY})
 
 ## Prerequisites
 
@@ -42,7 +65,7 @@ A throwaway plan, written by scripts/verify-plan.selftest.mjs and deleted by it.
 
 ## Product rules (from story)
 
-- PLATFORM-17-API is the story this stands in for.
+- The borrowed story stands in for itself; this plan says nothing about it.
 
 ## Implementation tasks
 
@@ -93,7 +116,8 @@ const probes = [
   {
     lesson: 'L-2',
     what: 'a plan that names its own file',
-    body: 'Attach `.squad/plans/platform/99-story-CRM-32.md` to the session.',
+    // The probe has to name the file it is IN, whichever story was borrowed.
+    body: `Attach \`.squad/plans/${FEATURE}/${FILE}\` to the session.`,
     expect: /names its own file/,
   },
   {

@@ -281,13 +281,13 @@ If the current rule at `scripts/verify-architecture.mjs:90–100` treats `api/sr
 
 ## Done Criteria
 
-- [ ] `api/src/seed-demo.js` exists, imports `createTicketsService` from `./features/tickets/index.js`, and never touches the `tickets`, `ticket_events`, or `audit_events` tables via raw SQL for writes.
-- [ ] `api/src/seed-demo.data.js` exists, contains 12–20 written fixtures with real English subjects/bodies, and covers every status returned by `allowedFrom` and every priority in `slaTargets`.
-- [ ] `api/src/platform/db/seed.js` still imports **zero** feature modules; `scripts/verify-architecture.mjs` passes.
-- [ ] `npm run seed` from `api/` populates both reference data and the demo queue on a fresh DB, and skips the demo queue on a second run without duplicating rows.
-- [ ] `api/src/seed-demo.test.js` asserts: status coverage, priority coverage, at least two unassigned tickets, at least two past first-response, at least one past resolution, second-run idempotence, and that every fixture key resolves.
-- [ ] All ticket-feature and audit-guarantee tests still pass unchanged.
-- [ ] No new file contains any AI-attribution string; `git grep` in the verification step returns zero matches.
-- [ ] The `.squad/plans/platform/00-overview.md` table has a new row for this story (file, title, tracker id `CRM-32`, depends on: `TICKETS-4-API`, `SERVICE-LEVELS-1-API`).
+- [x] `api/src/seed-demo.js` exists, imports `createTicketsService` from `./features/tickets/index.js`, and never touches the `tickets`, `ticket_events`, or `audit_events` tables via raw SQL for writes.
+- [x] `api/src/seed-demo.data.js` exists, contains 12–20 written fixtures with real English subjects/bodies, and covers every status returned by `allowedFrom` and every priority in `slaTargets`.
+- [x] `api/src/platform/db/seed.js` still imports **zero** feature modules; `scripts/verify-architecture.mjs` passes.
+- [x] `npm run seed` from `api/` populates both reference data and the demo queue on a fresh DB, and skips the demo queue on a second run without duplicating rows.
+- [x] `api/src/seed-demo.test.js` asserts: status coverage, priority coverage, at least two unassigned tickets, at least two past first-response, at least one past resolution, second-run idempotence, and that every fixture key resolves.
+- [x] All ticket-feature and audit-guarantee tests still pass unchanged.
+- [x] No new file contains any AI-attribution string; `git grep` in the verification step returns zero matches.
+- [x] The `.squad/plans/platform/00-overview.md` table has a new row for this story (file, title, tracker id `CRM-32`, depends on: `TICKETS-4-API`, `SERVICE-LEVELS-1-API`).
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

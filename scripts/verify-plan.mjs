@@ -219,7 +219,14 @@ function checkPlan(p) {
     if (NEGATED.test(before)) continue
     say(at(m.index), `uses ${m[0]} — another engine's dialect (L-5)`)
   }
-  if (PERSISTENCE.test(body) && !ENGINE.test(body))
+  // Citations are reads, not plans. A `path.sql` in backticks means "go and
+  // look at this file", and a good web plan cites the schema behind the rule it
+  // is honouring — CRM-61 did, said `api/` is untouched in the same breath, and
+  // was told it plans persistence without naming an engine. Single-backtick
+  // spans come out before the test; fenced blocks (```) stay, so a plan that
+  // actually shows SQL is still caught.
+  const authored = body.replace(/(?<!`)`[^`\n]+`(?!`)/g, ' ')
+  if (PERSISTENCE.test(authored) && !ENGINE.test(body))
     flag(`${p.file} plans persistence without naming the engine (L-5)`)
 
   // L-11 — a status outside rule E-2's catalogue is a promise the rules forbid

@@ -122,6 +122,12 @@ const SQL_EXEMPT = [
   { path: 'api/src/platform/db/migrations/', why: 'migrations are SQL by definition' },
   { path: 'api/src/platform/db/migrate.js', why: 'the runner reads and executes those files' },
   { path: 'api/src/platform/db/seed.js', why: 'the seed is a second composition root and owns its inserts' },
+  // The seed's CLI moved up to api/src/ when the demo half had to call the
+  // tickets service — platform may not know a feature's name, so the entry
+  // point rose instead of the dependency sinking. Same reason as the line
+  // above; the file moved and the reason did not.
+  { path: 'api/src/seed.js', why: 'the seed entry point, which owns the lookup that finds the actor' },
+  { path: 'api/src/seed-demo.js', why: 'the demo seed resolves fixture names to seeded ids; it is the seed, not a feature' },
   { path: 'api/src/features/audit/audit.guard.js', why: 'classifies SQL for a living, so it holds SQL keywords in regexes (L-13)' },
   { matches: (p) => p.endsWith('.test.js'), why: 'tests set up and assert on rows directly' },
 ]

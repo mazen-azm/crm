@@ -838,3 +838,26 @@ could not:
 
 Four of the five were in code that had passed review, tests and CI. The look
 costs ten minutes and it is not optional.
+
+## L-47 — Instructions a message prints are code, and are wrong the same way
+
+**Rule:** a line a program prints telling somebody what to do next is part of
+the product, and it is worth the same scrutiny as a branch. **Write the command
+out in full**, from the configuration rather than from memory, and check that
+following it literally produces the outcome it promises.
+
+**Where it came from:** the seed printed "To start over, delete the database
+file and seed again." Following it exactly leaves `app.db-wal` and `app.db-shm`
+behind. The database runs in WAL mode, so the next run opens a new empty
+`app.db` while the previous megabyte sits in a write-ahead log belonging to a
+database that no longer exists — and the first request answers `no such table:
+users`, which reads like a migration problem and is not one.
+
+It cost two separate hunts on the same evening: once for a password that had
+been printed correctly, and once for a 500 on sign-in. Both times the
+instruction was followed exactly and the instruction was wrong.
+
+The message now prints the full `rm -f` with all three paths, built from
+`config.dbPath` rather than typed, and says why all three. This is the same
+lesson as the password line above it, which was fixed for the same reason: a
+sentence in a terminal is read as an answer.
