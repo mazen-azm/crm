@@ -5,29 +5,36 @@ The promise about time, pauses, breaches, escalation.
 Written 2026-08-29, before SERVICE-LEVELS-1-API was planned, because the
 feature had no criteria file. That gap is L-7.
 
-## An unresolved contradiction, recorded before anybody plans against it
+## The targets, and how they came to be wrong
 
-`scripts/rules.txt` line 21 (S-2) enumerates the targets **and** says they are
-"fixed by the seed, by decision". The two disagree, on every priority:
+`scripts/rules.txt` line 21 (S-2) is the promise:
 
-| priority | S-2 says | the seed ships |
-|---|---|---|
-| urgent | 60 / 240 | **15** / 240 |
-| high | 240 / 1440 | **60** / **480** |
-| normal | 480 / 4320 | **240** / **1440** |
-| low | 1440 / 10080 | 1440 / **5760** |
+```
+urgent 1h/4h · high 4h/24h · normal 8h/72h · low 24h/168h
+```
 
-(minutes: first response / resolution. `api/src/platform/db/seed.data.js`
-lines 43–48.)
+For a day and a half the seed shipped different numbers — different on **all
+four** priorities — and nothing said so. Settled 2026-08-29 by reading rather
+than by choosing:
 
-By the rule's own words the seed is the authority, so the seed wins and the
-numbers written into S-2 are stale prose. **That reading needs confirming**, and
-until it is, a story must not quietly pick one — the numbers are the whole
-promise this feature makes.
+- `rules.txt` describes itself as "every rule the product promises", derived
+  from the product brief. It is the requirement.
+- "fixed by the seed, by decision" is about **configurability** — there is no
+  admin screen for these — and `CLAUDE.md` records that reading. It never
+  meant that whatever the seed contains becomes the promise.
+- S-2 was written 2026-08-27 with the backlog. `seed.data.js` came 2026-08-28,
+  a day later, and its plan justified the values as "the ones the criteria
+  assume" — while PLATFORM-8-API's criteria say only that targets *exist*. No
+  criteria ever stated a number.
 
-Nothing checks these two against each other today. `verify-backlog.mjs` checks
-that every rule is *owned*, not that a rule and the code agree, which is the
-difference between a rule having a home and a rule being true.
+So the seed was corrected, not the rule. `verify-backlog.mjs` now parses S-2
+and compares it to `seed.data.js`, because owning a rule means a story is
+answerable for it — not that the rule is true.
+
+**A related gap, unfixed:** the header of `scripts/rules.txt` names a product
+brief under docs as the source it derives from (not yet) — that file has never
+existed here, zero commits touch it. Thirty-one rules cite a source nobody can
+read.
 
 ## SERVICE-LEVELS-1-API
 

@@ -485,3 +485,26 @@ serves already pages through one reader: `/accounts`, `/assignees`,
 `/customers`, three of three. The intake had also said to reuse
 `readPagination` if reading turned out to be in scope, which the same plan
 decided it was, two paragraphs earlier.
+
+## L-32 — Owning a rule is not the same as the rule being true
+
+**Rule:** a check that every rule has an owning story proves only that somebody
+is answerable for it. Where a rule's text carries **values** — durations,
+limits, thresholds, enumerations — something must compare those values to the
+code that implements them, or the two drift silently and the rule becomes
+decoration. Parse the rule, import the implementation, compare. And when a rule
+and the code disagree, settle it by **provenance** — which is older, which
+document claims to be the source, what the implementing story's plan actually
+cited — not by whichever is easier to change.
+
+**Paid for by:** rule S-2 states the SLA targets as urgent 1h/4h, high 4h/24h,
+normal 8h/72h, low 24h/168h. The seed shipped 15min/4h, 1h/8h, 4h/24h and
+24h/96h — every priority different. It went unnoticed for a day and a half
+while `verify-backlog` reported the rule as owned and green.
+
+The first reading of the clause "fixed by the seed, by decision" was that the
+seed was therefore authoritative. It is not: `CLAUDE.md` records that clause as
+meaning there is no admin screen for the targets. The rule predates the seed by
+a day, `rules.txt` calls itself the product's promises, and the seed's plan
+justified its numbers as "the ones the criteria assume" — while the criteria
+state no number at all. The seed had invented them.

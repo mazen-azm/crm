@@ -29,7 +29,7 @@ An agent raises a ticket for a customer.
 - Given a raised ticket, when it is read back, then it belongs to one queue —
   there is no organisation or team to choose (SC-1).
 - Given a ticket is raised, when it is stored, then its service-level clocks
-  start from that moment (S-1) — see `criteria/service-levels.md`.
+  start from that moment (S-1) — see `scripts/criteria/service-levels.md`.
 
 ## TICKETS-2-API
 

@@ -121,6 +121,50 @@ for (const u of units.values()) {
   if (!hasApi) warn.push(`${u.id} is ${u.layer} with no API behind it — client-only on purpose?`)
 }
 
+// ── a rule that carries values is checked against the code that implements them
+//
+// Owning a rule means a story is answerable for it. It does not mean the rule
+// is true. S-2 is the one rule whose text states numbers rather than a
+// property, and for a day and a half its numbers and the seed's disagreed on
+// every priority — the seed was written after the rule, its plan justified the
+// values as "the ones the criteria assume", and no criteria state any number.
+//
+// Nothing compared them, so nothing said so. This does.
+{
+  const s2 = readFileSync(join(HERE, 'rules.txt'), 'utf8')
+    .split('\n')
+    .find((line) => line.startsWith('RULE S-2 '))
+  if (!s2) fail.push('rules.txt has no S-2 — the SLA targets rule is the one this check reads')
+  else {
+    // "urgent 1h/4h, high 4h/24h, normal 8h/72h, low 24h/168h"
+    const stated = new Map(
+      [...s2.matchAll(/(low|normal|high|urgent)\s+(\d+)h\/(\d+)h/g)].map((m) => [
+        m[1],
+        { first: Number(m[2]) * 60, resolution: Number(m[3]) * 60 },
+      ]),
+    )
+    if (stated.size !== 4) fail.push(`S-2 names ${stated.size} priorities in the shape "<p> <n>h/<n>h"; expected 4`)
+
+    const seeded = new Map(
+      (await import(new URL('../api/src/platform/db/seed.data.js', import.meta.url))).slaTargets.map(
+        (t) => [t.priority, { first: t.first_response_minutes, resolution: t.resolution_minutes }],
+      ),
+    )
+    for (const [priority, want] of stated) {
+      const got = seeded.get(priority)
+      if (!got) { fail.push(`S-2 promises a target for ${priority}; the seed ships none`); continue }
+      if (got.first !== want.first || got.resolution !== want.resolution) {
+        fail.push(
+          `S-2 promises ${priority} ${want.first / 60}h/${want.resolution / 60}h, ` +
+            `the seed ships ${got.first / 60}h/${got.resolution / 60}h`,
+        )
+      }
+    }
+    for (const priority of seeded.keys())
+      if (!stated.has(priority)) fail.push(`the seed ships a target for ${priority}, which S-2 does not promise`)
+  }
+}
+
 // report
 const total = [...units.values()].reduce((a, u) => a + u.pts, 0)
 console.log(`\nbacklog — ${features.length} features · ${features.reduce((a, f) => a + f.stories.length, 0)} capabilities · ${units.size} story units · ${total} points\n`)
