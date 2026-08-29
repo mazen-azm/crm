@@ -7,6 +7,7 @@ Entry point for the **service-levels** feature. Stories execute in order by thei
 | NN | File | Title | Tracker id | Depends on |
 |----|------|-------|------------|------------|
 | _add rows as stories are planned_ |
+| 32 | `32-story-crm-108.md` | SERVICE-LEVELS-1-API system — a ticket carries both deadlines, from its priority | CRM-108 | — |
 
 ## Dependency notes
 
