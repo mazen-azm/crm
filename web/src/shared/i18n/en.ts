@@ -58,6 +58,9 @@ export const en = {
     VALIDATION_FAILED: 'Check the highlighted fields and try again.',
     RATE_LIMITED: 'Too many attempts. Wait a moment and try again.',
     INTERNAL: 'Something went wrong at our end. Try again.',
+    REVISION_MISMATCH: 'Somebody changed this while you were working. Reload to see it, then try again.',
+    ILLEGAL_TRANSITION: 'That is not a move this ticket can make from where it is.',
+    STATUS_UNCHANGED: 'The ticket already has that status.',
   } satisfies Record<ApiErrorCode, string>,
   customers: {
     title: 'Customers',
@@ -131,6 +134,14 @@ export const en = {
     priorityNormal: 'Normal',
     priorityHigh: 'High',
     priorityUrgent: 'Urgent',
+  },
+  ticketAssign: {
+    label: 'Assign to',
+    submit: 'Assign',
+    assigning: 'Assigning…',
+    staleTitle: 'This ticket changed while you were looking at it',
+    reload: 'Reload the queue',
+    failedTitle: 'That assignment did not go through',
   },
   states: {
     loading: 'Loading',

@@ -14,6 +14,8 @@ import {
 } from '../../shared/ui';
 import { useTranslation } from '../../shared/i18n';
 import { useFormatters } from '../../shared/i18n/useFormatters';
+import { useAssignees } from './useAssignees';
+import { useAssignTicket } from './useAssignTicket';
 import { useTicketCategories } from './useTicketCategories';
 import {
   PAGE_SIZE,
@@ -30,6 +32,11 @@ type T = ReturnType<typeof useTranslation>['t'];
 // One separator, in one place. It is punctuation rather than words, so it does
 // not belong in the resource files — but it does not belong inline either.
 const SEPARATOR = ' · ';
+
+// The picker's word for nobody. The wire value is null — 'none' is the queue
+// FILTER's word for the same idea and the two must not be confused: one asks a
+// question, the other performs a write.
+const UNASSIGN = '__unassigned__';
 
 const statusLabel = (t: T, status: string) =>
   ({
@@ -49,7 +56,37 @@ const priorityLabel = (t: T, priority: string) =>
     urgent: t.ticketQueue.priorityUrgent,
   })[priority] ?? priority;
 
-function Row({ ticket, t, formatDate }: { ticket: Ticket; t: T; formatDate: (v: string) => string }) {
+// The row assigns. There is no route that reads one ticket and no story that
+// asks for a detail screen, and there does not need to be: the row already
+// holds the ticket and its revision, which is everything the write needs. An
+// agent assigns from the list they are looking at.
+function Row({
+  ticket,
+  t,
+  formatDate,
+  assignees,
+  onAssigned,
+}: {
+  ticket: Ticket;
+  t: T;
+  formatDate: (v: string) => string;
+  assignees: ReturnType<typeof useAssignees>;
+  onAssigned: (ticket: Ticket) => void;
+}) {
+  const assign = useAssignTicket();
+  const [choice, setChoice] = useState(ticket.assigneeId ?? UNASSIGN);
+
+  const submit = async () => {
+    const next = choice === UNASSIGN ? null : choice;
+    // The response carries the ticket at its new revision, and the page holds
+    // it. A screen that keeps the revision it loaded with refuses the agent's
+    // own second assignment, and the bug looks like a race that is not there.
+    const updated = await assign.assign(ticket, next).catch(() => null);
+    if (updated) onAssigned(updated);
+  };
+
+  const stale = assign.status === 'error' && assign.error?.code === 'REVISION_MISMATCH';
+
   return (
     <Card>
       <Stack gap={1}>
@@ -62,10 +99,58 @@ function Row({ ticket, t, formatDate }: { ticket: Ticket; t: T; formatDate: (v: 
           {[
             statusLabel(t, ticket.status),
             priorityLabel(t, ticket.priority),
-            ticket.assigneeId ?? t.ticketQueue.unassigned,
+            assignees.nameFor(ticket.assigneeId) ?? t.ticketQueue.unassigned,
             formatDate(ticket.createdAt),
           ].join(SEPARATOR)}
         </Text>
+
+        <Stack direction="row" gap={2} align="end">
+          <Field id={`assignee-${ticket.id}`} label={t.ticketAssign.label}>
+            {({ id }) => (
+              <Select
+                id={id}
+                value={choice}
+                disabled={assignees.status !== 'success'}
+                onChange={(event) => setChoice(event.target.value)}
+              >
+                {/* Returning a ticket to nobody is an assignment, not a
+                    cleared field — so it is an option that sends null, not an
+                    absent value. */}
+                <option value={UNASSIGN}>{t.ticketQueue.unassigned}</option>
+                {assignees.assignees.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+          <Button
+            variant="secondary"
+            disabled={assign.status === 'loading' || choice === (ticket.assigneeId ?? UNASSIGN)}
+            onClick={() => void submit()}
+          >
+            {assign.status === 'loading' ? t.ticketAssign.assigning : t.ticketAssign.submit}
+          </Button>
+        </Stack>
+
+        {stale ? (
+          // 409 is not "something went wrong". It means somebody else changed
+          // the ticket, and the only useful next action is to look again.
+          <ErrorState
+            title={t.ticketAssign.staleTitle}
+            body={t.errors.REVISION_MISMATCH}
+            onRetry={() => window.location.reload()}
+            retryLabel={t.ticketAssign.reload}
+          />
+        ) : null}
+
+        {assign.status === 'error' && !stale && assign.error ? (
+          <ErrorState
+            title={t.ticketAssign.failedTitle}
+            body={t.errors[assign.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+          />
+        ) : null}
       </Stack>
     </Card>
   );
@@ -76,6 +161,13 @@ export function TicketQueuePage() {
   const { formatDate, formatNumber } = useFormatters();
   const queue = useTicketQueue();
   const categories = useTicketCategories();
+  const assignees = useAssignees();
+
+  // Tickets this screen has changed since the page was fetched, so a row shows
+  // the assignment that just happened and carries the revision that came back
+  // with it. Cleared whenever a new page arrives — that page is fresher.
+  const [updated, setUpdated] = useState<Record<string, Ticket>>({});
+  useEffect(() => setUpdated({}), [queue.page]);
 
   // The form's own working copy, so typing into it does not rewrite the URL on
   // every keystroke. The URL is still the state — this is seeded from it, and
@@ -211,9 +303,19 @@ export function TicketQueuePage() {
           </Text>
           {/* Whatever the API returned is what is shown. No filter, no sort,
               no slice here — the total would be right and the rows wrong. */}
-          {page.items.map((ticket) => (
-            <Row key={ticket.id} ticket={ticket} t={t} formatDate={formatDate} />
-          ))}
+          {page.items.map((ticket) => {
+            const shown = updated[ticket.id] ?? ticket;
+            return (
+              <Row
+                key={shown.id}
+                ticket={shown}
+                t={t}
+                formatDate={formatDate}
+                assignees={assignees}
+                onAssigned={(next) => setUpdated((current) => ({ ...current, [next.id]: next }))}
+              />
+            );
+          })}
           <Stack direction="row" gap={2}>
             <Button
               variant="secondary"

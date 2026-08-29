@@ -16,12 +16,19 @@ const ticket = (id: string, extra: Record<string, unknown> = {}) => ({
   priority: 'normal',
   assigneeId: null,
   categoryId: null,
+  revision: 1,
   createdAt: '2026-08-01T00:00:00.000Z',
   updatedAt: '2026-08-01T00:00:00.000Z',
   ...extra,
 });
 
 const CATEGORIES = { items: [{ id: 'cat-1', name: 'Billing' }], total: 1, limit: 100, offset: 0 };
+const ASSIGNEES = {
+  items: [{ id: 'staff-1', name: 'Sofia Martinez', role: 'agent' }],
+  total: 1,
+  limit: 100,
+  offset: 0,
+};
 
 // Routes by path so a test says what each endpoint answers, and records the
 // queue calls so an assertion can read what was actually asked for.
@@ -29,7 +36,11 @@ const desk = (queue: () => Response) => {
   const calls: URL[] = [];
   const stub = vi.fn((input: RequestInfo | URL) => {
     const url = new URL(String(input), 'http://desk.test');
+    // The reference lists the screen loads alongside the queue. Recorded
+    // separately so an assertion about "what the queue was asked for" is not
+    // reading whichever request happened to be last.
     if (url.pathname.startsWith('/api/v1/ticket-categories')) return Promise.resolve(json(CATEGORIES)());
+    if (url.pathname.startsWith('/api/v1/assignees')) return Promise.resolve(json(ASSIGNEES)());
     calls.push(url);
     return Promise.resolve(queue());
   });
