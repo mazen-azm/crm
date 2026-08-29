@@ -659,3 +659,31 @@ different failure with a different fix. The copied condition was right for
 list is the entire answer. Caught at plan review by noticing the plan's own test
 ("409 with `allowed: []`") could not pass against the plan's own middleware
 rule. Three tests now fail on the flattening.
+
+## L-40 — For a story about what already exists, run it before planning it
+
+**Rule:** when a story's premise is "expose something the schema already has",
+**exercise the existing behaviour first** — a throwaway script against an
+in-memory database, driving the real HTTP layer — and put what it actually did
+into the intake. Reading the schema tells you what is declared. Running it tells
+you what happens, and those are different answers wherever a guarantee is split
+between the database and the service.
+
+**Where it came from:** CRM-82. The intake said the story was "mostly about
+exposing what exists" and expected a small change. Twenty lines of throwaway
+script found two defects that no amount of reading would have shown, because
+both live in the gap between a declared constraint and the code above it:
+
+- A category id that does not exist returned **500 INTERNAL**. The foreign key
+  is declared, `PRAGMA foreign_keys = ON` is set, and SQLite refused the insert
+  exactly as intended — then its own error escaped the service unhandled. The
+  schema was right and the behaviour was wrong.
+- A **retired** category was accepted with 201. A foreign key can see that a row
+  exists; it cannot see that `deleted_at` took it off the list. The one thing
+  the story's acceptance criteria forbid was the one thing the constraint could
+  not enforce.
+
+Both went into the intake as findings before the plan was generated, so the plan
+was written to fix them rather than to describe the route it thought was there.
+A story that had been planned from the schema alone would have shipped a list
+endpoint and left both in place.

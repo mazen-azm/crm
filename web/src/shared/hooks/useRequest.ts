@@ -40,5 +40,15 @@ export function useRequest<T>() {
     }
   }, []);
 
-  return { status, data, error, run };
+  // Back to idle, for a screen that finished one thing and offers another —
+  // raising a second ticket, say. It bumps the ticket too, so an in-flight
+  // request that lands after a reset cannot repaint the cleared screen.
+  const reset = useCallback(() => {
+    latest.current += 1;
+    setStatus('idle');
+    setData(null);
+    setError(null);
+  }, []);
+
+  return { status, data, error, run, reset };
 }

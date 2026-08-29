@@ -13,6 +13,7 @@ Entry point for the **tickets** feature. Stories execute in order by their `NN` 
 | 36 | `36-story-crm-79.md` | TICKETS-4-API system — an illegal status change is refused with what is legal | CRM-79 | — |
 | 37 | `37-story-crm-80.md` | TICKETS-5-API agent — resolving a ticket needs a note | CRM-80 | — |
 | 38 | `38-story-crm-82.md` | TICKETS-6-API agent — the categories are readable, so a form has something to offer | CRM-82 | — |
+| 39 | `39-story-crm-72.md` | TICKETS-1-WEB agent — I raise a ticket for a customer | CRM-72 | — |
 
 ## Dependency notes
 
