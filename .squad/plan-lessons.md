@@ -394,3 +394,94 @@ GitHub's settings, needs admin rights, and no committed file can turn on. The
 workflow being green proves the suites run — not that a red one stops anything.
 `.github/BRANCH_PROTECTION.md` carries the steps and the exact check names, and
 that box stays open until a person has clicked it.
+
+## L-28 — A helper that makes one rule honest can make another rule impossible
+
+**Rule:** when several checks share a normaliser, ask of **each** rule what the
+normaliser removes and whether the thing that rule hunts is inside it. Strip
+comments for everyone, because a comment explaining a rule reads exactly like a
+breach of it — but strip no further by default. A rule whose subject lives in
+string literals must not be handed source with the strings taken out, or it
+becomes a check that reads every file, finds nothing, and cannot fail.
+
+**Paid for by:** CRM-30's plan gave every rule `stripCommentsAndStrings`,
+correctly for the import matcher — `import … from '<string>'` is a fixed
+grammar and stripping strings first stops a quoted path in a comment counting.
+But the SQL-outside-a-repository rule hunts SQL, and every statement in this
+codebase is inside a string or template literal: `db.prepare('SELECT … FROM
+users …')`. That rule would have scanned 137 files, reported zero findings and
+a green tick, and stayed green no matter what anybody wrote. Two helpers now:
+`stripComments` for all, `stripStrings` composed on top for the one rule that
+can afford it.
+
+**Related:** [[L-13]] is why comments are stripped at all; this is the other
+edge of the same knife.
+
+## L-29 — Two callers of one code can owe the reader different sentences
+
+**Rule:** before folding several call sites onto one shared message map, ask
+whether any of them says what it says **on purpose**. A screen that is
+deliberately vague — because the API refused to distinguish, and the screen
+must keep that refusal — is not a duplicate of a generic mapper. Consolidate the
+generic meaning, leave the deliberate one alone, and put a comment on it naming
+the rule and the story that set it, or the next reader deletes it as
+duplication.
+
+**Paid for by:** CRM-31's intake said sign-in's local `messageFor` was "the
+accidental version of this story" and should be lifted onto a shared map. It is
+the opposite. IDENTITY-1-API answers 401 `UNAUTHENTICATED` for a wrong
+password, an unknown address and a disabled account alike so the response is not
+a directory of who works here, and `t.signIn.errorUnauthenticated` is one
+sentence covering three truths to keep that promise on the screen. Every other
+screen means "your session ended" by the same code. One map cannot say both:
+folding them would have leaked the distinction the API spends a dummy hash
+computation to hide.
+
+**Where the steering came from matters here:** the wrong instruction was in the
+intake, written at gate 1, and the plan followed it faithfully. Gate 2 is the
+only thing that catches a gate-1 mistake, which is the argument for both gates
+being read by someone rather than one of them being trusted.
+
+## L-30 — A stubbed Response is single-use, so a mock that resolves one instance lies on the second call
+
+**Rule:** a `fetch` stub must build a **fresh** `Response` per call —
+`vi.fn(() => Promise.resolve(makeResponse()))`, never
+`vi.fn().mockResolvedValue(makeResponse())`. A `Response` body can be read
+once; the second caller gets a consumed one and `.json()` throws. And the
+symptom names nothing: a screen sits in its loading state and the test waits out
+its full timeout, so it reads as a race, a missing `await`, or a component that
+never re-renders — anything but a body that was already read.
+
+**Paid for by:** CRM-56's paging test, which spent 298 seconds failing to find
+a button. The list was never re-rendering because the second search's `.json()`
+threw. Chained `mockResolvedValueOnce` calls hid it in the neighbouring tests,
+since each `Once` was given its own instance.
+
+The same stub was already in CRM-46's tests and passing — by luck. The client's
+failure path catches a `.json()` error and falls back to an empty body, and the
+handler keys off the status, which survives. The first assertion about the
+response's `code` would have ended that, on a story that had nothing to do with
+the change.
+
+## L-31 — A global rule does not stop applying because one story's criteria forgot to repeat it
+
+**Rule:** when a plan declines a rule marked `global` in `scripts/rules.txt`,
+that is a defect however well it argues. The story's own acceptance criteria are
+a floor, not a fence: they say what this story must do, not what it is excused
+from. Check a plan's decisions against the global rules as well as against the
+criteria, and treat "this story's criteria do not mention it" as the shape of
+the mistake rather than the reason.
+
+**And distrust any reason that is a prediction about data.** "Small in this
+sprint" is a guess about volume made by somebody who will not be there when it
+is wrong. A ceiling that refuses exists precisely so nobody has to be right
+about that in advance.
+
+**Paid for by:** CRM-60's plan shipped an unbounded list of a customer's notes,
+reasoning that the criterion was "about order, not about paging" and that the
+volume would be small. BR-4 is global — "No unbounded list: paginated,
+filterable, sortable, with a maximum page size" — and every list this API
+serves already pages through one reader: `/accounts`, `/assignees`,
+`/customers`, three of three. The intake had also said to reuse
+`readPagination` if reading turned out to be in scope, which the same plan
+decided it was, two paragraphs earlier.

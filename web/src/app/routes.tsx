@@ -1,8 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from './require-auth';
+import { DeskShell } from './desk-shell';
 import { SignInPage } from '../pages/sign-in/SignInPage';
 import { HomePage } from '../pages/home/HomePage';
+import { CustomersPage } from '../pages/customers/CustomersPage';
 
 // Routes import pages; nothing imports routes. The direction is
 // app -> pages -> features -> entities -> shared, and PLATFORM-15-ALL will
@@ -14,8 +16,24 @@ export function AppRoutes() {
       <Route
         path="/"
         element={
+          // The shell sits INSIDE RequireAuth, so an unauthenticated
+          // visitor is redirected before a navigation bar can render.
+          // Sign-in is deliberately not wrapped: it has nothing to navigate
+          // to and nobody to greet.
           <RequireAuth>
-            <HomePage />
+            <DeskShell>
+              <HomePage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/customers"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <CustomersPage />
+            </DeskShell>
           </RequireAuth>
         }
       />

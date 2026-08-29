@@ -8,6 +8,12 @@
 # had something caught at one of them.
 set -u
 cd /Users/mazen/Developer/projects/learning/crm/support-desk || exit 1
+
+# --dry says what WOULD be planned and stops. It exists because asking the
+# question by running the script spends the quota answering it, which is what
+# happened the first time somebody wanted to know.
+DRY=0
+[ "${1:-}" = "--dry" ] && DRY=1
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 
 # One planner at a time. The three firing times are a retry, not a fan-out: a
@@ -30,8 +36,34 @@ trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
 for intake in .squad/stories/*/CRM-*/intake.md; do
   key=$(basename "$(dirname "$intake")")            # CRM-47
   if ls .squad/plans/*/ 2>/dev/null | grep -qi "story-${key}.md"; then continue; fi
+  if [ "$DRY" = "1" ]; then
+    echo "[$(date '+%F %T')] would plan $key"
+    exit 0
+  fi
   echo "[$(date '+%F %T')] planning $key"
-  squad new-plan --api -y "$intake" 2>&1 | tail -3
+  # squad-kit caps the planner at 40 model turns. An INTERACTIVE run is offered
+  # "continue — extend limits for this run" and carries on; a run started with
+  # -y gets decideOnLimit = undefined and returns with no plan at all
+  # (cli.js: `const interactive = !opts.yes && Boolean(process.stdin.isTTY)`).
+  # Unattended planning has to pass -y, so it cannot be offered that choice —
+  # it can only be given another go. Whether a run hits the ceiling varies:
+  # CRM-27 died at it once and finished the next time with no change at all.
+  #
+  # Retry only the ceiling. Retrying a usage limit just spends the next window
+  # discovering the window is still closed.
+  attempt=1
+  while : ; do
+    out=$(squad new-plan --api -y "$intake" 2>&1)
+    echo "$out" | tail -3
+    case "$out" in
+      *"maximum number of turns"*)
+        if [ "$attempt" -ge 2 ]; then break; fi
+        attempt=$((attempt + 1))
+        echo "[$(date '+%F %T')] $key hit the turn ceiling — attempt $attempt"
+        ;;
+      *) break ;;
+    esac
+  done
   if ls .squad/plans/*/ 2>/dev/null | grep -qi "story-${key}"; then
     # squad-kit lowercases the id; the console and its own lookup are
     # case-sensitive, so fix it here rather than leaving the story unplanned.
@@ -40,7 +72,15 @@ for intake in .squad/stories/*/CRM-*/intake.md; do
     done
     echo "[$(date '+%F %T')] $key planned"
   else
-    echo "[$(date '+%F %T')] $key not planned — quota or error"
+    # Say which. "quota or error" sent somebody looking at a usage limit for
+    # a run that had actually hit squad-kit's hardcoded 40-turn ceiling
+    # (DEFAULT_PLANNER_MAX_ITERATIONS), which no flag or config key exposes.
+    case "$out" in
+      *"hit your limit"*|*"usage limit"*)  why="usage limit — retry after it resets" ;;
+      *"maximum number of turns"*)         why="hit the 40-turn planner ceiling — retry, or lower planner.budget.maxFileReads so fewer turns go on reading" ;;
+      *)                                   why="see the output above" ;;
+    esac
+    echo "[$(date '+%F %T')] $key not planned — $why"
   fi
   exit 0
 done

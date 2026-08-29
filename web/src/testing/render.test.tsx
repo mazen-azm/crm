@@ -43,8 +43,13 @@ test('and the item the previous test left behind is gone', () => {
 });
 
 test('the helper puts the providers in place, so a page renders alone', async () => {
-  // HomePage reads the auth context and the translations; neither is stated
-  // here, which is the point of the fourth criterion.
+  // HomePage reads the translations; the auth context and the theme are read
+  // by the shell it normally sits inside. None of that is stated here, which
+  // is the point of the fourth criterion.
+  //
+  // The heading this used to look for now belongs to the desk shell, so the
+  // assertion follows it: rendered alone, HomePage is only its own content.
   renderWithProviders(<HomePage />, { signedIn: true });
-  expect(await screen.findByRole('heading', { name: 'Support Desk' })).toBeInTheDocument();
+  expect(await screen.findByText('Support Desk')).toBeInTheDocument();
+  expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
 });

@@ -15,8 +15,51 @@ export const ar = defineLocale({
     errorInternal: 'حدث خطأ عندنا. حاول مرة أخرى.',
     errorUnknown: 'فشل تسجيل الدخول.',
   },
+  shell: {
+    navLabel: 'التنقل الرئيسي',
+    navCustomers: 'العملاء',
+    navHome: 'الرئيسية',
+    switchToDark: 'الوضع الداكن',
+    switchToLight: 'الوضع الفاتح',
+    // Each language is named in its own words, in BOTH files on purpose: the
+    // button says which language you would switch TO, so it reads the same
+    // whichever way round you are. Do not "translate" these.
+    switchToArabic: 'العربية',
+    switchToEnglish: 'English',
+  },
   home: {
     heading: 'مكتب الدعم',
     signOut: 'تسجيل الخروج',
+  },
+  errors: {
+    BAD_REQUEST: 'تعذّرت قراءة هذا الطلب. أعد تحميل الصفحة وحاول مرة أخرى.',
+    UNAUTHENTICATED: 'انتهت جلستك. سجّل الدخول مرة أخرى للمتابعة.',
+    FORBIDDEN: 'حسابك لا يملك صلاحية الوصول إلى هذا.',
+    NOT_FOUND: 'هذا غير موجود هنا. ربما نُقل أو حُذف.',
+    CONFLICT: 'غيّر شخص آخر هذا أثناء عملك. أعد التحميل لرؤيته.',
+    VALIDATION_FAILED: 'راجع الحقول المطلوبة وحاول مرة أخرى.',
+    RATE_LIMITED: 'محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.',
+    INTERNAL: 'حدث خطأ عندنا. حاول مرة أخرى.',
+  },
+  customers: {
+    title: 'العملاء',
+    searchLabel: 'ابحث عن عميل',
+    searchPlaceholder: 'الاسم أو البريد الإلكتروني أو رقم الهاتف',
+    search: 'بحث',
+    searching: 'جارٍ البحث…',
+    resultCount: 'عميل مطابق',
+    emptyTitle: 'لا يوجد عميل مطابق',
+    emptyBody: 'راجع الكتابة، أو جرّب جزءًا من رقم الهاتف بدلًا منها.',
+    emptyAction: 'امسح البحث',
+    errorTitle: 'تعذّر تنفيذ البحث',
+    noEmail: 'لا يوجد بريد إلكتروني',
+    noPhone: 'لا يوجد رقم هاتف',
+    previous: 'السابق',
+    next: 'التالي',
+  },
+  states: {
+    loading: 'جارٍ التحميل',
+    errorTitle: 'تعذّر التحميل',
+    retry: 'حاول مرة أخرى',
   },
 });

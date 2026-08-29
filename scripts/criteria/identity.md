@@ -61,6 +61,23 @@ An admin creates, disables and re-enables accounts, and sets roles.
 - Given an address that already belongs to a live account, when it is used
   again, then the answer is 409.
 
+## IDENTITY-3-WEB
+
+An expired token returns me to sign-in, not a broken screen.
+
+*Acceptance criteria*
+- Given a token the API no longer accepts, when any request uses it, then the
+  session is cleared and the reader is at sign-in — not on a screen that
+  renders an error it cannot recover from.
+- Given the sign-in request itself, when it answers 401 because the password
+  was wrong, then that is not treated as an expired session: the message stays
+  on the screen and nothing is cleared.
+- Given a session ending mid-task, when the reader arrives at sign-in, then
+  they are told the session ended rather than being dropped there with no
+  explanation.
+- Given several requests failing at once with the same expired token, when they
+  land, then the reader is sent to sign-in once.
+
 ## IDENTITY-4-API
 
 Failed sign-ins are throttled, per account and per address.

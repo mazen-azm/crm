@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest';
 
 import { renderWithProviders, screen, userEvent } from '../testing/render';
 import { AppRoutes } from './routes';
+import { THEME_KEY } from './theme-context';
 import { AUTH_TOKEN_KEY } from './auth-context';
 
 describe('the router', () => {
@@ -44,4 +45,21 @@ describe('the router', () => {
     expect(await screen.findByRole('heading', { name: 'تسجيل الدخول' })).toBeInTheDocument();
     expect(document.documentElement.getAttribute('dir')).toBe('rtl');
   });
+});
+
+test('the shell does not wrap sign-in — there is nothing there to navigate', async () => {
+  renderWithProviders(<AppRoutes />, { route: '/' });
+
+  expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+  // No navigation landmark, because an unauthenticated visitor is redirected
+  // before the shell can mount.
+  expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument();
+});
+
+test('the theme survives a reload, which is a fresh render reading the same storage', async () => {
+  localStorage.setItem(THEME_KEY, 'dark');
+  renderWithProviders(<AppRoutes />, { signedIn: true });
+
+  await screen.findByRole('heading', { name: 'Support Desk' });
+  expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
 });

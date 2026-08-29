@@ -122,3 +122,11 @@ jobs:
       - name: verify plan
         if: always()
         run: node scripts/verify-plan.mjs
+
+      - name: verify architecture
+        if: always()
+        run: node scripts/verify-architecture.mjs
+
+      - name: verify i18n coverage
+        if: always()
+        run: node scripts/verify-i18n-parity.mjs

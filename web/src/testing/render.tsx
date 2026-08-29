@@ -4,13 +4,19 @@ import { render } from '@testing-library/react';
 import type { RenderOptions, RenderResult } from '@testing-library/react';
 
 import { AUTH_TOKEN_KEY, AuthProvider } from '../app/auth-context';
+import { ThemeProvider } from '../app/theme-context';
 import { I18nProvider } from '../shared/i18n';
 import type { Language } from '../shared/i18n';
 
 // One helper, so a test says what it is testing instead of restating the
 // providers every screen already lives inside. The nesting mirrors
-// app/App.tsx exactly — router, then language, then session — with a
-// MemoryRouter so nothing touches window.history.
+// app/App.tsx exactly — router, then language, then theme, then session —
+// with a MemoryRouter so nothing touches window.history.
+//
+// "Mirrors App.tsx exactly" is load-bearing: when the shell started calling
+// useTheme, every test that renders a screen began throwing, because the
+// harness was one provider behind the application. Adding a provider to
+// App.tsx means adding it here.
 type Options = Omit<RenderOptions, 'wrapper'> & {
   route?: string;
   initialEntries?: string[];
@@ -19,7 +25,12 @@ type Options = Omit<RenderOptions, 'wrapper'> & {
 };
 
 export function renderWithProviders(ui: ReactElement, options: Options = {}): RenderResult {
-  const { route, initialEntries, language = 'en', signedIn, ...rest } = options;
+  // No default for `language`. App.tsx passes none, so the harness passing
+  // 'en' would not be mirroring it — and because an explicit prop beats
+  // storage, a defaulted one means no test could ever exercise the stored
+  // choice. Undefined here is the honest translation of "the caller did not
+  // say".
+  const { route, initialEntries, language, signedIn, ...rest } = options;
 
   // Seeded before the render, not after: AuthProvider reads storage on its
   // first render, so a token written afterwards would arrive too late to make
@@ -34,7 +45,9 @@ export function renderWithProviders(ui: ReactElement, options: Options = {}): Re
     return (
       <MemoryRouter initialEntries={entries}>
         <I18nProvider language={language}>
-          <AuthProvider>{children}</AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ThemeProvider>
         </I18nProvider>
       </MemoryRouter>
     );

@@ -66,6 +66,7 @@ const EXERCISED = new Set([
   'PATCH /api/v1/accounts/:id/role',
   'POST /api/v1/accounts/:id/disable',
   'POST /api/v1/accounts/:id/re-enable',
+  'POST /api/v1/customers/:id/notes',
 ]);
 
 test('every mutating route the router serves is exercised by this file', async () => {
@@ -106,7 +107,17 @@ test('each mutating route writes exactly one audit row', async () => {
     assert.equal(auditCount(), before + 1, `${name} must write exactly one audit row`);
   }
 
+  // Adding a route to EXERCISED without driving it here would satisfy the
+  // census with a claim rather than a test — which is the failure the census
+  // exists to prevent, arriving through its own front door.
+  const customer = (await (await call('/api/v1/customers?limit=1')).json()).items[0];
+
   const rest = [
+    ['POST /api/v1/customers/:id/notes', () =>
+      call(`/api/v1/customers/${customer.id}/notes`, {
+        method: 'POST',
+        body: { body: 'A note, so this route is actually exercised.' },
+      })],
     ['PATCH /api/v1/accounts/:id/role', () =>
       call(`/api/v1/accounts/${created.id}/role`, { method: 'PATCH', body: { role: 'admin' } })],
     ['POST /api/v1/accounts/:id/disable', () =>

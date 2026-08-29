@@ -10,7 +10,26 @@ export function setAuthTokenGetter(getter: () => string | null): void {
   readToken = getter;
 }
 
-export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+// The app layer registers what should happen when the API stops accepting our
+// token. This module reports; it does not navigate and does not touch storage,
+// because doing either would mean importing from app/ — and shared/ reaching
+// upward is a violation verify-architecture.mjs fails by name. Same shape as
+// the token getter above, for the same reason.
+type UnauthenticatedHandler = (error: ApiError) => void;
+let onUnauthenticated: UnauthenticatedHandler = () => {};
+
+export function setUnauthenticatedHandler(handler: UnauthenticatedHandler): void {
+  onUnauthenticated = handler;
+}
+
+export async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  // A caller that expects a 401 as a normal answer says so here. Only sign-in
+  // does — an option rather than sniffing the path, so the exemption sits at
+  // the call site where a reviewer meets it.
+  { suppressSessionExpiry = false }: { suppressSessionExpiry?: boolean } = {},
+): Promise<T> {
   if (!path.startsWith('/')) {
     throw new Error(`request(): path must start with "/", got "${path}"`);
   }
@@ -47,10 +66,20 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     body = {};
   }
 
-  throw new ApiError({
+  const error = new ApiError({
     status: response.status,
     code: typeof body.code === 'string' ? body.code : 'INTERNAL',
     requestId: typeof body.requestId === 'string' ? body.requestId : requestId,
     fields: Array.isArray(body.fields) ? body.fields.filter((f): f is string => typeof f === 'string') : undefined,
   });
+
+  // A 401 from the sign-in request is a wrong password, not an expired
+  // session: IDENTITY-1-API answers the same 401 for a wrong password, an
+  // unknown address and a disabled account, on purpose. Treating that as an
+  // expiry would clear a session that does not exist, redirect a reader who is
+  // already on sign-in, and wipe the message they were meant to read.
+  // The next person adding a global 401 handler will read this. Leave it here.
+  if (error.status === 401 && !suppressSessionExpiry) onUnauthenticated(error);
+
+  throw error;
 }
