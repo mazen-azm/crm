@@ -145,6 +145,56 @@ export function assignTicket(db, { id, assigneeId, revision, at }) {
 // Read from this feature, as the customer lookup above is: identity/index.js
 // publishes a router and a subject resolver, so its assignee list is not
 // reachable without widening another feature's surface for one caller.
+// ── the categories a form offers ─────────────────────────────────────────────
+
+const CATEGORY_PROJECTION = 'id, name, created_at, updated_at';
+
+// The FK on tickets.category_id already keeps the row present. What it cannot
+// see is deleted_at, and that is what takes a category off the list — so a
+// retired one satisfies the constraint and still must not be choosable. Same
+// shape as findLiveCustomerId and findLiveAssigneeId, for the same reason.
+export function findLiveCategoryId(db, { categoryId }) {
+  return db
+    .prepare('SELECT id FROM ticket_categories WHERE id = ? AND deleted_at IS NULL')
+    .get(categoryId);
+}
+
+// One predicate, both statements — the page and the count cannot disagree
+// about what is being counted. Same reasoning as queueFilter above.
+function categoryFilter({ q }) {
+  const where = ['deleted_at IS NULL'];
+  const params = [];
+  if (q !== undefined) {
+    where.push('name LIKE ?');
+    params.push(`%${q}%`);
+  }
+  return { where: where.join(' AND '), params };
+}
+
+export function listCategories(db, { filters, sort, limit, offset }) {
+  const { where, params } = categoryFilter(filters);
+  // `sort` is one of CATEGORY_SORTS, checked in the rules layer before it
+  // reaches here — it is interpolated, so nothing else may ever reach it.
+  // id ASC is the tiebreaker: name is unique today, but a list whose order
+  // depends on that staying true is a list that reorders itself later.
+  return db
+    .prepare(`
+      SELECT ${CATEGORY_PROJECTION}
+      FROM ticket_categories
+      WHERE ${where}
+      ORDER BY ${sort} ASC, id ASC
+      LIMIT ? OFFSET ?
+    `)
+    .all(...params, limit, offset);
+}
+
+export function countCategories(db, { filters }) {
+  const { where, params } = categoryFilter(filters);
+  return db
+    .prepare(`SELECT count(*) AS n FROM ticket_categories WHERE ${where}`)
+    .get(...params).n;
+}
+
 export function findLiveAssigneeId(db, { assigneeId }) {
   return db
     .prepare('SELECT id FROM users WHERE id = ? AND deleted_at IS NULL')

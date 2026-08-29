@@ -143,3 +143,18 @@ export function validateStatusChange({ status, revision, note }) {
   if (status === 'resolved' && !present(note)) fields.push('note');
   return fields;
 }
+
+// The categories a form offers. Sorted by name because that is the order a
+// person reads a dropdown in; created_at is there because BR-4 asks a list to
+// be sortable and seeding order is the only other order anyone would want.
+export const CATEGORY_SORTS = ['name', 'created_at'];
+export const DEFAULT_CATEGORY_SORT = 'name';
+
+export function validateCategoryQuery({ q, sort }) {
+  const fields = [];
+  // A ceiling on the search term, for the reason every ceiling exists: an
+  // unbounded LIKE pattern is a request the database cannot refuse.
+  if (q !== undefined && (typeof q !== 'string' || q.length > 100)) fields.push('q');
+  if (sort !== undefined && !CATEGORY_SORTS.includes(sort)) fields.push('sort');
+  return fields;
+}
