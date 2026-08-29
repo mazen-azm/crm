@@ -801,6 +801,15 @@ Two things follow. **Look at the thing you shipped, in a browser** — four
 screens had never been opened. And when a bug appears only under StrictMode's
 second mount, suspect a cleanup that undoes a registration rather than a race.
 
+**The worst part, found afterwards:** `IDENTITY-1-WEB`'s fourth acceptance
+criterion is *"Given a signed-in session, when the page is reloaded, then it
+survives."* It was written, it was ticked, the story was closed, and it was
+false for two sprints. The criterion was right; nothing in the suite could tell
+whether it held, because a reload is a browser thing and the tests mount a
+component. **A criterion that no test can distinguish from its opposite is not
+covered, however carefully it is worded** — so when writing one, ask what would
+have to be true for a test to see it fail.
+
 ## L-46 — Open the thing you built. The suite has no pixels and no headers
 
 **Rule:** before a screen story is called done, **run the app and look at it**,
