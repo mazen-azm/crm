@@ -800,3 +800,32 @@ only ever visible in a browser: no stub in the suite cared about headers.
 Two things follow. **Look at the thing you shipped, in a browser** — four
 screens had never been opened. And when a bug appears only under StrictMode's
 second mount, suspect a cleanup that undoes a registration rather than a race.
+
+## L-46 — Open the thing you built. The suite has no pixels and no headers
+
+**Rule:** before a screen story is called done, **run the app and look at it**,
+in both languages, and measure rather than squint. A plan's verification steps
+should say so explicitly for any `-WEB` story, because a green suite says
+nothing about the two categories of defect that only a browser can show:
+
+- **what the request carries** — stubs answer 200 whatever headers arrive
+- **what the layout does** — jsdom has no layout, so no test can see an
+  element finishing past the column it sits in
+
+**Where it came from:** four screens shipped across two sprints without once
+being opened. One hour with a browser found five defects that 274 green tests
+could not:
+
+1. Every request on a fresh load went out with no token, so reloading any
+   screen signed you out (L-45).
+2. The queue crashed to a blank page against a server started before
+   `allowedTransitions` existed.
+3. `box-sizing` was never set, so a padded control with `inline-size: 100%`
+   finished past its container — the form did, and everything padded would
+   have.
+4. `Stack`'s `align="end"` sets `justify-content`, which on a row moves the
+   whole row; three call sites used it meaning "line the button up".
+5. "1 tickets" in English. Arabic was already right, by accident.
+
+Four of the five were in code that had passed review, tests and CI. The look
+costs ten minutes and it is not optional.
