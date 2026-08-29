@@ -552,3 +552,26 @@ refuses a dependency on a later block and same-block dependencies are legal.
 It now prints them, and the loop picks by dependency with backlog order as the
 tie-break. Checked backwards over sprints 0–2 as well; every story there had in
 fact been built in a legal order.
+
+## L-35 — The first attempt is a source, and its migrations are its confessions
+
+**Rule:** before building a feature this project has built once before, read the
+old repository's schema **and its migration comments**. A migration that adds a
+column later is a record of something learned the hard way, dated and explained
+by somebody who had already paid for it. Read them for what to copy and, just
+as carefully, for what not to: the old code also contains niceties nobody asked
+for, and porting those is scope arriving disguised as precedent.
+
+**Paid for by:** `tickets` here has no `revision` column, and BR-5 needs one for
+status change, assignment and priority change — two of which are stories later
+in this same sprint. The first attempt shipped without it too, used `updated_at`
+as the token, and wrote its own postmortem into
+`003_ticket_revision.sql`: two writes inside one millisecond share a timestamp,
+so a stale write whose version happened to match was accepted, and it showed up
+as "a test that passed alone and failed about one run in five". This repository
+was one story away from repeating it exactly.
+
+The same reading said what **not** to take: the old schema's human-readable
+ticket `number` is not in the brief, and its stored `response_due_at` /
+`resolution_due_at` contradict the derived deadlines SERVICE-LEVELS-1-API
+shipped here deliberately. Precedent is evidence, not instruction.
