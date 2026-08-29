@@ -69,6 +69,7 @@ const EXERCISED = new Set([
   'POST /api/v1/customers/:id/notes',
   'POST /api/v1/tickets',
   'PATCH /api/v1/tickets/:id/assignee',
+  'PATCH /api/v1/tickets/:id/status',
 ]);
 
 test('every mutating route the router serves is exercised by this file', async () => {
@@ -124,6 +125,13 @@ test('each mutating route writes exactly one audit row', async () => {
     body: { customerId: customer.id, subject: 'To be assigned', body: 'Body.' },
   })).json();
 
+  // A second ticket, for the same reason: the status move needs a ticket whose
+  // revision nothing else has touched.
+  const movable = await (await call('/api/v1/tickets', {
+    method: 'POST',
+    body: { customerId: customer.id, subject: 'To be moved', body: 'Body.' },
+  })).json();
+
   const rest = [
     ['POST /api/v1/tickets', () =>
       call('/api/v1/tickets', {
@@ -134,6 +142,11 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/tickets/${assignable.id}/assignee`, {
         method: 'PATCH',
         body: { assigneeId: null, revision: assignable.revision },
+      })],
+    ['PATCH /api/v1/tickets/:id/status', () =>
+      call(`/api/v1/tickets/${movable.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'open', revision: movable.revision },
       })],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {

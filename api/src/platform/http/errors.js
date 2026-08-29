@@ -55,6 +55,28 @@ export class ValidationError extends HttpError {
   }
 }
 
+// A 409 that can say what would have worked. T-7 requires an illegal status
+// change to name the legal ones, and { code, requestId } has nowhere to put
+// them — so this adds one key for one case, exactly as ValidationError did for
+// `fields`. The base shape is untouched, so E-1 holds.
+//
+// `allowed` being absent and being empty are DIFFERENT answers, which is why
+// undefined is kept rather than flattened to []. A closed ticket has an answer
+// to "what else could I have done" and the answer is "nothing"; a stale
+// revision was never asked the question. Collapse the two and T-7 goes silent
+// in the one case a caller most needs it.
+export class ConflictError extends HttpError {
+  constructor(code, allowed, cause) {
+    super(409, code, cause);
+    if (allowed === undefined) return;
+    // Strings only, for ValidationError's reason: whatever goes in here is
+    // going out to the client.
+    this.allowed = Array.isArray(allowed)
+      ? allowed.filter((s) => typeof s === 'string')
+      : [];
+  }
+}
+
 export function unprocessable(fields, cause) {
   return new ValidationError(fields, cause);
 }
@@ -85,6 +107,12 @@ export function errorHandler() {
     const body = { code, requestId: req.id ?? null };
     if (err instanceof ValidationError && err.fields.length > 0) {
       body.fields = err.fields;
+    }
+    // Note this tests presence, not length, unlike the line above. An empty
+    // `fields` says nothing and is left out; an empty `allowed` is the whole
+    // answer and has to travel.
+    if (err instanceof ConflictError && err.allowed !== undefined) {
+      body.allowed = err.allowed;
     }
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.status(status).json(body);

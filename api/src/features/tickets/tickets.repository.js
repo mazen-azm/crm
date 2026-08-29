@@ -150,3 +150,16 @@ export function findLiveAssigneeId(db, { assigneeId }) {
     .prepare('SELECT id FROM users WHERE id = ? AND deleted_at IS NULL')
     .get(assigneeId);
 }
+
+// The second BR-5 write, and a deliberate copy of assignTicket rather than a
+// shared helper: two callers is not yet a pattern, and the comment above that
+// function is the one place the reasoning lives.
+export function updateTicketStatus(db, { id, status, revision, at }) {
+  return db
+    .prepare(
+      `UPDATE tickets
+          SET status = ?, revision = revision + 1, updated_at = ?
+        WHERE id = ? AND revision = ? AND deleted_at IS NULL`,
+    )
+    .run(status, at, id, revision);
+}

@@ -46,5 +46,15 @@ export function ticketsRouter({ db, now }) {
     );
   });
 
+  router.patch('/tickets/:id/status', requireSubject(), (req, res) => {
+    res.json(
+      service.changeStatus(req.subject, {
+        id: req.params.id,
+        status: req.body?.status,
+        revision: req.body?.revision,
+      }),
+    );
+  });
+
   return router;
 }

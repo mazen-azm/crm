@@ -79,3 +79,62 @@ export function validateAssignment({ assigneeId, revision }) {
   if (!Number.isInteger(revision) || revision < 1) fields.push('revision');
   return fields;
 }
+
+// T-7 asks a refusal to name what would have worked, which means the machine
+// has to be data rather than a chain of ifs — you cannot list the legal moves
+// from a branch you did not take.
+//
+// The brief pins five edges and leaves the rest, so this table is a decision:
+//
+//   new → open        T-2, the first public reply
+//   new → resolved    T-3, in as many words — answered on the spot, closeable
+//   resolved → reopened   T-5, a reply within the 14-day window
+//   resolved → closed     T-6, automatically after 14 days
+//   pending exists        S-4, time waiting on the customer is not counted
+//
+// The rest follow from those: pending is a pause in ordinary work, so it is
+// reachable from and returns to open; reopened is a ticket that is being
+// worked again, so it moves onward exactly as open does.
+export const TRANSITIONS = Object.freeze({
+  new: Object.freeze(['open', 'pending', 'resolved']),
+  open: Object.freeze(['pending', 'resolved']),
+  pending: Object.freeze(['open', 'resolved']),
+  resolved: Object.freeze(['closed', 'reopened']),
+  // closed is terminal, and this is the edge worth arguing about. T-5 gives
+  // reopening a 14-day window and T-6 closes a resolved ticket after 14 days,
+  // so by the time a ticket is closed that window has already passed. An edge
+  // back out of closed would make the window unbounded, and a window that any
+  // status change resets is not a window. Revisiting a closed ticket is a new
+  // ticket, not a mutation of the old one.
+  closed: Object.freeze([]),
+  reopened: Object.freeze(['open', 'pending', 'resolved']),
+});
+
+// The table and the enum are two statements of one fact, so they are checked
+// against each other at import rather than trusted to stay in step. A status
+// added to STATUSES with no row here would otherwise fail as "nothing is
+// legal" at run time, which reads like a product decision and is a typo.
+{
+  const missing = STATUSES.filter((s) => !Object.hasOwn(TRANSITIONS, s));
+  const extra = Object.keys(TRANSITIONS).filter((s) => !STATUSES.includes(s));
+  if (missing.length > 0 || extra.length > 0) {
+    throw new Error(
+      `TRANSITIONS and STATUSES disagree: missing ${missing}, unknown ${extra}`,
+    );
+  }
+}
+
+// Read through this rather than the map, so the service and the tests cannot
+// disagree about what an unknown status means.
+export function allowedFrom(status) {
+  return TRANSITIONS[status] ?? [];
+}
+
+// A status change says which status, and which version of the ticket the
+// caller was looking at — same two questions as an assignment, same reason.
+export function validateStatusChange({ status, revision }) {
+  const fields = [];
+  if (!STATUSES.includes(status)) fields.push('status');
+  if (!Number.isInteger(revision) || revision < 1) fields.push('revision');
+  return fields;
+}
