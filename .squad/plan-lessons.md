@@ -441,3 +441,24 @@ computation to hide.
 intake, written at gate 1, and the plan followed it faithfully. Gate 2 is the
 only thing that catches a gate-1 mistake, which is the argument for both gates
 being read by someone rather than one of them being trusted.
+
+## L-30 — A stubbed Response is single-use, so a mock that resolves one instance lies on the second call
+
+**Rule:** a `fetch` stub must build a **fresh** `Response` per call —
+`vi.fn(() => Promise.resolve(makeResponse()))`, never
+`vi.fn().mockResolvedValue(makeResponse())`. A `Response` body can be read
+once; the second caller gets a consumed one and `.json()` throws. And the
+symptom names nothing: a screen sits in its loading state and the test waits out
+its full timeout, so it reads as a race, a missing `await`, or a component that
+never re-renders — anything but a body that was already read.
+
+**Paid for by:** CRM-56's paging test, which spent 298 seconds failing to find
+a button. The list was never re-rendering because the second search's `.json()`
+threw. Chained `mockResolvedValueOnce` calls hid it in the neighbouring tests,
+since each `Once` was given its own instance.
+
+The same stub was already in CRM-46's tests and passing — by luck. The client's
+failure path catches a `.json()` error and falls back to an empty body, and the
+handler keys off the status, which survives. The first assertion about the
+response's `code` would have ended that, on a story that had nothing to do with
+the change.

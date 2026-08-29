@@ -8,13 +8,20 @@ import { AppRoutes } from './routes';
 import { AUTH_TOKEN_KEY } from './auth-context';
 import { en } from '../shared/i18n/en';
 
-// A fetch that answers 401 the way the API does, for any request.
+// A fetch that answers 401 the way the API does, for any request — and a FRESH
+// Response every call. A Response body can be read once, so a mock resolving
+// one instance hands a consumed body to the second caller. These tests passed
+// with it anyway, by luck: the client's failure path catches the json() error
+// and falls back to an empty body, and the handler keys off the status, which
+// survives. The moment one of them asserts on `code`, that luck runs out.
 function refusingFetch(status = 401, code = 'UNAUTHENTICATED') {
-  return vi.fn().mockResolvedValue(
-    new Response(JSON.stringify({ code, requestId: 'r-1' }), {
-      status,
-      headers: { 'Content-Type': 'application/json' },
-    }),
+  return vi.fn(() =>
+    Promise.resolve(
+      new Response(JSON.stringify({ code, requestId: 'r-1' }), {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ),
   );
 }
 

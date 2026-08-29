@@ -256,17 +256,17 @@ All tests use `web/src/testing/render.tsx`; none use real timers; none call unst
 
 ## Done Criteria
 
-- [ ] `/customers` route exists inside `RequireAuth` and `DeskShell`; a nav item links to it.
-- [ ] Empty search results render `EmptyState` with a next action (D-2).
-- [ ] Loading renders `Skeleton`; results replace it without layout jump.
-- [ ] Failed request renders `ErrorState` with the documented code's meaning and a working **Retry**.
-- [ ] Every string on the screen is sourced from `en.ts` and `ar.ts`; `no-hardcoded-strings` and `parity` tests pass (BR-6).
-- [ ] Paging uses only the API envelope (`items`, `total`, `limit`, `offset`); no client-side slicing or invented page size (BR-4).
-- [ ] Any date/number rendering goes through `useFormatters`; no direct `toLocaleDateString` calls in the new code.
-- [ ] `cd web && npm run build` and `cd web && npm test` both pass.
-- [ ] No `api/` files modified.
-- [ ] No commit, comment, doc line, or ignore-file entry mentions AI assistance (grep in Verification Step 6 clean).
-- [ ] `DeskShell` navigation still reads as navigation with two items (test updated).
-- [ ] If any of `EmptyState` / `ErrorState` / `Skeleton` did not fit, the misfit is reported in the story write-up rather than worked around.
+- [x] `/customers` route exists inside `RequireAuth` and `DeskShell`; a nav item links to it.
+- [x] Empty search results render `EmptyState` with a next action (D-2).
+- [x] Loading renders `Skeleton`; results replace it without layout jump.
+- [x] Failed request renders `ErrorState` with the documented code's meaning and a working **Retry**.
+- [x] Every string on the screen is sourced from `en.ts` and `ar.ts`; `no-hardcoded-strings` and `parity` tests pass (BR-6).
+- [x] Paging uses only the API envelope (`items`, `total`, `limit`, `offset`); no client-side slicing or invented page size (BR-4).
+- [x] Any date/number rendering goes through `useFormatters`; no direct `toLocaleDateString` calls in the new code.
+- [x] `cd web && npm run build` and `cd web && npm test` both pass.
+- [x] No `api/` files modified.
+- [x] No commit, comment, doc line, or ignore-file entry mentions AI assistance (grep in Verification Step 6 clean).
+- [x] `DeskShell` navigation still reads as navigation with two items (test updated).
+- [x] If any of `EmptyState` / `ErrorState` / `Skeleton` did not fit, the misfit is reported in the story write-up rather than worked around.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

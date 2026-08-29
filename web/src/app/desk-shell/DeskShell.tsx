@@ -40,14 +40,16 @@ export function DeskShell({ children }: { children: ReactNode }) {
       </header>
 
       <nav className="desk-shell__nav" aria-label={t.shell.navLabel}>
-        {/* Real navigation items arrive with the screens they point at. One
-            link keeps this a navigation landmark rather than an empty one.
+        {/* Navigation items arrive with the screens they point at.
 
             Link, not <a href>: a bare anchor makes the browser fetch the
             document again, throwing away the router, the session and the
             theme to reach the page you are already on. */}
         <Link to="/" className="desk-shell__nav-item">
           {t.shell.navHome}
+        </Link>
+        <Link to="/customers" className="desk-shell__nav-item">
+          {t.shell.navCustomers}
         </Link>
       </nav>
 
