@@ -59,3 +59,40 @@ test('the customers screen does the same', async () => {
   await waitFor(() => expect(calls.length).toBeGreaterThan(0));
   expect(calls[0]).toBe('Bearer seeded-token');
 });
+
+test('a signed-in session survives a reload', async () => {
+  // IDENTITY-1-WEB's fourth acceptance criterion, which was written, ticked and
+  // false for two sprints because nothing could tell whether it held: a reload
+  // is a browser thing and the suite mounts components.
+  //
+  // What a reload actually is, from the app's point of view: a fresh mount with
+  // the token already in storage and nothing else carried over. That IS
+  // reproducible here, and the failure it reproduces is the real one — the
+  // first request going out unauthenticated, coming back 401, and the session
+  // being cleared.
+  const calls: Array<string | null> = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      const auth = authOf(init);
+      calls.push(auth);
+      // The server does what a server does: no token, no answer.
+      if (!auth) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ code: 'UNAUTHENTICATED', requestId: 'rq' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
+      return Promise.resolve(empty());
+    }),
+  );
+
+  renderWithProviders(<TicketQueuePage />, { signedIn: 'a-token-from-before' });
+
+  await waitFor(() => expect(calls.length).toBeGreaterThan(0));
+  expect(calls.every((c) => c === 'Bearer a-token-from-before')).toBe(true);
+  // The session is still there: nothing cleared it.
+  expect(localStorage.getItem('support-desk.auth-token')).toBe('a-token-from-before');
+});
