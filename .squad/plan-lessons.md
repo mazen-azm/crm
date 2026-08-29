@@ -753,3 +753,23 @@ before the token fixed both halves.
 The same shape appears wherever a check asks "is this line saying not to do
 it?" — L-6's repo-wide-grep check still tests the whole line, and should be
 read with this in mind.
+
+## L-44 — Point the probe at the tool that actually enforces the rule
+
+**Rule:** before writing "check X enforces rule Y" into an intake or a plan,
+**break Y and watch X fail**. A guarantee can be real and still be enforced
+somewhere other than where everyone says it is — and a hint naming the wrong
+tool sends an executor to run something that will never fail, which is worse
+than naming no tool at all.
+
+**Where it came from:** eight intakes said `verify-i18n-parity.mjs` fails on a
+key present in one resource file and missing from the other. It does not, and
+its own header says so in as many words: it deliberately does not parse the
+dictionaries, because it runs in a CI job with no `npm install` and could only
+scrape TypeScript with a regex that breaks on the first quoted value. The
+comparison lives in `web/src/shared/i18n/parity.test.ts` under vitest, which
+does fail — the guarantee was real the whole time and the sentence describing it
+was wrong. Found by adding an orphan key and watching the script report green.
+
+The corollary is the reason this lesson exists at all: **probing a guard tells
+you where a rule is enforced, not only whether it is.**

@@ -157,7 +157,7 @@ screen needs, and a second way of doing what that page does is the defect.
 
 **BR-6: no string is written in a component.** Keys go into both
 `web/src/shared/i18n/en.ts` and `ar.ts` in the same edit, or
-`verify-i18n-parity.mjs` fails. Error text is keyed by the API's `code`
+`web/src/shared/i18n/parity.test.ts` fails — it is the vitest suite that compares the two objects, not `verify-i18n-parity.mjs`, which checks which roots carry resource files at all and says so in its own header. Error text is keyed by the API's `code`
 (`web/src/shared/api/errors.ts`), never composed from `fields`.
 
 **A stub that returns the same `Response` twice fails on the second read** (L-30):

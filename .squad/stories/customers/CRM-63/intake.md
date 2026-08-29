@@ -159,7 +159,7 @@ and `useRequest` is the four-state hook every page uses. `Field` takes an
 optional render prop for a control that is not a text input.
 
 **BR-6.** Keys go into both `en.ts` and `ar.ts` in the same edit or
-`verify-i18n-parity.mjs` fails, and `no-hardcoded-strings.test.ts` catches a
+`web/src/shared/i18n/parity.test.ts` fails — it is the vitest suite that compares the two objects, not `verify-i18n-parity.mjs`, which checks which roots carry resource files at all and says so in its own header, and `no-hardcoded-strings.test.ts` catches a
 literal in JSX — **including a separator typed between tags**. Error sentences
 come from the shared `t.errors` map keyed by the API's code, which now names the
 three domain codes as well; never compose one from `fields`.
