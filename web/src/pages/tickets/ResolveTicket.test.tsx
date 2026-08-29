@@ -183,3 +183,19 @@ test('a refusal from the machine is reported as itself', async () => {
   expect(screen.getByText(en.errors.ILLEGAL_TRANSITION)).toBeInTheDocument();
   expect(screen.queryByText(en.errors.INTERNAL)).not.toBeInTheDocument();
 });
+
+test('a ticket from a server too old to send its legal moves offers none', async () => {
+  // Not hypothetical: a dev server started before the field existed returned
+  // tickets without it, and reading .length straight off undefined blanked the
+  // entire page. Defaulted to nothing rather than everything — a screen that
+  // cannot verify a move should not offer it.
+  const old = { ...TICKET };
+  delete (old as { allowedTransitions?: unknown }).allowedTransitions;
+  const { stub } = desk(json(TICKET), old as Ticket);
+  vi.stubGlobal('fetch', stub);
+  renderWithProviders(<TicketQueuePage />);
+  await ready();
+
+  expect(screen.getByText(en.ticketStatus.noMoves)).toBeInTheDocument();
+  expect(screen.queryByLabelText(en.ticketStatus.label)).not.toBeInTheDocument();
+});

@@ -92,6 +92,15 @@ function Row({
   };
 
   const stale = assign.status === 'error' && assign.error?.code === 'REVISION_MISMATCH';
+
+  // The API always sends this and a test pins that it does. It is defaulted
+  // anyway, and defaulted to NOTHING rather than to everything: an API old
+  // enough not to send it is an API whose transition table this screen cannot
+  // know, and offering moves that cannot be verified is worse than offering
+  // none. Reading .length straight off it crashed the whole page against a
+  // server started before the field existed — a blank screen for a missing
+  // optional is the wrong failure.
+  const moves = ticket.allowedTransitions ?? [];
   const moveStale = move.status === 'error' && move.error?.code === 'REVISION_MISMATCH';
 
   const submitMove = async () => {
@@ -180,7 +189,7 @@ function Row({
           <Text variant="muted">{`${t.ticketStatus.resolvedNote}: ${ticket.resolutionNote}`}</Text>
         ) : null}
 
-        {ticket.allowedTransitions.length === 0 ? (
+        {moves.length === 0 ? (
           <Text variant="muted">{t.ticketStatus.noMoves}</Text>
         ) : (
           <Stack gap={2}>
@@ -193,7 +202,7 @@ function Row({
                         The six statuses and their edges are not copied here —
                         the API sends them with the ticket, derived from the
                         same table the refusal reads. */}
-                    {ticket.allowedTransitions.map((next) => (
+                    {moves.map((next) => (
                       <option key={next} value={next}>
                         {statusLabel(t, next)}
                       </option>

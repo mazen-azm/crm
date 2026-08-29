@@ -773,3 +773,30 @@ was wrong. Found by adding an orphan key and watching the script report green.
 
 The corollary is the reason this lesson exists at all: **probing a guard tells
 you where a rule is enforced, not only whether it is.**
+
+## L-45 — A stub that answers 200 whatever arrives cannot see a missing header
+
+**Rule:** a screen's tests are blind to everything the request carries unless
+they assert it. Stub fetch, and the stub answers happily with no token, no
+content type and no body — so authentication, headers and method are invisible
+until something asserts them. **At least one test per app should pin what the
+FIRST request on a fresh mount carries**, because the first request is the one
+whose failure the user meets.
+
+**Where it came from:** `setAuthTokenGetter` was registered in the auth
+provider's `useEffect`. React runs effects child-first, so a page's data effect
+fired before the provider had registered anything, `readToken()` returned the
+module default of `null`, and every request on a fresh load went out with no
+Authorization header. The 401 that came back was read as an expired session,
+which cleared the token and bounced the reader to sign-in: **reloading any
+screen signed you out.** 134 tests were green.
+
+Registering during render fixed half of it. The other half was the effect's
+cleanup, which set the getter back to `null` — under StrictMode's double mount
+the first cleanup ran after the second mount had registered, so one request
+succeeded and the rest failed. That asymmetry is what gave it away, and it was
+only ever visible in a browser: no stub in the suite cared about headers.
+
+Two things follow. **Look at the thing you shipped, in a browser** — four
+screens had never been opened. And when a bug appears only under StrictMode's
+second mount, suspect a cleanup that undoes a registration rather than a race.

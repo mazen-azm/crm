@@ -45,6 +45,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const tokenRef = useRef(token);
   tokenRef.current = token;
 
+  // Registered during RENDER, not in an effect. React runs effects child-first,
+  // so a page's data effect fires before this provider's effect could have
+  // registered anything — which meant every request on a fresh load or a
+  // reload went out with no Authorization header, came back 401, was read as
+  // an expired session, and signed the reader out. Reloading any screen logged
+  // you out, and no test saw it because page stubs answer 200 whatever headers
+  // arrive.
+  //
+  // It reads through the ref rather than the closure so it is always current
+  // without needing to re-register, and it is idempotent: calling it on every
+  // render costs an assignment.
+  setAuthTokenGetter(() => tokenRef.current);
+
   const signIn = useCallback((next: string) => {
     try {
       globalThis.localStorage?.setItem(AUTH_TOKEN_KEY, next);
@@ -79,8 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // The HTTP client asks for the token rather than importing this module, so
   // it stays free of React and usable from anywhere.
   useEffect(() => {
-    setAuthTokenGetter(() => token);
-
     setUnauthenticatedHandler(() => {
       // Idempotent on purpose. A screen with three requests in flight gets
       // three 401s from one dead token; clearing three times and navigating
@@ -91,13 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       forget();
     });
 
-    // Both handlers are module-level variables, so a provider that goes away
-    // without unregistering leaves one behind pointing at a component nobody
-    // renders — a warning in the app, and in the suite a handler from an
-    // earlier test firing during a later one, since every render mounts a
-    // fresh provider against the same module.
+    // Only the handler is unregistered here. It is a module-level variable, so
+    // a provider that goes away without clearing it leaves one behind pointing
+    // at a component nobody renders — in the suite, a handler from an earlier
+    // test firing during a later one.
+    //
+    // The token getter is deliberately NOT cleared. It used to be, and that
+    // undid the render-time registration above: StrictMode mounts twice, so
+    // the first mount's cleanup ran AFTER the second mount had registered, and
+    // the second mount's requests went out unauthenticated. The symptom was a
+    // reload that signed you out with one request succeeding and the rest
+    // failing — visible only in a browser, because no stub cares about
+    // headers. A fresh provider overwrites the getter during its own render,
+    // which is the isolation the suite actually needs.
     return () => {
-      setAuthTokenGetter(() => null);
       setUnauthenticatedHandler(() => {});
     };
   }, [token]);
