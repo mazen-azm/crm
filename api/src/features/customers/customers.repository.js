@@ -76,3 +76,43 @@ export function listLiveCustomers(db, { limit, offset }) {
 export function countLiveCustomers(db) {
   return db.prepare('SELECT count(*) AS n FROM customers WHERE deleted_at IS NULL').get().n;
 }
+
+// ── notes ────────────────────────────────────────────────────────────────────
+const NOTE_PROJECTION = 'id, customer_id, author_id, body, created_at';
+
+export function findLiveCustomerById(db, { id }) {
+  return db
+    .prepare('SELECT id, name FROM customers WHERE id = ? AND deleted_at IS NULL')
+    .get(id);
+}
+
+export function insertCustomerNote(db, { id, customerId, authorId, body, createdAt }) {
+  return db
+    .prepare(`
+      INSERT INTO customer_notes (id, customer_id, author_id, body, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `)
+    .run(id, customerId, authorId, body, createdAt);
+}
+
+export function listCustomerNotes(db, { customerId, limit, offset }) {
+  return db
+    .prepare(`
+      SELECT ${NOTE_PROJECTION}
+      FROM customer_notes
+      WHERE customer_id = ?
+      -- rowid, never created_at: two notes written in the same second share a
+      -- timestamp and the engine may then return them in any order (L-19).
+      -- The customer_id index yields this ordering for free; SQLite stores the
+      -- rowid as the index payload.
+      ORDER BY rowid ASC
+      LIMIT ? OFFSET ?
+    `)
+    .all(customerId, limit, offset);
+}
+
+export function countCustomerNotes(db, { customerId }) {
+  return db
+    .prepare('SELECT count(*) AS n FROM customer_notes WHERE customer_id = ?')
+    .get(customerId).n;
+}

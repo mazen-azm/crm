@@ -16,7 +16,7 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
     subjectResolver: identitySubjectResolver(identity),
     mountFeatures: (v1) => {
       v1.use(identityRouter(identity));
-      v1.use(customersRouter({ db }));
+      v1.use(customersRouter({ db, now }));
     },
   });
 }

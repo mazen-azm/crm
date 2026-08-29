@@ -226,6 +226,48 @@
           }
         }
       }
+    },
+    "/api/v1/customers/{id}/notes": {
+      "get": {
+        "summary": "The internal notes about a customer, oldest first. Any signed-in staff member may read them.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each item is { id, customerId, authorId, body, createdAt }. authorId is null when the system wrote the note. The order is the order they were written."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such customer, or one that has been removed. Its notes are not readable."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, never clamped (BR-4)."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      },
+      "post": {
+        "summary": "Write an internal note about a customer. Audited in the same transaction as the write, so neither can exist without the other.",
+        "responses": {
+          "201": {
+            "description": "The note: { id, customerId, authorId, body, createdAt }."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such customer, or one that has been removed. Nothing is written."
+          },
+          "422": {
+            "description": "An absent or blank note. The body names the field, never the value."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
     }
   }
 }

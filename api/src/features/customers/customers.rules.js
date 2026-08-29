@@ -26,3 +26,14 @@ export const phoneDigits = (term) => {
 export const ESCAPE_CHAR = '\\';
 export const escapeLike = (term) =>
   String(term ?? '').replace(/\\/g, '\\\\').replace(/[%_]/g, (c) => `\\${c}`);
+
+// A note has one field and one way to be wrong: absent, or nothing but space.
+// The name of the field travels in the 422; the value never does.
+export function validateNote({ body }) {
+  if (typeof body !== 'string' || body.trim() === '') return ['body'];
+  return [];
+}
+
+// Stored trimmed. A note that is " ok " and a note that is "ok" are the same
+// note, and the difference only ever shows up as a puzzling diff later.
+export const normaliseNote = (body) => String(body).trim();

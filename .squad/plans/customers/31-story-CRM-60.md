@@ -303,16 +303,16 @@ Do **not** add web tests.
 
 ## Done Criteria
 
-- [ ] Migration `api/src/platform/db/migrations/0006__customer_notes.sql` created, comment header explains **why** (including the "not a ticket note", "not shared with `CONVERSATION-2-API`", "internal is a rule not a column", and "ordered by rowid not at" points).
-- [ ] `customer_notes` table stores `id`, `customer_id`, `author_id` (nullable), `body`, `created_at`; index on `customer_id`.
-- [ ] `parseNoteBody` in `customers.rules.js` rejects empty/whitespace and names `body`; tested in `customers.rules.test.js`.
-- [ ] `findLiveCustomerById`, `insertCustomerNote`, `listCustomerNotes` live in `customers.repository.js`; every read filters `deleted_at IS NULL`; the list uses `ORDER BY rowid ASC` with a comment citing L-19.
-- [ ] `writeCustomerNote` in `customers.service.js` performs the lookup, insert, and `createAuditWriter(...).record(...)` **inside a single `transact(db, …)` closure**; imports audit only from `api/src/features/audit/index.js`.
-- [ ] `POST /customers/:id/notes` returns **201** on success, **404** for unknown or soft-deleted customer, **422** naming `body` for empty/whitespace input; nothing is written on 404 or 422.
-- [ ] `GET /customers/:id/notes` returns notes in insertion order (by `rowid`), returns **404** for unknown or soft-deleted customer, and does **not** page (comment states why).
-- [ ] Audit row is written for every successful note-creation, with `entity='customer_note'`, `verb='create'`, `before=null`, `after={ customerId, noteId, body }`, `actorId` = actor id or `null`.
-- [ ] Guarantee test proves that mutating `customer_notes` outside `transact` is refused by `wrapDbWithAuditGuard`.
-- [ ] `scripts/verify-architecture.mjs` passes; `cd api && npm test` passes; no AI-attribution grep hits anywhere in the diff.
-- [ ] No file under `web/`, no file under `android/`, no change to `customers` table, audit feature internals, or pagination reader.
+- [x] Migration `api/src/platform/db/migrations/0006__customer_notes.sql` created, comment header explains **why** (including the "not a ticket note", "not shared with `CONVERSATION-2-API`", "internal is a rule not a column", and "ordered by rowid not at" points).
+- [x] `customer_notes` table stores `id`, `customer_id`, `author_id` (nullable), `body`, `created_at`; index on `customer_id`.
+- [x] `parseNoteBody` in `customers.rules.js` rejects empty/whitespace and names `body`; tested in `customers.rules.test.js`.
+- [x] `findLiveCustomerById`, `insertCustomerNote`, `listCustomerNotes` live in `customers.repository.js`; every read filters `deleted_at IS NULL`; the list uses `ORDER BY rowid ASC` with a comment citing L-19.
+- [x] `writeCustomerNote` in `customers.service.js` performs the lookup, insert, and `createAuditWriter(...).record(...)` **inside a single `transact(db, …)` closure**; imports audit only from `api/src/features/audit/index.js`.
+- [x] `POST /customers/:id/notes` returns **201** on success, **404** for unknown or soft-deleted customer, **422** naming `body` for empty/whitespace input; nothing is written on 404 or 422.
+- [x] `GET /customers/:id/notes` returns notes in insertion order (by `rowid`), returns **404** for unknown or soft-deleted customer, and does **not** page (comment states why).
+- [x] Audit row is written for every successful note-creation, with `entity='customer_note'`, `verb='create'`, `before=null`, `after={ customerId, noteId, body }`, `actorId` = actor id or `null`.
+- [x] Guarantee test proves that mutating `customer_notes` outside `transact` is refused by `wrapDbWithAuditGuard`.
+- [x] `scripts/verify-architecture.mjs` passes; `cd api && npm test` passes; no AI-attribution grep hits anywhere in the diff.
+- [x] No file under `web/`, no file under `android/`, no change to `customers` table, audit feature internals, or pagination reader.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
