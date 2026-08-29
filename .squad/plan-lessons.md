@@ -533,3 +533,22 @@ repository the whole time, while `rules.txt` cited it as `docs/product-brief.md`
 its structural references, and the SLA fix was re-confirmed against it: the
 first attempt's own harness seeded the correct numbers, so the wrong ones were
 never inherited — they were invented.
+
+## L-34 — "No dependency on a later sprint" says nothing about order inside one
+
+**Rule:** a check that dependencies never point at a future block is necessary
+and not sufficient. Two stories in one sprint may still have an order, and file
+order is not it. Before picking the next story, read which units in the block
+wait on which, and pick one with nothing left ahead of it. If that information
+is only derivable, derive it and print it — an ordering somebody has to notice
+is an ordering somebody will eventually not notice.
+
+**Paid for by:** the loop's own selection rule said "inside a sprint, by the
+order in `scripts/backlog.txt`". `TICKETS-1-API` needs `SERVICE-LEVELS-1-API`,
+both are block 3, and the tickets feature is written first in that file — so
+following the rule would have built a ticket that starts service-level clocks
+nothing had created. `verify-backlog` was green throughout, correctly: it
+refuses a dependency on a later block and same-block dependencies are legal.
+It now prints them, and the loop picks by dependency with backlog order as the
+tie-break. Checked backwards over sprints 0–2 as well; every story there had in
+fact been built in a legal order.

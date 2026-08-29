@@ -165,12 +165,35 @@ for (const u of units.values()) {
   }
 }
 
+// ── ordering inside a block ──────────────────────────────────────────────────
+//
+// A dependency on a LATER block is a failure, above. A dependency inside the
+// SAME block is legal and says nothing about order — so it has to be shown, or
+// it is something a person has to notice. TICKETS-1-API needs SLA-1-API, both
+// land in block 3, and the tickets feature is written first in this file: file
+// order would have built a ticket whose service-level clocks nothing had
+// created yet.
+const waits = new Map()
+for (const u of units.values())
+  for (const need of u.needs) {
+    const dep = units.get(need)
+    if (dep && dep.block === u.block) {
+      if (!waits.has(u.block)) waits.set(u.block, [])
+      waits.get(u.block).push(`${u.id} waits on ${need}`)
+    }
+  }
+
 // report
 const total = [...units.values()].reduce((a, u) => a + u.pts, 0)
 console.log(`\nbacklog — ${features.length} features · ${features.reduce((a, f) => a + f.stories.length, 0)} capabilities · ${units.size} story units · ${total} points\n`)
 console.log('  block   pts  units  roots')
 for (const [n, b] of [...blocks].sort((a, b) => a[0] - b[0]))
   console.log(`   ${String(n).padStart(2)}   ${String(b.pts).padStart(4)}  ${String(b.count).padStart(5)}  ${[...b.roots].sort().join(' ')}${b.pts < lo || b.pts > hi ? '   <-' : ''}`)
+if (waits.size) {
+  console.log('\n  ordering inside a block (build the right-hand side first)')
+  for (const [block, lines] of [...waits].sort((a, b) => a[0] - b[0]))
+    for (const line of lines) console.log(`   ${String(block).padStart(2)}   ${line}`)
+}
 console.log(`\n  rules: ${rules.size} defined, ${[...rules.values()].filter((r) => r.owners.length).length} owned`)
 if (warn.length) { console.log(`\n${warn.length} warning(s)`); for (const w of warn) console.log(`  ~ ${w}`) }
 if (fail.length) { console.log(`\n${fail.length} failure(s)`); for (const f of fail) console.log(`  x ${f}`); process.exit(1) }
