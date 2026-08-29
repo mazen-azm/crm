@@ -300,13 +300,13 @@ The HTTP client owns a single, replaceable handler slot (`setUnauthenticatedHand
 
 ## Done Criteria
 
-- [ ] An authenticated request refused with `401 UNAUTHENTICATED` clears the persisted session and lands the reader on `/sign-in`.
-- [ ] The reader sees `t.errors.UNAUTHENTICATED` ("Your session has ended. Sign in again to continue.") on `/sign-in` after a session-expiry redirect, and does **not** see it after clicking the header sign-out button.
-- [ ] A wrong-password 401 from `POST /api/v1/sign-in` does not clear state, does not navigate, and does not show the session-ended banner.
-- [ ] Three concurrent 401s from the same dead token produce **one** state clear and **one** navigation to `/sign-in`.
-- [ ] `web/src/shared/api/client.ts` imports nothing from `web/src/app/**`; `node scripts/verify-architecture.mjs` exits 0.
-- [ ] `cd web && npm test` and `cd web && npm run build` both pass; `cd api && npm test` still passes with no `api/` edits.
-- [ ] No committed file mentions AI assistance (grep in step 5 clean).
-- [ ] `t.errors.UNAUTHENTICATED` is reused verbatim in `en.ts` and `ar.ts`; no new i18n key added; wrong-password sentence remains distinct (L-29).
+- [x] An authenticated request refused with `401 UNAUTHENTICATED` clears the persisted session and lands the reader on `/sign-in`.
+- [x] The reader sees `t.errors.UNAUTHENTICATED` ("Your session has ended. Sign in again to continue.") on `/sign-in` after a session-expiry redirect, and does **not** see it after clicking the header sign-out button.
+- [x] A wrong-password 401 from `POST /api/v1/sign-in` does not clear state, does not navigate, and does not show the session-ended banner.
+- [x] Three concurrent 401s from the same dead token produce **one** state clear and **one** navigation to `/sign-in`.
+- [x] `web/src/shared/api/client.ts` imports nothing from `web/src/app/**`; `node scripts/verify-architecture.mjs` exits 0.
+- [x] `cd web && npm test` and `cd web && npm run build` both pass; `cd api && npm test` still passes with no `api/` edits.
+- [x] No committed file mentions AI assistance (grep in step 5 clean).
+- [x] `t.errors.UNAUTHENTICATED` is reused verbatim in `en.ts` and `ar.ts`; no new i18n key added; wrong-password sentence remains distinct (L-29).
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 02.**
