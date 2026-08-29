@@ -392,19 +392,19 @@ Model tests on `api/src/features/identity/accounts.test.js` (paginated list + su
 
 ## Done Criteria
 
-- [ ] `GET /customers?q=<term>` returns live customers whose **name**, **email**, or **phone digits** contain the term — one endpoint, one `q`, not three parameters.
-- [ ] The response envelope is `{ items, total, limit, offset }` and matches `listAccounts` / `listAssignees` exactly.
-- [ ] A request above `MAX_LIMIT` is **refused (422)**, not clamped. BR-4.
-- [ ] Soft-deleted customers are never in `items` and never counted in `total`.
-- [ ] A term matching nothing returns 200 with an empty page and `total: 0`. Not 404.
-- [ ] No `q` at all returns the paginated list of live customers, not an error.
-- [ ] `GET /customers` writes zero rows to `audit_events` — proven by a test.
-- [ ] Phone stored with punctuation (`+20 100 123 4567`) is found when searched by digits (`1001234567`). Proven by a test.
-- [ ] Arabic orthographic variation (أ vs ا) is documented as a known limitation in `customers.repository.js`. **Not implemented.**
-- [ ] The comment in `customers.repository.js` explains why no index is added for the LIKE search.
-- [ ] Any signed-in staff member (not just admin) can call the endpoint.
-- [ ] `scripts/verify-architecture.mjs` passes: no `req`/`res` outside `customers.routes.js`, no SQL outside `customers.repository.js`, no cross-feature reach-through.
-- [ ] No `web/` or `android/` files changed.
-- [ ] No AI-attribution strings anywhere in the diff.
+- [x] `GET /customers?q=<term>` returns live customers whose **name**, **email**, or **phone digits** contain the term — one endpoint, one `q`, not three parameters.
+- [x] The response envelope is `{ items, total, limit, offset }` and matches `listAccounts` / `listAssignees` exactly.
+- [x] A request above `MAX_LIMIT` is **refused (422)**, not clamped. BR-4.
+- [x] Soft-deleted customers are never in `items` and never counted in `total`.
+- [x] A term matching nothing returns 200 with an empty page and `total: 0`. Not 404.
+- [x] No `q` at all returns the paginated list of live customers, not an error.
+- [x] `GET /customers` writes zero rows to `audit_events` — proven by a test.
+- [x] Phone stored with punctuation (`+20 100 123 4567`) is found when searched by digits (`1001234567`). Proven by a test.
+- [x] Arabic orthographic variation (أ vs ا) is documented as a known limitation in `customers.repository.js`. **Not implemented.**
+- [x] The comment in `customers.repository.js` explains why no index is added for the LIKE search.
+- [x] Any signed-in staff member (not just admin) can call the endpoint.
+- [x] `scripts/verify-architecture.mjs` passes: no `req`/`res` outside `customers.routes.js`, no SQL outside `customers.repository.js`, no cross-feature reach-through.
+- [x] No `web/` or `android/` files changed.
+- [x] No AI-attribution strings anywhere in the diff.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next customers story (CUSTOMERS-3-API / CRM-60).**

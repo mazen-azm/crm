@@ -1,4 +1,5 @@
 import { createApp } from './app.js';
+import { customersRouter } from './features/customers/index.js';
 import { identityRouter, identitySubjectResolver } from './features/identity/index.js';
 
 // What the production application is, in one place. server.js starts it and
@@ -15,6 +16,7 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
     subjectResolver: identitySubjectResolver(identity),
     mountFeatures: (v1) => {
       v1.use(identityRouter(identity));
+      v1.use(customersRouter({ db }));
     },
   });
 }
