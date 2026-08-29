@@ -36,6 +36,10 @@ const publicShape = (row) => ({
   // BR-5's token. A caller sends it back on a write and a mismatch is 409 —
   // TICKETS-3-API and TICKETS-4-API are the writes that read it.
   revision: row.revision,
+  // Null until the ticket is resolved. T-4 requires the note to survive being
+  // read back, which is the whole reason it is a column — so it is on the
+  // public shape rather than only in the audit trail.
+  resolutionNote: row.resolution_note ?? null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -180,8 +184,8 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
 
     // The second BR-5 write. It reads like assign because it is the same
     // shape; what is different is that a refusal here has to explain itself.
-    changeStatus(actor, { id, status, revision }) {
-      const invalid = validateStatusChange({ status, revision });
+    changeStatus(actor, { id, status, revision, note }) {
+      const invalid = validateStatusChange({ status, revision, note });
       if (invalid.length > 0) throw unprocessable(invalid);
 
       const at = stamp();
@@ -208,7 +212,14 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           throw new ConflictError('ILLEGAL_TRANSITION', legal);
         }
 
-        const { changes } = updateTicketStatus(db, { id, status, revision, at });
+        // Null on every other edge, which is what the CASE in the SQL keys
+        // off. Trimmed, because '  fixed it  ' and 'fixed it' are the same
+        // note and only one of them should be what the customer reads.
+        const resolutionNote = status === 'resolved' ? note.trim() : null;
+
+        const { changes } = updateTicketStatus(db, {
+          id, status, revision, at, resolutionNote,
+        });
         if (changes === 0) {
           // No `allowed` here, and that is the point: the transition was
           // legal. Nothing the caller could have asked for instead would have
@@ -221,7 +232,10 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           entityId: id,
           verb: 'ticket.status',
           before: { status: before.status },
-          after: { status },
+          // The note is in the trail only on the edge that wrote it. Recording
+          // a null on every other move would make the trail say the note was
+          // cleared, which is not what happened.
+          after: status === 'resolved' ? { status, resolutionNote } : { status },
           at,
         });
 

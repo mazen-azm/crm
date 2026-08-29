@@ -45,6 +45,12 @@ async function start() {
   const move = (id, body, tok = token) =>
     call(`/api/v1/tickets/${id}/status`, { method: 'PATCH', body, tok });
 
+  // TICKETS-5-API made a resolution note a condition of the resolve edge, so
+  // any move to `resolved` has to carry one. Spelled out here rather than
+  // defaulted inside `move`, because a helper that quietly supplies the note
+  // would hide the requirement from every test that depends on it.
+  const withNote = (status) => (status === 'resolved' ? { note: 'Resolved.' } : {});
+
   // Walk the ticket to `target` along legal edges only, so a test about one
   // edge never depends on an illegal shortcut to set itself up.
   const PATH = {
@@ -58,7 +64,11 @@ async function start() {
   const at = async (status) => {
     let ticket = await raise();
     for (const step of PATH[status]) {
-      const res = await move(ticket.id, { status: step, revision: ticket.revision });
+      const res = await move(ticket.id, {
+        status: step,
+        revision: ticket.revision,
+        ...withNote(step),
+      });
       assert.equal(res.status, 200, `setup ${ticket.status} -> ${step}`);
       ticket = await res.json();
     }
@@ -71,14 +81,18 @@ async function start() {
   const lastAudit = () =>
     db.prepare('SELECT * FROM audit_events ORDER BY rowid DESC LIMIT 1').get();
 
-  return { db, call, raise, move, at, row, auditCount, lastAudit };
+  return { db, call, raise, move, withNote, at, row, auditCount, lastAudit };
 }
 
 test('new to resolved is legal — a request answered on the spot is closeable', async () => {
   const { at, move } = await start();
   const ticket = await at('new');
 
-  const res = await move(ticket.id, { status: 'resolved', revision: ticket.revision });
+  const res = await move(ticket.id, {
+    status: 'resolved',
+    revision: ticket.revision,
+    note: 'Answered on the spot.',
+  });
   assert.equal(res.status, 200);
   const after = await res.json();
   assert.equal(after.status, 'resolved');
@@ -86,11 +100,15 @@ test('new to resolved is legal — a request answered on the spot is closeable',
 });
 
 test('every edge the table calls legal is accepted', async () => {
-  const { at, move } = await start();
+  const { at, move, withNote } = await start();
   for (const [from, targets] of Object.entries(TRANSITIONS)) {
     for (const to of targets) {
       const ticket = await at(from);
-      const res = await move(ticket.id, { status: to, revision: ticket.revision });
+      const res = await move(ticket.id, {
+        status: to,
+        revision: ticket.revision,
+        ...withNote(to),
+      });
       assert.equal(res.status, 200, `${from} -> ${to} should be legal`);
       const body = await res.json();
       assert.equal(body.status, to);
@@ -100,12 +118,18 @@ test('every edge the table calls legal is accepted', async () => {
 });
 
 test('every edge the table omits is refused, and the refusal names the legal ones', async () => {
-  const { at, move } = await start();
+  const { at, move, withNote } = await start();
   for (const from of STATUSES) {
     const legal = allowedFrom(from);
     for (const to of STATUSES.filter((s) => s !== from && !legal.includes(s))) {
       const ticket = await at(from);
-      const res = await move(ticket.id, { status: to, revision: ticket.revision });
+      // The note goes in even on the refused edges, so a 409 is proven to be
+      // about the transition and never about a missing field.
+      const res = await move(ticket.id, {
+        status: to,
+        revision: ticket.revision,
+        ...withNote(to),
+      });
       assert.equal(res.status, 409, `${from} -> ${to} should be refused`);
       const body = await res.json();
       assert.equal(body.code, 'ILLEGAL_TRANSITION');
@@ -214,4 +238,139 @@ test('signing in is required', async () => {
   const ticket = await at('new');
   const res = await move(ticket.id, { status: 'open', revision: ticket.revision }, null);
   assert.equal(res.status, 401);
+});
+
+// --- TICKETS-5-API: resolving requires a note (T-4) -------------------------
+
+test('resolving with no note is refused, and the ticket is left exactly as it was', async () => {
+  const { at, move, row, auditCount } = await start();
+  const ticket = await at('new');
+  const before = row(ticket.id);
+  const audits = auditCount();
+
+  const res = await move(ticket.id, { status: 'resolved', revision: ticket.revision });
+  assert.equal(res.status, 422);
+  const body = await res.json();
+  assert.equal(body.code, 'VALIDATION_FAILED');
+  assert.deepEqual(body.fields, ['note']);
+
+  // 422 and not 409: the edge is legal, the request is simply missing a field.
+  // Getting this backwards would make CRM-79's 409 mean two different things.
+  const after = row(ticket.id);
+  assert.equal(after.status, before.status);
+  assert.equal(after.revision, before.revision);
+  assert.equal(after.updated_at, before.updated_at);
+  assert.equal(after.resolution_note, null);
+  assert.equal(auditCount(), audits, 'a refusal must not leave an audit row');
+});
+
+test('a note that is only whitespace is no note at all', async () => {
+  const { at, move } = await start();
+  for (const note of ['   ', '\t\n', '', ' \u00a0 ']) {
+    const ticket = await at('new');
+    const res = await move(ticket.id, { status: 'resolved', revision: ticket.revision, note });
+    assert.equal(res.status, 422, `note ${JSON.stringify(note)} should be refused`);
+    assert.deepEqual((await res.json()).fields, ['note']);
+  }
+});
+
+test('a note that is not a string is refused rather than stringified', async () => {
+  const { at, move } = await start();
+  const ticket = await at('new');
+  const res = await move(ticket.id, { status: 'resolved', revision: ticket.revision, note: 42 });
+  assert.equal(res.status, 422);
+  assert.deepEqual((await res.json()).fields, ['note']);
+});
+
+test('a resolved ticket reads its note back, trimmed', async () => {
+  const { at, move, call } = await start();
+  const ticket = await at('new');
+
+  const res = await move(ticket.id, {
+    status: 'resolved',
+    revision: ticket.revision,
+    note: '  Replaced the cable.  ',
+  });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).resolutionNote, 'Replaced the cable.');
+
+  // Read back through the queue, not just the write's own response — a note
+  // that only exists in the reply to the write has not been stored.
+  const listed = (await (await call('/api/v1/tickets?limit=100')).json())
+    .items.find((t) => t.id === ticket.id);
+  assert.equal(listed.resolutionNote, 'Replaced the cable.');
+});
+
+test('a ticket that was never resolved reports no note', async () => {
+  const { raise } = await start();
+  assert.equal((await raise()).resolutionNote, null);
+});
+
+test('no other edge asks for a note, and none stores one', async () => {
+  const { at, move, row } = await start();
+  for (const [from, to] of [['new', 'open'], ['new', 'pending'], ['open', 'pending'], ['pending', 'open']]) {
+    const ticket = await at(from);
+    const res = await move(ticket.id, { status: to, revision: ticket.revision });
+    assert.equal(res.status, 200, `${from} -> ${to} must not need a note`);
+    assert.equal((await res.json()).resolutionNote, null);
+  }
+
+  // A note sent where the rule does not ask for one is ignored, not stored.
+  const ticket = await at('new');
+  await move(ticket.id, { status: 'open', revision: ticket.revision, note: 'Not a resolution.' });
+  assert.equal(row(ticket.id).resolution_note, null);
+});
+
+test('the note survives the moves that follow it', async () => {
+  const { at, move } = await start();
+  let ticket = await at('new');
+
+  const resolved = await (await move(ticket.id, {
+    status: 'resolved',
+    revision: ticket.revision,
+    note: 'First answer.',
+  })).json();
+  assert.equal(resolved.resolutionNote, 'First answer.');
+
+  // Reopening does not erase what the customer was told. The CASE in the SQL
+  // is what makes this true; writing the column unconditionally would blank it
+  // here and "readable afterwards" would quietly stop holding.
+  const reopened = await (await move(resolved.id, {
+    status: 'reopened',
+    revision: resolved.revision,
+  })).json();
+  assert.equal(reopened.resolutionNote, 'First answer.');
+
+  const again = await (await move(reopened.id, {
+    status: 'resolved',
+    revision: reopened.revision,
+    note: 'Second answer.',
+  })).json();
+  assert.equal(again.resolutionNote, 'Second answer.');
+
+  const closed = await (await move(again.id, {
+    status: 'closed',
+    revision: again.revision,
+  })).json();
+  assert.equal(closed.resolutionNote, 'Second answer.');
+});
+
+test('the audit trail carries the note only on the move that wrote it', async () => {
+  const { at, move, lastAudit } = await start();
+  const ticket = await at('new');
+
+  await move(ticket.id, { status: 'open', revision: ticket.revision });
+  assert.deepEqual(JSON.parse(lastAudit().diff).after, { status: 'open' });
+
+  const now = await (await move(ticket.id, { status: 'pending', revision: ticket.revision + 1 })).json();
+  const resolved = await (await move(now.id, {
+    status: 'resolved',
+    revision: now.revision,
+    note: 'Fixed.',
+  })).json();
+  assert.equal(resolved.status, 'resolved');
+  assert.deepEqual(JSON.parse(lastAudit().diff).after, {
+    status: 'resolved',
+    resolutionNote: 'Fixed.',
+  });
 });

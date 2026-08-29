@@ -11,6 +11,7 @@ Entry point for the **tickets** feature. Stories execute in order by their `NN` 
 | 34 | `34-story-crm-73.md` | TICKETS-2-API agent — I filter and sort the queue; an agent sees all of it | CRM-73 | — |
 | 35 | `35-story-crm-76.md` | TICKETS-3-API agent — I assign a ticket | CRM-76 | — |
 | 36 | `36-story-crm-79.md` | TICKETS-4-API system — an illegal status change is refused with what is legal | CRM-79 | — |
+| 37 | `37-story-crm-80.md` | TICKETS-5-API agent — resolving a ticket needs a note | CRM-80 | — |
 
 ## Dependency notes
 

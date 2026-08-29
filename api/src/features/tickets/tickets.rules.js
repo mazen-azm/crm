@@ -132,9 +132,14 @@ export function allowedFrom(status) {
 
 // A status change says which status, and which version of the ticket the
 // caller was looking at — same two questions as an assignment, same reason.
-export function validateStatusChange({ status, revision }) {
+export function validateStatusChange({ status, revision, note }) {
   const fields = [];
   if (!STATUSES.includes(status)) fields.push('status');
   if (!Number.isInteger(revision) || revision < 1) fields.push('revision');
+  // T-4, and only T-4: resolving needs a note. The rule names resolving and no
+  // other edge, so closing or reopening is left alone rather than tidied into
+  // the same shape. `present` is the raise validator's test, so whitespace is
+  // emptiness here for the same reason it is there.
+  if (status === 'resolved' && !present(note)) fields.push('note');
   return fields;
 }

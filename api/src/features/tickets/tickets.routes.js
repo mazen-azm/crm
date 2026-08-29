@@ -52,6 +52,7 @@ export function ticketsRouter({ db, now }) {
         id: req.params.id,
         status: req.body?.status,
         revision: req.body?.revision,
+        note: req.body?.note,
       }),
     );
   });
