@@ -1,7 +1,14 @@
 #!/bin/zsh
-# Generate the plan for the next story whose intake exists and whose plan does
-# not. Run by a LaunchAgent so a quota window that opens while nobody is at the
-# keyboard is not a window that is missed.
+# Generate plans for stories whose intake exists and whose plan does not. Run by
+# a LaunchAgent so a quota window that opens while nobody is at the keyboard is
+# not a window that is missed.
+#
+# The schedule is four firings six hours apart — 03:25, 09:25, 15:25, 21:25 —
+# and each may plan up to four stories. Six hours because the one reset time
+# the API has ever named was 21:20, and an even spread lands inside a window
+# whether the cycle turns out to be five hours or six. It is a guess about the
+# cycle, deliberately made robust to being wrong: a firing that arrives inside
+# a shut window costs one refused request and stops.
 #
 # It plans and stops. Reviewing the plan and building from it stay with a
 # person and a session — those are the two gates, and every story so far has
@@ -41,6 +48,17 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 # runs of `squad new-plan` on one intake spend the quota twice to produce a
 # duplicate. mkdir is the atomic test-and-set; a stale lock older than an hour
 # is a crashed run, not a live one.
+# How many stories one firing may plan. A run used to stop after the first,
+# which spends four minutes of a fresh five-hour window and leaves the rest of
+# it unused — the schedule fires four times a day, so that was four plans a day
+# against a backlog of nine per sprint.
+#
+# It stops early on a usage limit rather than working through the list
+# discovering the window is shut, and the lock still means two firings cannot
+# overlap.
+MAX_PLANS=${CRM_MAX_PLANS:-4}
+planned=0
+
 LOCK=/tmp/crm-plan.lock
 if [ -d "$LOCK" ] && [ -z "$(find "$LOCK" -maxdepth 0 -mmin +60 2>/dev/null)" ]; then
   echo "[$(date '+%F %T')] another planner holds the lock — skipping"
@@ -101,7 +119,24 @@ for intake in ${ONLY:-.squad/stories/*/CRM-*/intake.md}; do
       *)                                   why="see the output above" ;;
     esac
     echo "[$(date '+%F %T')] $key not planned — $why"
+    # A shut window will answer the same way for every remaining story, so
+    # stop rather than spend the run proving it nine times. A turn-ceiling or
+    # an unexplained failure is about THAT story, so the run carries on.
+    case "$out" in
+      *"hit your limit"*|*"usage limit"*)
+        echo "[$(date '+%F %T')] stopping — the window is shut"
+        break
+        ;;
+    esac
   fi
-  exit 0
+
+  planned=$((planned + 1))
+  if [ "$planned" -ge "$MAX_PLANS" ]; then
+    echo "[$(date '+%F %T')] planned $planned this run — the cap for one firing"
+    break
+  fi
+  # An explicit intake means "plan that one", so a caller who named a story
+  # gets exactly it and nothing else.
+  [ -n "$ONLY" ] && break
 done
 echo "[$(date '+%F %T')] nothing to plan"
