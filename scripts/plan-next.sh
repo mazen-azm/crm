@@ -139,4 +139,9 @@ for intake in ${ONLY:-.squad/stories/*/CRM-*/intake.md}; do
   # gets exactly it and nothing else.
   [ -n "$ONLY" ] && break
 done
-echo "[$(date '+%F %T')] nothing to plan"
+# Only when the run really did nothing. A break out of the loop — the
+# per-run cap, a named intake, a shut window — used to fall through to this
+# line and report "nothing to plan" immediately after saying what it planned.
+if [ "$planned" -eq 0 ]; then
+  echo "[$(date '+%F %T')] nothing to plan"
+fi
