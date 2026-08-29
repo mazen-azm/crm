@@ -109,3 +109,66 @@ The categories are readable, so a form has something to offer.
 - Given a retired category, then it is not in the list a form offers — but a
   ticket that already carries it still reads correctly.
 - Given the list, when it is read, then it writes no audit row.
+
+## TICKETS-1-WEB
+
+Raising a ticket, on a screen.
+
+*Acceptance criteria*
+- Given the form, when a required field is missing, then the field the API named
+  is the field the screen marks — the message is not invented on the client.
+- Given a category, when the form offers one, then the list came from the API and
+  a retired category is not among the choices.
+- Given a submission in flight, when the screen renders, then the submit control
+  cannot be pressed twice and the shared loading state is shown.
+- Given a raised ticket, when the API answers, then the screen shows the ticket
+  it created rather than a message saying it worked.
+- Given every string on the screen, when it is read, then it came from a resource
+  file, in both languages (BR-6).
+
+## TICKETS-2-WEB
+
+The queue, filtered and sorted, on a screen.
+
+*Acceptance criteria*
+- Given the filters, when one is applied, then the API is asked and the screen
+  does not filter what it already holds.
+- Given an empty result, when the screen renders, then the empty state says which
+  filters produced it and offers to clear them (D-2).
+- Given the queue, when it is paged, then the screen uses the API's paging and
+  adds none of its own (BR-4).
+- Given a filter and a page, when the screen is reloaded, then the same rows come
+  back — the filter lives in the URL, not only in memory.
+- Given every string on the screen, when it is read, then it came from a resource
+  file, in both languages (BR-6).
+
+## TICKETS-3-WEB
+
+Assigning a ticket, on a screen.
+
+*Acceptance criteria*
+- Given the assignee list, when the screen offers it, then it came from the API's
+  live staff and includes the option of nobody.
+- Given a stale revision, when the API refuses with 409, then the screen says the
+  ticket changed underneath and offers to reload, rather than reporting a failure
+  the agent cannot act on.
+- Given a successful assignment, when the API answers, then the screen holds the
+  new revision — a second assignment from the same screen must not be refused.
+- Given every string on the screen, when it is read, then it came from a resource
+  file, in both languages (BR-6).
+
+## TICKETS-5-WEB
+
+Resolving a ticket, on a screen.
+
+*Acceptance criteria*
+- Given the resolve control, when it is pressed, then the screen asks for a note
+  before it calls the API — the requirement is stated, not discovered by a 422.
+- Given a note that is only whitespace, when resolve is pressed, then the screen
+  refuses it the same way the API does, and says so on the field.
+- Given a resolved ticket, when the screen renders it afterwards, then the note
+  is readable on the ticket.
+- Given a status the machine does not allow, when the screen offers the moves,
+  then that status is not among them — the 409 is a backstop, not the interface.
+- Given every string on the screen, when it is read, then it came from a resource
+  file, in both languages (BR-6).

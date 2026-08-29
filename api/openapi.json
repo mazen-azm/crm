@@ -283,7 +283,7 @@
             "description": "No such customer, or one that has been removed. Nothing is written."
           },
           "422": {
-            "description": "A missing subject or body, or a stated priority that is not one of low, normal, high, urgent. The body names the fields, never their values."
+            "description": "A missing subject or body, or a stated priority that is not one of low, normal, high, urgent. The body names the fields, never their values. A categoryId that does not exist, or one that has been retired, is refused here too — a retired category satisfies the foreign key and is still not a choice, so the service checks what the constraint cannot see."
           },
           "500": {
             "description": "Internal."
@@ -301,6 +301,25 @@
           },
           "422": {
             "description": "A status, priority or sort the API does not name, an empty assigneeId or categoryId, or a limit above the ceiling. The body names the parameters, never their values."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/ticket-categories": {
+      "get": {
+        "summary": "The categories a form offers when raising a ticket. Read-only: the seed is where categories are defined and no screen edits them. A retired category leaves this list, but a ticket that already carries one still reads it back — the list and the ticket answer two different questions. Paginated, filterable by q on the name, sortable by name (the default) or created_at, with the page ceiling every list obeys (BR-4).",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each item is { id, name, createdAt, updatedAt }. Reading writes no audit row."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "422": {
+            "description": "A limit above the ceiling, a sort this list does not know, or a q longer than the ceiling. Refused, never clamped (BR-4). The body names the fields, never their values."
           },
           "500": {
             "description": "Internal."

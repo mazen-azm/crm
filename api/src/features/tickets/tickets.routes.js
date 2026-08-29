@@ -31,6 +31,20 @@ export function ticketsRouter({ db, now }) {
     );
   });
 
+  // The list a form offers when raising a ticket. Named after the table
+  // (ticket_categories) rather than /categories, so the knowledge base can have
+  // its own later without this one having to be renamed.
+  router.get('/ticket-categories', requireSubject(), (req, res) => {
+    const { q, sort } = req.query ?? {};
+    res.json(
+      service.listCategories(req.subject, {
+        q,
+        sort,
+        ...readPagination(req),
+      }),
+    );
+  });
+
   // Assigning and unassigning are one route: a ticket returning to nobody is
   // an assignment to nobody, not a deletion.
   router.patch('/tickets/:id/assignee', requireSubject(), (req, res) => {

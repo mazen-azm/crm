@@ -93,15 +93,14 @@ Points: 2 · Sprint: 3 · Layer: API
 *(Checklist, bullets, Gherkin, etc. Prefilled for Azure DevOps when the work item has acceptance criteria.)*
 
 ```
-From scripts/criteria/tickets.md, section TICKETS-6-API:
+From scripts/criteria/tickets.md, section TICKETS-6-API — copied, not
+paraphrased, because verify-plan compares the plan against that file:
 
-- Given a request for the categories, then the answer lists them, and a ticket
-  can be raised against any id in that list (BR-4).
-- Given a category id that is not in the list, when a ticket is raised with it,
-  then the ticket is refused rather than stored against a category that does
-  not exist.
-- Given the list, then it comes from the database rather than a constant in the
-  code — the seed is where categories are defined.
+- Given the categories, when they are read, then they are paginated with the
+  ceiling every list obeys (BR-4).
+- Given a retired category, then it is not in the list a form offers — but a
+  ticket that already carries it still reads correctly.
+- Given the list, when it is read, then it writes no audit row.
 ```
 
 ---
@@ -149,6 +148,31 @@ Place files in `attachments/` next to this `intake.md`, then list them here so t
 
 - APIs, screens, services already discussed. Repos/roots: `api, web, android`. Primary language: `JavaScript`. **`api/` only.**
 
+**Two defects were found by running the code, not by reading it, and they
+belong to this story because it is the story about which categories are real:**
+
+1. **A category id that does not exist returns 500 `INTERNAL`.** The FK is
+   declared and `PRAGMA foreign_keys = ON` is set (`connection.js:19`), so
+   SQLite refuses the insert — and the raw `FOREIGN KEY constraint failed`
+   escapes the service as an unhandled error. That breaks E-2: a caller's bad
+   input is being reported as a server fault, and it lands in the log as one.
+   It should be 422 naming `categoryId`, the way an unknown `assigneeId`
+   already is (`tickets.service.js`, the `findLiveAssigneeId` guard).
+2. **A retired category is accepted when raising a ticket.** The FK only asks
+   whether the row exists; `deleted_at` is what takes it off the list. So a
+   ticket can be raised against a category no form offers — which is the exact
+   thing the second acceptance criterion says must not be possible.
+
+   The fix is the pattern already in this file: `findLiveCustomerId` at
+   `tickets.repository.js:31` and `findLiveAssigneeId` at `:150` both select
+   `WHERE id = ? AND deleted_at IS NULL`. A `findLiveCategoryId` alongside
+   them, checked inside `raise`'s transaction, is the whole change.
+
+**A retired category must still read back on the tickets that carry it.** The
+second criterion says so in its second half, so do not join the list's
+`deleted_at IS NULL` filter onto the ticket read — a ticket raised last month
+against a category retired yesterday still shows that category.
+
 **Read `0002__tickets.sql` before deciding anything.** `categories` is already
 a table and the seed already fills it; `tickets.category_id` may already carry a
 foreign key. This story is mostly about *exposing* what exists, and the amount
@@ -156,7 +180,19 @@ of new code should be small. If a check the criteria ask for is already enforced
 by the schema, prove it with a test and say so in the commit rather than adding
 a second enforcement in JavaScript.
 
-**GET /api/categories, and it goes in `api/openapi.json`.** The contract test
+**The table is `ticket_categories`, not `categories`** — name the route after
+it. The brief has a knowledge base with articles, and a bare `/categories`
+would be the obvious place to hang article categories later; a route that has
+to be renamed once something else arrives was named for today only.
+
+**The list is paginated like every other, which is BR-4 and not a nicety.**
+`GET /api/v1/customers` and `GET /api/v1/tickets` already answer
+`{ items, total, limit, offset }` with a ceiling that is refused rather than
+clamped. Six seeded categories will never reach that ceiling — which is exactly
+why it would be left out, and exactly why leaving it out makes this list the
+one that is different. Copy the existing shape.
+
+**And it goes in `api/openapi.json`.** The contract test
 fails on a route that is served and not documented, so the OpenAPI entry is not
 optional bookkeeping — it is what makes the test pass.
 

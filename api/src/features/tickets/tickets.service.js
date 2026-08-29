@@ -4,22 +4,27 @@ import { ConflictError, HttpError, unprocessable } from '../../platform/http/err
 import { createAuditWriter, transact } from '../audit/index.js';
 import { createServiceLevels } from '../service-levels/index.js';
 import {
+  DEFAULT_CATEGORY_SORT,
   DEFAULT_SORT,
   UNASSIGNED,
   allowedFrom,
   normaliseRaisedTicket,
   validateQueueQuery,
   validateAssignment,
+  validateCategoryQuery,
   validateRaisedTicket,
   validateStatusChange,
 } from './tickets.rules.js';
 import {
   assignTicket,
+  countCategories,
   countTickets,
+  findLiveCategoryId,
   findLiveAssigneeId,
   findLiveCustomerId,
   findTicketById,
   insertTicket,
+  listCategories as listCategoryRows,
   listTickets,
   updateTicketStatus,
 } from './tickets.repository.js';
@@ -77,6 +82,18 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           throw new HttpError(404, 'NOT_FOUND');
         }
 
+        // null is a ticket with no category, which the column allows and
+        // normaliseRaisedTicket produces by default — so the null test comes
+        // first, exactly as it does for assigneeId when assigning.
+        //
+        // Without this guard the FK fires and SQLite's own error escapes as a
+        // 500, which tells the caller their bad input was our fault; and a
+        // retired category slips through entirely, because a foreign key can
+        // see that a row exists and cannot see that it was taken off the list.
+        if (categoryId !== null && !findLiveCategoryId(db, { categoryId })) {
+          throw unprocessable(['categoryId']);
+        }
+
         insertTicket(db, {
           id,
           customerId: input.customerId,
@@ -131,6 +148,34 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map(publicShape),
         // The matches, not the page.
         total: countTickets(db, { filters }),
+        limit,
+        offset,
+      };
+    },
+
+    // The categories a form offers when raising a ticket. A read, so no audit
+    // row — and paginated like every other list, because six rows today is not
+    // a reason for this one list to be the one that is different (BR-4).
+    listCategories(actor, { q, sort, limit, offset }) {
+      const invalid = validateCategoryQuery({ q, sort });
+      if (invalid.length > 0) throw unprocessable(invalid);
+
+      const filters = {};
+      if (q !== undefined) filters.q = q;
+
+      return {
+        items: listCategoryRows(db, {
+          filters,
+          sort: sort ?? DEFAULT_CATEGORY_SORT,
+          limit,
+          offset,
+        }).map((row) => ({
+          id: row.id,
+          name: row.name,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        })),
+        total: countCategories(db, { filters }),
         limit,
         offset,
       };
