@@ -279,8 +279,12 @@ function checkPlan(p) {
 
   // L-6 — a guard's scope is the surface its rule governs
   for (const line of lines) {
-    if (!/whole (?:working )?tree|entire (?:working )?tree|recursively grep the repo/i.test(line)) continue
-    if (/\bnot\b|NOT|never|rather than|instead of/.test(line)) continue   // saying it is not whole-tree
+    const m = line.match(/whole (?:working )?tree|entire (?:working )?tree|recursively grep the repo/i)
+    if (!m) continue
+    // Only the text BEFORE the phrase can negate it, for L-43's reason: a
+    // line-wide test lets a word further along switch the check off, and
+    // "grep the whole tree, not the app" is still proposing a whole-tree grep.
+    if (/\bnot\b|\bnever\b|rather than|instead of/i.test(line.slice(0, m.index))) continue
     flag(`${p.file} proposes a repo-wide grep — .squad/ names its tools by design, so scope the guard to the code root (L-6)`)
     break
   }

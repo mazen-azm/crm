@@ -85,6 +85,30 @@ const probes = [
     expect: /no-such-file\.js/,
   },
   {
+    lesson: 'L-5',
+    what: 'a dialect the plan explicitly forbids — must stay silent',
+    body: 'Do not use TIMESTAMPTZ here; the engine is SQLite.',
+    expect: null,
+  },
+  {
+    lesson: 'L-2',
+    what: 'a plan that names its own file',
+    body: 'Attach `.squad/plans/platform/99-story-CRM-32.md` to the session.',
+    expect: /names its own file/,
+  },
+  {
+    lesson: 'L-6',
+    what: 'a guard proposed over the whole tree',
+    body: 'Add a check that greps the whole tree for the forbidden token.',
+    expect: /repo-wide grep/,
+  },
+  {
+    lesson: 'L-6',
+    what: 'the same, negated before the phrase — must stay silent',
+    body: 'Scope the guard to api/src rather than the whole tree.',
+    expect: null,
+  },
+  {
     lesson: '(control)',
     what: 'a plan with no defect at all',
     body: 'Edit `api/src/platform/db/seed.js` to walk the tickets through.',
