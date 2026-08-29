@@ -1,39 +1,40 @@
 {
-  "runId": "0mtekd10t-a4ceb76232be91a3",
+  "runId": "0mtepwdrj-2073ab4e74cb0402",
   "provider": "anthropic",
   "model": "claude-opus-4-7",
-  "feature": "tickets",
-  "storyId": "CRM-72",
-  "startedAt": "2026-08-29T15:57:04.493Z",
-  "completedAt": "2026-08-29T16:00:34.897Z",
+  "feature": "customers",
+  "storyId": "CRM-58",
+  "startedAt": "2026-08-29T18:32:05.551Z",
+  "completedAt": "2026-08-29T18:36:43.911Z",
   "success": true,
   "partial": false,
-  "planFile": ".squad/plans/tickets/39-story-crm-72.md",
+  "planFile": ".squad/plans/customers/45-story-crm-58.md",
   "stats": {
-    "turns": 16,
-    "inputTokens": 29,
-    "outputTokens": 17146,
-    "cacheCreationTokens": 33801,
-    "cacheReadTokens": 115303,
+    "turns": 50,
+    "inputTokens": 55,
+    "outputTokens": 22380,
+    "cacheCreationTokens": 45439,
+    "cacheReadTokens": 674501,
     "cacheHitRatio": 1,
-    "durationMs": 127976
+    "durationMs": 202209
   },
   "cacheEnabled": true,
-  "durationMs": 210402,
+  "durationMs": 278358,
   "scout": {
     "enabled": true,
-    "selectedCount": 23,
-    "tokensUsed": 8102,
-    "durationMs": 82393
+    "selectedCount": 17,
+    "tokensUsed": 9500,
+    "durationMs": 76108
   },
   "validation": {
     "enabled": true,
-    "issuesCount": 43,
+    "issuesCount": 16,
     "issuesByKind": {
-      "missing_path": 1,
-      "symbol_not_found": 42
+      "missing_path": 4,
+      "line_range_too_large": 2,
+      "symbol_not_found": 10
     },
-    "durationMs": 21
+    "durationMs": 29
   },
   "plannerRuntime": {
     "kind": "agent-sdk",

@@ -10,6 +10,8 @@ Entry point for the **customers** feature. Stories execute in order by their `NN
 | 29 | `29-story-crm-55.md` | CUSTOMERS-1-API agent — I search by name, address or number | CRM-55 | — |
 | 30 | `30-story-crm-56.md` | CUSTOMERS-1-WEB agent — I search by name, address or number | CRM-56 | — |
 | 31 | `31-story-crm-60.md` | CUSTOMERS-3-API agent — I write an internal note about a customer | CRM-60 | — |
+| 44 | `44-story-crm-57.md` | CUSTOMERS-2-API agent — contacts, open tickets and history in one screen | CRM-57 | — |
+| 45 | `45-story-crm-58.md` | CUSTOMERS-2-WEB agent — contacts, open tickets and history in one screen | CRM-58 | — |
 
 ## Dependency notes
 

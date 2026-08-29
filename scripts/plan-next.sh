@@ -3,12 +3,17 @@
 # a LaunchAgent so a quota window that opens while nobody is at the keyboard is
 # not a window that is missed.
 #
-# The schedule is four firings six hours apart — 03:25, 09:25, 15:25, 21:25 —
-# and each may plan up to four stories. Six hours because the one reset time
-# the API has ever named was 21:20, and an even spread lands inside a window
-# whether the cycle turns out to be five hours or six. It is a guess about the
-# cycle, deliberately made robust to being wrong: a firing that arrives inside
-# a shut window costs one refused request and stops.
+# The schedule is five firings five hours apart — 02:15, 07:15, 12:15, 17:15,
+# 22:15 — and each may plan up to four stories.
+#
+# Five hours because that is what the plan page says the session window is, not
+# because of anything inferred here: a first guess of six hours was wrong and
+# was corrected by reading it. Five FIRINGS rather than four because 24 hours
+# does not divide by five — four firings at five-hour spacing leave a
+# nine-hour hole once a day, which is a whole window nobody uses.
+#
+# A firing that arrives inside a shut window costs one refused request and
+# stops, so being slightly out of phase is cheap.
 #
 # It plans and stops. Reviewing the plan and building from it stay with a
 # person and a session — those are the two gates, and every story so far has
