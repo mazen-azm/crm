@@ -68,6 +68,14 @@ export const en = {
     searchPlaceholder: 'Name, email address or phone number',
     search: 'Search',
     searching: 'Searching…',
+    // Keyed by Intl.PluralRules. English uses two of the six categories.
+    // One key per plural category, because every value in these files is a
+    // string — Messages says so, and defineLocale's key check depends on it.
+    // English uses two of the six; the rest repeat, which is what English does.
+    resultCountOne: 'customer found',
+    resultCountTwo: 'customers found',
+    resultCountFew: 'customers found',
+    resultCountMany: 'customers found',
     resultCount: 'customers found',
     emptyTitle: 'No customer matched that',
     emptyBody: 'Check the spelling, or try part of a phone number instead.',
@@ -114,6 +122,10 @@ export const en = {
     unassigned: 'Unassigned',
     apply: 'Apply',
     clear: 'Clear the filters',
+    resultCountOne: 'ticket',
+    resultCountTwo: 'tickets',
+    resultCountFew: 'tickets',
+    resultCountMany: 'tickets',
     resultCount: 'tickets',
     emptyTitle: 'No ticket matched',
     // The filters are named in the body so an agent can see which one is

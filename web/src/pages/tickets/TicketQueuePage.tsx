@@ -262,7 +262,7 @@ function Row({
 
 export function TicketQueuePage() {
   const { t } = useTranslation();
-  const { formatDate, formatNumber } = useFormatters();
+  const { formatDate, countOf } = useFormatters();
   const queue = useTicketQueue();
   const categories = useTicketCategories();
   const assignees = useAssignees();
@@ -402,9 +402,7 @@ export function TicketQueuePage() {
 
       {queue.status === 'success' && page && page.items.length > 0 ? (
         <Stack gap={3}>
-          <Text variant="muted">
-            {formatNumber(page.total)} {t.ticketQueue.resultCount}
-          </Text>
+          <Text variant="muted">{countOf(page.total, t.ticketQueue)}</Text>
           {/* Whatever the API returned is what is shown. No filter, no sort,
               no slice here — the total would be right and the rows wrong. */}
           {page.items.map((ticket) => {

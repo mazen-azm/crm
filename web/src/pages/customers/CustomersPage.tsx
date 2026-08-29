@@ -30,7 +30,7 @@ function Row({ customer, t }: { customer: Customer; t: ReturnType<typeof useTran
 
 export function CustomersPage() {
   const { t } = useTranslation();
-  const { formatNumber } = useFormatters();
+  const { countOf } = useFormatters();
   const { status, page, error, query, search } = useCustomerSearch();
   const [term, setTerm] = useState('');
 
@@ -117,7 +117,7 @@ export function CustomersPage() {
       {status === 'success' && shown.length > 0 && page ? (
         <Stack gap={3}>
           <Text variant="muted">
-            {formatNumber(page.total)} {t.customers.resultCount}
+            {countOf(page.total, t.customers)}
           </Text>
 
           <ul className="customer-list">

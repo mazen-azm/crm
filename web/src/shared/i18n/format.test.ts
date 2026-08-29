@@ -13,7 +13,7 @@
 // Do not "tighten" these into equality checks.
 import { expect, test } from 'vitest';
 
-import { formatDate, formatNumber, formatRelativeTime, localeTag } from './format';
+import { formatDate, formatNumber, formatRelativeTime, localeTag, plural } from './format';
 
 const ARABIC_INDIC = /[٠-٩]/;
 const ARABIC_THOUSANDS = '٬';
@@ -84,4 +84,30 @@ test('numeric auto is in effect, so the near past gets a word', () => {
 
 test('a plain count still carries its number', () => {
   expect(formatRelativeTime(-9, 'day', 'en')).toMatch(ANY_DIGIT);
+});
+
+
+// "1 tickets" is what gluing a number to a fixed plural produces, and it was on
+// the screen. English is the easy half: Arabic uses four categories at the
+// sizes a list reaches, and Intl.PluralRules is what knows which.
+const tickets = { one: 'ticket', two: 'tickets', few: 'tickets', many: 'tickets', other: 'tickets' };
+const arabic = { one: 'تذكرة', two: 'تذكرتان', few: 'تذاكر', many: 'تذكرة', other: 'تذكرة' };
+
+test('plural picks English singular and plural', () => {
+  expect(plural(1, tickets, 'en')).toBe('ticket');
+  expect(plural(0, tickets, 'en')).toBe('tickets');
+  expect(plural(2, tickets, 'en')).toBe('tickets');
+});
+
+test('plural picks each category Arabic uses at these sizes', () => {
+  expect(plural(1, arabic, 'ar')).toBe('تذكرة');
+  expect(plural(2, arabic, 'ar')).toBe('تذكرتان');
+  expect(plural(3, arabic, 'ar')).toBe('تذاكر');
+  expect(plural(11, arabic, 'ar')).toBe('تذكرة');
+});
+
+test('plural falls back to other for a category the forms do not carry', () => {
+  // `other` is the one category every locale defines, which is what makes it
+  // a safe fallback rather than a guess.
+  expect(plural(3, { other: 'tickets' }, 'ar')).toBe('tickets');
 });
