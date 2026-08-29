@@ -45,6 +45,13 @@ const publicShape = (row) => ({
   // read back, which is the whole reason it is a column — so it is on the
   // public shape rather than only in the audit trail.
   resolutionNote: row.resolution_note ?? null,
+  // The moves that are legal from where this ticket is. Derived from the same
+  // table the refusal reads, so it cannot drift from it — and it is here
+  // because a client has no other way to know. Without it a screen either
+  // copies the transition table into its own language, which is one product
+  // rule in two places, or offers every move and lets the 409 narrow them,
+  // which makes the refusal the interface rather than the backstop.
+  allowedTransitions: allowedFrom(row.status),
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });

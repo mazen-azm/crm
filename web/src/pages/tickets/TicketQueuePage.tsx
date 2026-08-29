@@ -11,11 +11,13 @@ import {
   Skeleton,
   Stack,
   Text,
+  TextArea,
 } from '../../shared/ui';
 import { useTranslation } from '../../shared/i18n';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useAssignees } from './useAssignees';
 import { useAssignTicket } from './useAssignTicket';
+import { useChangeStatus, isBlank } from './useChangeStatus';
 import { useTicketCategories } from './useTicketCategories';
 import {
   PAGE_SIZE,
@@ -74,7 +76,11 @@ function Row({
   onAssigned: (ticket: Ticket) => void;
 }) {
   const assign = useAssignTicket();
+  const move = useChangeStatus();
   const [choice, setChoice] = useState(ticket.assigneeId ?? UNASSIGN);
+  const [target, setTarget] = useState('');
+  const [note, setNote] = useState('');
+  const [noteMissing, setNoteMissing] = useState(false);
 
   const submit = async () => {
     const next = choice === UNASSIGN ? null : choice;
@@ -86,6 +92,24 @@ function Row({
   };
 
   const stale = assign.status === 'error' && assign.error?.code === 'REVISION_MISMATCH';
+  const moveStale = move.status === 'error' && move.error?.code === 'REVISION_MISMATCH';
+
+  const submitMove = async () => {
+    // The requirement is stated, not discovered by a 422. The API applies the
+    // same test after trimming, so a round-trip here would return the answer
+    // the screen already has.
+    if (target === 'resolved' && isBlank(note)) {
+      setNoteMissing(true);
+      return;
+    }
+    setNoteMissing(false);
+    const updated = await move.change(ticket, target, note).catch(() => null);
+    if (updated) {
+      setNote('');
+      setTarget('');
+      onAssigned(updated);
+    }
+  };
 
   return (
     <Card>
@@ -151,6 +175,77 @@ function Row({
             body={t.errors[assign.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
           />
         ) : null}
+
+        {ticket.resolutionNote ? (
+          <Text variant="muted">{`${t.ticketStatus.resolvedNote}: ${ticket.resolutionNote}`}</Text>
+        ) : null}
+
+        {ticket.allowedTransitions.length === 0 ? (
+          <Text variant="muted">{t.ticketStatus.noMoves}</Text>
+        ) : (
+          <Stack gap={2}>
+            <Stack direction="row" gap={2} align="end">
+              <Field id={`status-${ticket.id}`} label={t.ticketStatus.label}>
+                {({ id }) => (
+                  <Select id={id} value={target} onChange={(event) => setTarget(event.target.value)}>
+                    <option value="">{t.ticketStatus.choose}</option>
+                    {/* Only what the ticket says is legal from where it is.
+                        The six statuses and their edges are not copied here —
+                        the API sends them with the ticket, derived from the
+                        same table the refusal reads. */}
+                    {ticket.allowedTransitions.map((next) => (
+                      <option key={next} value={next}>
+                        {statusLabel(t, next)}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Button
+                variant="secondary"
+                disabled={move.status === 'loading' || target === ''}
+                onClick={() => void submitMove()}
+              >
+                {move.status === 'loading' ? t.ticketStatus.moving : t.ticketStatus.submit}
+              </Button>
+            </Stack>
+
+            {target === 'resolved' ? (
+              <Field
+                id={`note-${ticket.id}`}
+                label={t.ticketStatus.noteLabel}
+                error={noteMissing ? t.ticketStatus.noteRequired : undefined}
+              >
+                {({ id, describedBy, invalid }) => (
+                  <TextArea
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    placeholder={t.ticketStatus.notePlaceholder}
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                  />
+                )}
+              </Field>
+            ) : null}
+
+            {moveStale ? (
+              <ErrorState
+                title={t.ticketStatus.staleTitle}
+                body={t.errors.REVISION_MISMATCH}
+                onRetry={() => window.location.reload()}
+                retryLabel={t.ticketStatus.reload}
+              />
+            ) : null}
+
+            {move.status === 'error' && !moveStale && move.error ? (
+              <ErrorState
+                title={t.ticketStatus.failedTitle}
+                body={t.errors[move.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+              />
+            ) : null}
+          </Stack>
+        )}
       </Stack>
     </Card>
   );

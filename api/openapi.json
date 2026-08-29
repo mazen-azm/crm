@@ -271,7 +271,7 @@
     },
     "/api/v1/tickets": {
       "post": {
-        "summary": "Raise a ticket for a customer. Any signed-in staff member may; there is one queue and nothing to route it to. The ticket is created, its two service-level clocks are started and an audit row is written in one transaction.",
+        "summary": "Raise a ticket for a customer. Any signed-in staff member may; there is one queue and nothing to route it to. The ticket is created, its two service-level clocks are started and an audit row is written in one transaction. Every ticket carries allowedTransitions: the statuses it may legally move to from where it is, derived from the same table a refusal reads. A screen offers those and no others — the 409 is the backstop, not the interface.",
         "responses": {
           "201": {
             "description": "The ticket: { id, customerId, categoryId, assigneeId, status, priority, subject, body, revision, createdAt, updatedAt }. status is always new; priority defaults to normal when none is stated; revision is 1 and is the token a later write sends back (BR-5)."
@@ -291,7 +291,7 @@
         }
       },
       "get": {
-        "summary": "The queue. Every signed-in staff member sees every ticket in it — there is one organisation and one queue, so it is not scoped to the caller. Filters combine; assigneeId=none means unassigned; the only sort is created_at, newest first, and an unknown one is refused rather than ignored.",
+        "summary": "The queue. Every signed-in staff member sees every ticket in it — there is one organisation and one queue, so it is not scoped to the caller. Filters combine; assigneeId=none means unassigned; the only sort is created_at, newest first, and an unknown one is refused rather than ignored. Every ticket carries allowedTransitions: the statuses it may legally move to from where it is, derived from the same table a refusal reads. A screen offers those and no others — the 409 is the backstop, not the interface.",
         "responses": {
           "200": {
             "description": "{ items, total, limit, offset }. Each item is the ticket shape POST returns, including revision — a caller that later writes sends that value back (BR-5). total counts the matches, not the page."

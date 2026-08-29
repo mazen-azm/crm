@@ -182,6 +182,11 @@ trims and calls `'   '` empty (T-4). The screen must not send it and then
 translate the 422 — it must say so on the field, because a round-trip to be
 told what the screen already knew is a worse experience for the same answer.
 
+**Half of this was done by CRM-77 — check what is left before writing.**
+`ApiErrorCode` now names `ILLEGAL_TRANSITION` and `STATUS_UNCHANGED`, and both
+have a sentence in `en.ts` and `ar.ts`. What is still missing is the `allowed`
+array itself.
+
 **The API client drops `allowed` today, and this story has to add it.**
 `web/src/shared/api/client.ts` builds an `ApiError` from `code`, `requestId`
 and `fields` only, and `web/src/shared/api/errors.ts:19–37` has no `allowed`

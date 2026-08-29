@@ -374,3 +374,26 @@ test('the audit trail carries the note only on the move that wrote it', async ()
     resolutionNote: 'Fixed.',
   });
 });
+
+test('a ticket carries the moves that are legal from where it is', async () => {
+  const { at, move } = await start();
+
+  // A client has no other way to know. The alternative is the transition table
+  // copied into another language, or a screen that offers every move and lets
+  // the 409 narrow them — which makes the refusal the interface.
+  for (const from of STATUSES) {
+    const ticket = await at(from);
+    assert.deepEqual(ticket.allowedTransitions, [...allowedFrom(from)], `from ${from}`);
+  }
+
+  // Including the empty answer: a closed ticket says "nothing", and a screen
+  // that reads that as "unknown, offer everything" would offer moves that
+  // cannot happen.
+  assert.deepEqual((await at('closed')).allowedTransitions, []);
+
+  // And it moves with the ticket rather than being a snapshot of where it
+  // started.
+  const ticket = await at('new');
+  const opened = await (await move(ticket.id, { status: 'open', revision: ticket.revision })).json();
+  assert.deepEqual(opened.allowedTransitions, [...allowedFrom('open')]);
+});
