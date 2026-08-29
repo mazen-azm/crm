@@ -733,3 +733,23 @@ existing plans still pass, so the looser pattern costs no false positives.
 
 The general form of this is worth carrying: **a guard is only as good as what
 it can see.** Before trusting one, feed it the defect it is supposed to catch.
+
+## L-43 — A negation test that reads the whole line lets the text switch the check off
+
+**Rule:** when a check skips a match because the surrounding prose negates it,
+read only the text **before** the match, not the whole line. A line-wide test
+hands the document a way to disable the check by accident — and the accident is
+usually a word that has nothing to do with the rule.
+
+**Where it came from:** the L-5 dialect check skipped any line whose text
+matched `NEGATED`, and `NEGATED` carried a bare `NOT` with no word boundaries
+under an `/i` flag. So `created_at TIMESTAMPTZ NOT NULL` — the commonest way a
+Postgres column can possibly appear in a plan — switched off the check that
+exists to catch it. So did any line containing "another", "nothing" or
+"cannot", because each contains the letters n-o-t. The bare `NOT` was redundant
+next to `\bnot\b` under `/i`; removing it and scoping the test to the text
+before the token fixed both halves.
+
+The same shape appears wherever a check asks "is this line saying not to do
+it?" — L-6's repo-wide-grep check still tests the whole line, and should be
+read with this in mind.

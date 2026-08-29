@@ -123,6 +123,16 @@ jobs:
         if: always()
         run: node scripts/verify-plan.mjs
 
+      # The check that checks the check. Six known defects are fed to
+      # verify-plan and each must be reported; a seventh probe is clean and
+      # must be silent. Nothing tested the guards themselves until a real hole
+      # survived in one of them — a story id shaped TICKETS-4B-API was
+      # invisible because the recogniser wanted digits, so no check ever ran on
+      # it and the script said green (L-42).
+      - name: verify the plan checks can see their own defects
+        if: always()
+        run: node scripts/verify-plan.selftest.mjs
+
       - name: verify architecture
         if: always()
         run: node scripts/verify-architecture.mjs
