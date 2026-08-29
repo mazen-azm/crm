@@ -139,3 +139,14 @@ test('a percent sign a person typed is a character, not a wildcard', async () =>
   // If the term were interpolated, '%' would match everybody.
   assert.deepEqual(await namesIn(await search('?q=%25')), []);
 });
+
+test('an underscore is a character too, not a single-character wildcard', async () => {
+  const { db, search } = await start();
+  db.prepare("INSERT INTO customers (id, name, created_at, updated_at) VALUES (?,?,?,?)")
+    .run('cus-underscore', 'a_b Trading', '2026-08-29', '2026-08-29');
+
+  // 'a_b' would also match 'axb' if the underscore reached LIKE unescaped —
+  // and a match that looks right is worse than an error.
+  assert.deepEqual(await namesIn(await search('?q=a_b')), ['a_b Trading']);
+  assert.deepEqual(await namesIn(await search('?q=a%5Fb')), ['a_b Trading']);
+});

@@ -1,4 +1,4 @@
-import { escapeLike } from './customers.rules.js';
+import { ESCAPE_CHAR, escapeLike } from './customers.rules.js';
 
 // The only file in this feature with SQL, which verify-architecture enforces.
 //
@@ -31,8 +31,8 @@ const STRIPPED_PHONE = `REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
 const MATCHES = `
   deleted_at IS NULL
   AND (
-    name LIKE ? ESCAPE '\\'
-    OR email LIKE ? ESCAPE '\\'
+    name LIKE ? ESCAPE '${ESCAPE_CHAR}'
+    OR email LIKE ? ESCAPE '${ESCAPE_CHAR}'
     OR (? IS NOT NULL AND ${STRIPPED_PHONE} LIKE ?)
   )`;
 
