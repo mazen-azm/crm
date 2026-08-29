@@ -264,12 +264,12 @@ All new tests live under `api/src/features/service-levels/` and follow the shape
 
 ## Done Criteria
 
-- [ ] `api/src/features/service-levels/{service-levels.repository.js,service-levels.service.js,index.js}` exist and export the named surface listed above; no `routes` export.
-- [ ] `startClocksForTicket` inserts one `first_response` and one `resolution` clock per ticket, idempotently, relying on the `UNIQUE (ticket_id, kind)` constraint at `0003__service_levels.sql:21`.
-- [ ] `readDeadlines` computes each deadline as `started_at + minutes` where `minutes` comes from the row in `sla_targets` matching the ticket's **current** priority (acceptance criterion 3), and reports `overdue` without writing to `sla_breaches` (acceptance criteria 4, 6).
-- [ ] Comment in `service-levels.service.js` explains the "current priority wins" reading and cites the escalation example.
-- [ ] No new migration, no OpenAPI change, no route registration, no import of minute constants from anywhere except `sla_targets` at runtime.
-- [ ] Test files listed in `## Test Plan` are added and green; existing tests remain green.
-- [ ] All commands in `## Verification Steps` pass locally; the AI-attribution grep is clean.
+- [x] `api/src/features/service-levels/{service-levels.repository.js,service-levels.service.js,index.js}` exist and export the named surface listed above; no `routes` export.
+- [x] `startClocksForTicket` inserts one `first_response` and one `resolution` clock per ticket, idempotently, relying on the `UNIQUE (ticket_id, kind)` constraint at `0003__service_levels.sql:21`.
+- [x] `readDeadlines` computes each deadline as `started_at + minutes` where `minutes` comes from the row in `sla_targets` matching the ticket's **current** priority (acceptance criterion 3), and reports `overdue` without writing to `sla_breaches` (acceptance criteria 4, 6).
+- [x] Comment in `service-levels.service.js` explains the "current priority wins" reading and cites the escalation example.
+- [x] No new migration, no OpenAPI change, no route registration, no import of minute constants from anywhere except `sla_targets` at runtime.
+- [x] Test files listed in `## Test Plan` are added and green; existing tests remain green.
+- [x] All commands in `## Verification Steps` pass locally; the AI-attribution grep is clean.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story (`TICKETS-1-API` / CRM-71), which becomes the first production caller of this service.**
