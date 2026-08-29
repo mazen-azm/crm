@@ -31,5 +31,20 @@ export function ticketsRouter({ db, now }) {
     );
   });
 
+  // Assigning and unassigning are one route: a ticket returning to nobody is
+  // an assignment to nobody, not a deletion.
+  router.patch('/tickets/:id/assignee', requireSubject(), (req, res) => {
+    res.json(
+      service.assign(req.subject, {
+        id: req.params.id,
+        // undefined and null are different here — undefined is a field the
+        // caller forgot, null is "nobody" — so this reads the property rather
+        // than defaulting it.
+        assigneeId: req.body?.assigneeId,
+        revision: req.body?.revision,
+      }),
+    );
+  });
+
   return router;
 }

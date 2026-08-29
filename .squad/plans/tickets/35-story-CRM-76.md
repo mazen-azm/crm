@@ -289,13 +289,13 @@ Update `api/src/platform/http/openapi-contract.test.js` if it enumerates paths â
 
 ## Done Criteria
 
-- [ ] `PATCH /api/v1/tickets/:id/assignee` exists, guarded by `requireSubject()`, and returns the same shape as `POST /tickets`.
-- [ ] Successful assignment updates `assignee_id`, increments `revision` **inside the SQL statement** (`revision = revision + 1` in the `SET`), and refreshes `updated_at`.
-- [ ] Stale or missing `revision` returns 409 `REVISION_MISMATCH` and writes nothing (BR-5).
-- [ ] Assignee id that does not name a live user returns 422 naming `assigneeId` and writes nothing.
-- [ ] `assigneeId: null` is legal, bumps the revision, and writes an audit row.
-- [ ] Every successful call writes exactly one `audit_events` row with `verb = 'ticket.assign'` and both `before.assigneeId` and `after.assigneeId` (BR-2).
-- [ ] `audit.guarantee.test.js` still passes for the tickets table.
-- [ ] `api/openapi.json` documents the new path, its request body, and its 200 / 404 / 409 / 422 responses.
-- [ ] `scripts/verify-architecture.mjs` passes; no new cross-feature imports.
-- [ ] No AI-attribution strings appear in the diff.
+- [x] `PATCH /api/v1/tickets/:id/assignee` exists, guarded by `requireSubject()`, and returns the same shape as `POST /tickets`.
+- [x] Successful assignment updates `assignee_id`, increments `revision` **inside the SQL statement** (`revision = revision + 1` in the `SET`), and refreshes `updated_at`.
+- [x] Stale or missing `revision` returns 409 `REVISION_MISMATCH` and writes nothing (BR-5).
+- [x] Assignee id that does not name a live user returns 422 naming `assigneeId` and writes nothing.
+- [x] `assigneeId: null` is legal, bumps the revision, and writes an audit row.
+- [x] Every successful call writes exactly one `audit_events` row with `verb = 'ticket.assign'` and both `before.assigneeId` and `after.assigneeId` (BR-2).
+- [x] `audit.guarantee.test.js` still passes for the tickets table.
+- [x] `api/openapi.json` documents the new path, its request body, and its 200 / 404 / 409 / 422 responses.
+- [x] `scripts/verify-architecture.mjs` passes; no new cross-feature imports.
+- [x] No AI-attribution strings appear in the diff.

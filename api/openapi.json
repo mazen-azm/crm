@@ -307,6 +307,31 @@
           }
         }
       }
+    },
+    "/api/v1/tickets/{id}/assignee": {
+      "patch": {
+        "summary": "Assign a ticket, or return it to nobody by sending assigneeId null. The caller sends the revision it read; a mismatch is refused rather than overwriting somebody else's change (BR-5). The assignment is audited with both the previous assignee and the new one.",
+        "responses": {
+          "200": {
+            "description": "The ticket, with its new assigneeId and its revision one higher. That new revision is what the next write on this ticket must send."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket, or one that has been removed."
+          },
+          "409": {
+            "description": "The revision sent is not the ticket's current one \u2014 somebody changed it since it was read. Nothing is written, and re-reading the ticket gives the revision to retry with."
+          },
+          "422": {
+            "description": "A missing or malformed revision, or an assigneeId that is not live staff. The body names the fields, never their values."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
     }
   }
 }

@@ -66,3 +66,16 @@ export function validateQueueQuery({ status, priority, assigneeId, categoryId, s
   if (sort !== undefined && !SORTS.includes(sort)) fields.push('sort');
   return fields;
 }
+
+// An assignment says who, and which version of the ticket the caller was
+// looking at. Both are required: BR-5 is not optional for the writes it names,
+// and a write with no revision is precisely the silent overwrite it forbids.
+//
+// assigneeId may be null — a ticket returning to nobody is an assignment, not
+// a deletion — so `null` is a value here and `undefined` is a missing field.
+export function validateAssignment({ assigneeId, revision }) {
+  const fields = [];
+  if (assigneeId !== null && !present(assigneeId)) fields.push('assigneeId');
+  if (!Number.isInteger(revision) || revision < 1) fields.push('revision');
+  return fields;
+}

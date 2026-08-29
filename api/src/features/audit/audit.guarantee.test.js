@@ -68,6 +68,7 @@ const EXERCISED = new Set([
   'POST /api/v1/accounts/:id/re-enable',
   'POST /api/v1/customers/:id/notes',
   'POST /api/v1/tickets',
+  'PATCH /api/v1/tickets/:id/assignee',
 ]);
 
 test('every mutating route the router serves is exercised by this file', async () => {
@@ -113,11 +114,26 @@ test('each mutating route writes exactly one audit row', async () => {
   // exists to prevent, arriving through its own front door.
   const customer = (await (await call('/api/v1/customers?limit=1')).json()).items[0];
 
+  // Raised outside the counted steps below: each of those asserts exactly one
+  // new audit row, and raising a ticket writes one of its own. Driven for real
+  // rather than only listed — a route named in the covered set without being
+  // exercised satisfies the census with a claim, which is the failure the
+  // census exists to prevent.
+  const assignable = await (await call('/api/v1/tickets', {
+    method: 'POST',
+    body: { customerId: customer.id, subject: 'To be assigned', body: 'Body.' },
+  })).json();
+
   const rest = [
     ['POST /api/v1/tickets', () =>
       call('/api/v1/tickets', {
         method: 'POST',
         body: { customerId: customer.id, subject: 'A raised ticket', body: 'So this route is driven.' },
+      })],
+    ['PATCH /api/v1/tickets/:id/assignee', () =>
+      call(`/api/v1/tickets/${assignable.id}/assignee`, {
+        method: 'PATCH',
+        body: { assigneeId: null, revision: assignable.revision },
       })],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
