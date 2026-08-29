@@ -7,6 +7,7 @@ import {
   EmptyState,
   ErrorState,
   Field,
+  Isolated,
   Heading,
   Skeleton,
   Stack,
@@ -21,8 +22,15 @@ function Row({ customer, t }: { customer: Customer; t: ReturnType<typeof useTran
     <li className="customer-list__row">
       <Text>{customer.name}</Text>
       <div className="customer-list__contact">
-        <Text variant="muted">{customer.email ?? t.customers.noEmail}</Text>
-        <Text variant="muted">{customer.phone ?? t.customers.noPhone}</Text>
+        {/* Both are left-to-right runs sitting in a paragraph that may be
+            right-to-left. Without isolation the phone number's groups reorder
+            and the leading + lands at the far end. */}
+        <Text variant="muted">
+          <Isolated>{customer.email ?? t.customers.noEmail}</Isolated>
+        </Text>
+        <Text variant="muted">
+          <Isolated>{customer.phone ?? t.customers.noPhone}</Isolated>
+        </Text>
       </div>
     </li>
   );
