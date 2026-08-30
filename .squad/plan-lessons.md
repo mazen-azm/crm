@@ -1227,3 +1227,36 @@ each other, and a mutation removing the syntax from either side fails the
 check by name. Two parsers of one grammar are fine; two parsers that never
 meet are not (the same argument as [[verify-the-plan-not-just-the-code]]).
 
+---
+
+## L-61 — Ask what the screen will CALL before planning what it will show
+
+**Rule:** for every screen a plan describes, list the requests it will make and
+check each one against the router before writing a task. A plan that names a
+route which does not exist is not slightly wrong — every task under it is
+written against an API that cannot answer.
+
+**Where it came from:** `PORTAL-3-WEB (CRM-123)`. The plan described a customer
+opening one of their tickets, and there is no route that returns one ticket —
+not for a customer, not for the desk. The whole product reads lists. Nothing in
+138 units provides it, so the story could not be started, let alone finished.
+
+The same plan then assumed `reopenWindowOpen` or `canReply` "mirroring whatever
+CONVERSATION-2-API exposes". It exposes neither. The screen owes the customer a
+warning before they type, and the only field that looks like an answer —
+`allowedTransitions` — is derived from the status alone, so it lists `reopened`
+a month after the resolution. A hedge is not a citation, and both hedges were
+wrong.
+
+Four stories now (L-56, L-59, twice here). The pattern is stable enough to
+name: **the missing unit is always in the layer the story is not in.** A WEB
+story's plan reads WEB files carefully and takes the API on trust, because the
+API is where it is not looking.
+
+What made this one different is that the guards caught the consequence. Adding
+the route turned two censuses red on the first run — the ownership census
+demanding it be driven, the staff-only census demanding it be named open with a
+reason. Neither is a test somebody remembered to write; both read the routes
+off the router. That is the argument for a census over a checklist, made by the
+censuses rather than about them.
+
