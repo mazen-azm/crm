@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth-context';
 import { useTheme } from '../theme-context';
 import { useTranslation } from '../../shared/i18n';
+import { useMe } from '../../shared/session/use-me';
 import { Button, Heading, Stack } from '../../shared/ui';
 import './DeskShell.css';
 
@@ -17,6 +18,7 @@ import './DeskShell.css';
 // layout without a second copy of it.
 export function DeskShell({ children }: { children: ReactNode }) {
   const { t, language, toggleLanguage } = useTranslation();
+  const { isAdmin } = useMe();
   const { signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const themeLabel = theme === 'dark' ? t.shell.switchToLight : t.shell.switchToDark;
@@ -64,6 +66,17 @@ export function DeskShell({ children }: { children: ReactNode }) {
         <Link to="/account/password" className="desk-shell__nav-item">
           {t.shell.navPassword}
         </Link>
+        {/* Only for an admin, and only once we know they are one. Undefined
+            means the answer has not arrived: drawing the item then taking it
+            away is worse than drawing it a moment late, and drawing nothing
+            for an admin is worse still — so it waits rather than guesses.
+            Courtesy, not enforcement: the API refuses a non-admin whether or
+            not this link is here. */}
+        {isAdmin === true ? (
+          <Link to="/accounts/set-password" className="desk-shell__nav-item">
+            {t.shell.navSetPassword}
+          </Link>
+        ) : null}
       </nav>
 
       <main className="desk-shell__main">{children}</main>

@@ -26,6 +26,7 @@ export const en = {
     navQueue: 'The queue',
     navRaiseTicket: 'Raise a ticket',
     navPassword: 'Your password',
+    navSetPassword: 'Set a password',
     navHome: 'Home',
     switchToDark: 'Dark theme',
     switchToLight: 'Light theme',
@@ -55,6 +56,25 @@ export const en = {
     passwordStillSignedIn: 'You are still signed in here.',
     passwordAgain: 'Change it again',
     passwordFailed: 'That change did not go through',
+  },
+  setPassword: {
+    title: "Set somebody's password",
+    subtitle: 'For a colleague who cannot sign in. They will need the one you type here.',
+    adminOnly: 'Only an admin can set somebody else’s password.',
+    // An id typed in rather than a person picked: the people screen is a later
+    // story, and a label promising a search that is not here is worse than one
+    // asking for what the screen actually takes.
+    userId: 'User id',
+    password: 'New password',
+    confirm: 'New password again',
+    submit: 'Set it',
+    submitting: 'Setting…',
+    mismatch: 'The two new passwords are not the same.',
+    done: 'The password has been set.',
+    doneFor: 'For the account',
+    doneRead: 'Read it out to them. Nothing here can show it again.',
+    another: 'Set another',
+    failed: 'That password was not set',
   },
   home: {
     heading: 'Support Desk',
