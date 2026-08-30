@@ -86,6 +86,31 @@ export function findLiveCustomerById(db, { id }) {
     .get(id);
 }
 
+export function insertCustomer(db, { id, name, email, phone, at }) {
+  // No user_id column: 0001__customers.sql does not have one. I-1 says a
+  // customer is not a user, and the way this honours it is by writing one row
+  // here and none in `users` — a test asserts that. The column arrives with
+  // whichever story gives a customer a sign-in.
+  //
+  // No address either: nothing asks for it and PROJECTION does not return it,
+  // so a value written here would be invisible to every reader.
+  db.prepare(`
+    INSERT INTO customers (id, name, email, phone, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, name, email, phone, at, at);
+  return db.prepare(`SELECT ${PROJECTION} FROM customers WHERE id = ?`).get(id);
+}
+
+// The partial unique index only covers live rows, so this asks the same
+// question the index does. A soft-deleted customer does not hold their address
+// against a new one, and that is deliberate.
+export function findLiveCustomerByEmail(db, { email }) {
+  if (email === null || email === undefined) return null;
+  return db
+    .prepare('SELECT id FROM customers WHERE email = ? AND deleted_at IS NULL')
+    .get(email) ?? null;
+}
+
 export function insertCustomerNote(db, { id, customerId, authorId, body, createdAt }) {
   return db
     .prepare(`

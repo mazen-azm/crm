@@ -225,6 +225,23 @@
             "description": "Internal."
           }
         }
+      },
+      "post": {
+        "summary": "Put a customer on file, typically while somebody is still on the telephone. A name is required and nothing else is: somebody who telephones may have neither an address nor a number worth keeping, and the desk still needs them. A blank email or phone is the same as none — both are stored as absent, so \"one live customer per address\" keeps its meaning. Writes a customers row and no users row: the two are separate tables (I-1), and a customer gets a sign-in through a different story.",
+        "responses": {
+          "201": {
+            "description": "The customer that was created, with the id the caller needs next."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "422": {
+            "description": "A missing name, an email that is not one, or an address already held by a live customer. The body names the fields, never their values. A retired customer does not hold their address against a new one — the unique index is partial and this refusal asks the same question it does."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
       }
     },
     "/api/v1/customers/{id}/notes": {

@@ -23,6 +23,13 @@ export function customersRouter({ db, now }) {
   // Notes are paginated like every other list here. BR-4 is global — no
   // unbounded list — and it does not stop applying because this story's
   // criteria happen to talk about order instead.
+  // Adding a customer is a write and answers 201 with the customer it made,
+  // the way raising a ticket does — a message saying it worked cannot be read
+  // back, and the caller needs the id.
+  router.post('/customers', requireSubject(), (req, res) => {
+    res.status(201).json(service.create(req.subject, req.body ?? {}));
+  });
+
   router.get('/customers/:id/notes', requireSubject(), (req, res) => {
     res.json(
       service.listNotes(req.subject, {
