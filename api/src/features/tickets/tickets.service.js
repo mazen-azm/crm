@@ -13,6 +13,7 @@ import {
   validateAssignment,
   validateCategoryQuery,
   validateRaisedTicket,
+  REOPEN_WINDOW_DAYS,
   validateCategoryChange,
   validateStatusChange,
 } from './tickets.rules.js';
@@ -501,12 +502,45 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         const before = findTicketById(db, { id });
         if (!before) throw new HttpError(404, 'NOT_FOUND');
 
-        // Ownership, as in assign — and a blanket refusal for the same
-        // reason: moving a ticket through the state machine is the desk's
-        // work. A customer's own actions on their ticket are replies, and
-        // replies reopen it by rule T-5 rather than by a status change
-        // somebody chose.
-        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+        // Ownership, and no longer a blanket refusal.
+        //
+        // This used to refuse every customer, and the comment argued that
+        // moving a ticket through the state machine is the desk's work and a
+        // customer's own actions are replies. That was right about the desk
+        // and wrong about the customer: TICKETS-11-API gives them one move,
+        // `resolved -> reopened` on their own ticket, and CONVERSATION-3-API
+        // gives them the same move as a consequence of replying. Two ways to
+        // do one thing, and this is the one somebody chooses deliberately.
+        //
+        // Exactly one move, and no other. A customer may not resolve, may not
+        // close, may not move a ticket to pending — those are the desk saying
+        // something about work it is doing. And somebody else's ticket is the
+        // same 404 a missing one gets, whichever move they asked for, so
+        // nothing about the answer says which of the two rules refused them.
+        if (actor?.role === 'customer') {
+          const owns = before.customer_id === actor.customerId;
+          if (!owns || status !== 'reopened') throw new HttpError(404, 'NOT_FOUND');
+        }
+
+        // T-5's window, and it applies to whoever is asking.
+        //
+        // Not a rule about customers: it is a fact about the ticket. T-6 closes
+        // a resolved ticket once the same fourteen days have passed, so after
+        // the window there is nothing to reopen anyway — two rules for one
+        // period, differing by who asks, would be two answers to when a
+        // resolution becomes final.
+        //
+        // Measured from resolved_at, not updated_at: updated_at moves for
+        // anything, and a window any activity resets is not a window. A NULL
+        // resolved_at fails the check, which is the safe direction — a ticket
+        // whose resolution moment is unknown is not reopenable.
+        if (status === 'reopened' && before.status === 'resolved') {
+          const resolvedAtMs = Date.parse(before.resolved_at ?? '');
+          const openFor = REOPEN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+          if (!(now() * 1000 - resolvedAtMs <= openFor)) {
+            throw new ConflictError('REOPEN_WINDOW_CLOSED');
+          }
+        }
 
         // Both refusals below carry the legal moves from where the ticket
         // IS, not from where the caller wanted it — the caller already knows

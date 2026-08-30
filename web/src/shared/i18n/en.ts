@@ -140,6 +140,7 @@ export const en = {
     REVISION_MISMATCH: 'Somebody changed this while you were working. Reload to see it, then try again.',
     ILLEGAL_TRANSITION: 'That is not a move this ticket can make from where it is.',
     STATUS_UNCHANGED: 'The ticket already has that status.',
+    REOPEN_WINDOW_CLOSED: 'This was resolved more than two weeks ago. Send us a new request instead.',
   } satisfies Record<ApiErrorCode, string>,
   customers: {
     title: 'Customers',

@@ -1,7 +1,7 @@
 // The only file in this feature with SQL, which verify-architecture enforces.
 const PROJECTION = `
   id, customer_id, category_id, assignee_id, status, priority,
-  subject, body, revision, resolution_note, channel, created_at, updated_at
+  subject, body, revision, resolution_note, resolved_at, channel, created_at, updated_at
 `;
 
 export function insertTicket(db, { id, customerId, categoryId, subject, body, priority, status, channel, at }) {
@@ -270,9 +270,17 @@ export function updateTicketStatus(db, { id, status, revision, at, resolutionNot
       `UPDATE tickets
           SET status = ?,
               resolution_note = CASE WHEN ? = 'resolved' THEN ? ELSE resolution_note END,
+              -- Set on the way in and cleared on the way out, in the same
+              -- statement and by the same CASE reasoning as the note above it:
+              -- the reopen window is measured from THIS moment, and a ticket
+              -- that is no longer resolved has no resolution moment to measure
+              -- from. Writing it unconditionally would leave a stale value on
+              -- a reopened ticket, which the next resolve would then be
+              -- compared against.
+              resolved_at = CASE WHEN ? = 'resolved' THEN ? ELSE NULL END,
               revision = revision + 1,
               updated_at = ?
         WHERE id = ? AND revision = ? AND deleted_at IS NULL`,
     )
-    .run(status, status, resolutionNote, at, id, revision);
+    .run(status, status, resolutionNote, status, at, at, id, revision);
 }

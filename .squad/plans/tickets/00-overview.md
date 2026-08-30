@@ -21,6 +21,7 @@ Entry point for the **tickets** feature. Stories execute in order by their `NN` 
 | 50 | `50-story-crm-84.md` | TICKETS-7-WEB agent — I read the whole history in order | CRM-84 | — |
 | 51 | `51-story-crm-86.md` | TICKETS-8-API system — a customer may act only on their own ticket, on every path | CRM-86 | — |
 | 65 | `65-story-crm-89.md` | TICKETS-10-API agent — I change a ticket's category | CRM-89 | — |
+| 66 | `66-story-crm-91.md` | TICKETS-11-API customer — I reopen a resolved ticket inside the window | CRM-91 | — |
 
 ## Dependency notes
 
