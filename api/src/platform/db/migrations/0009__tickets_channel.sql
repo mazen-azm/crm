@@ -1,0 +1,12 @@
+-- CHANNELS-1-API: a ticket records which channel it arrived through.
+--
+-- NOT NULL with a default, so every row already in the table is valid the
+-- moment the column exists — a nullable column would make "we do not know" and
+-- "it came from the desk" the same value, and every existing row DID come from
+-- the desk: nothing else could raise one.
+--
+-- The tickets feature stores what it is given and defaults to 'desk'. It does
+-- not know the list of valid names: that list belongs to the channels feature,
+-- and a CHECK constraint here would be the same list in a second place,
+-- changed by a migration every time a channel is added.
+ALTER TABLE tickets ADD COLUMN channel TEXT NOT NULL DEFAULT 'desk';

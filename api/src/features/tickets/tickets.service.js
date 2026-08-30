@@ -53,6 +53,10 @@ const publicShape = (row) => ({
   // read back, which is the whole reason it is a column — so it is on the
   // public shape rather than only in the audit trail.
   resolutionNote: row.resolution_note ?? null,
+  // Where it came in from. Provenance, not a filter: the desk reads it to know
+  // whether it is talking to somebody who was on the phone or somebody who
+  // filled in a form, and a support conversation reads differently either way.
+  channel: row.channel,
   // The moves that are legal from where this ticket is. Derived from the same
   // table the refusal reads, so it cannot drift from it — and it is here
   // because a client has no other way to know. Without it a screen either
@@ -76,7 +80,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       const invalid = validateRaisedTicket(input ?? {});
       if (invalid.length > 0) throw unprocessable(invalid);
 
-      const { subject, body, priority, categoryId } = normaliseRaisedTicket(input);
+      const { subject, body, priority, categoryId, channel } = normaliseRaisedTicket(input);
       const id = randomUUID();
       const at = stamp();
 
@@ -116,6 +120,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           subject,
           body,
           priority,
+          channel,
           // Always new. Moving it is the state machine's job (TICKETS-4-API),
           // and there is nothing to move from yet.
           status: 'new',
@@ -131,7 +136,10 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           entityId: id,
           verb: 'ticket.create',
           before: null,
-          after: { customerId: input.customerId, priority, status: 'new' },
+          // The channel is on the audit row as well as the column: BR-2 asks
+          // what changed, and "a ticket appeared, from outside" is a different
+          // event from "an agent raised one" even though the row looks alike.
+          after: { customerId: input.customerId, priority, status: 'new', channel },
           at,
         });
 

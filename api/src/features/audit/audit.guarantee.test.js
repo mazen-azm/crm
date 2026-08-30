@@ -71,6 +71,7 @@ const EXERCISED = new Set([
   'POST /api/v1/tickets',
   'PATCH /api/v1/tickets/:id/assignee',
   'PATCH /api/v1/tickets/:id/status',
+  'POST /api/v1/intake/:channel/tickets',
 ]);
 
 test('every mutating route the router serves is exercised by this file', async () => {
@@ -153,6 +154,21 @@ test('each mutating route writes exactly one audit row', async () => {
       call('/api/v1/customers', {
         method: 'POST',
         body: { name: 'Audited By The Census', email: 'census@support-desk.local' },
+      })],
+    // Driven with an address ALREADY on file, on purpose. The intake writes two
+    // audit rows for a stranger — the customer it created and the ticket it
+    // raised — and one for somebody it recognised. This loop asserts exactly
+    // one per route, so the recognised case is the one that belongs in it; the
+    // two-row case is pinned in the channels feature's own tests, where the
+    // count is the thing being tested rather than the frame around it.
+    ['POST /api/v1/intake/:channel/tickets', () =>
+      call('/api/v1/intake/web/tickets', {
+        method: 'POST',
+        body: {
+          email: customer.email,
+          subject: 'Arrived through the intake',
+          body: 'So this route is driven.',
+        },
       })],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
