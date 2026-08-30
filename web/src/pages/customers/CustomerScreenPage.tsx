@@ -19,6 +19,7 @@ import { useFormatters } from '../../shared/i18n/useFormatters';
 import { priorityLabel, statusLabel } from '../tickets/ticket-labels';
 import { useAssignees } from '../tickets/useAssignees';
 import { useCustomer } from './useCustomer';
+import { useGrantSignIn } from './useGrantSignIn';
 import { isBlank, useWriteNote } from './useWriteNote';
 import type { Note } from './useCustomer';
 
@@ -33,6 +34,7 @@ export function CustomerScreenPage() {
   const { id = '' } = useParams();
   const { status, error, screen, reload } = useCustomer(id);
   const note = useWriteNote(id);
+  const grant = useGrantSignIn(id);
   // The notes route returns an author id and no name, the way the queue
   // returned an assignee id. The screen that needs the name is the screen with
   // the list, so it resolves it rather than the API growing a join.
@@ -127,6 +129,49 @@ export function CustomerScreenPage() {
               </Stack>
             </Card>
           ))}
+        </Stack>
+      )}
+
+      <Heading level={2}>{t.customerScreen.signInHeading}</Heading>
+
+      {/* An action that will certainly be refused is worse than no action, so
+          a customer who already has one gets a statement instead of a button. */}
+      {customer.hasSignIn || grant.granted ? (
+        grant.granted ? (
+          <Card>
+            <Stack gap={2}>
+              {/* Once, in full, unmasked. The agent is on the phone and has to
+                  read it out; nothing can fetch it again, and the sentence
+                  above it says so before the password rather than after. */}
+              <Text>{t.customerScreen.signInReady}</Text>
+              <Text variant="muted">{t.customerScreen.signInEmail}</Text>
+              <Text>
+                <Isolated>{grant.granted.user.email}</Isolated>
+              </Text>
+              <Text variant="muted">{t.customerScreen.signInPassword}</Text>
+              <Text>
+                <Isolated>{grant.granted.initialPassword}</Isolated>
+              </Text>
+            </Stack>
+          </Card>
+        ) : (
+          <Text variant="muted">{t.customerScreen.signInAlready}</Text>
+        )
+      ) : (
+        <Stack gap={2}>
+          <Text variant="muted">{t.customerScreen.signInNone}</Text>
+          {/* Disabled while in flight, because this creates an account. */}
+          <Button disabled={grant.status === 'loading'} onClick={grant.grant}>
+            {grant.status === 'loading'
+              ? t.customerScreen.signInGranting
+              : t.customerScreen.signInGrant}
+          </Button>
+          {grant.status === 'error' && grant.error ? (
+            <ErrorState
+              title={t.customerScreen.signInFailed}
+              body={t.errors[grant.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+            />
+          ) : null}
         </Stack>
       )}
 
