@@ -5,6 +5,7 @@ import { expect, test, vi } from 'vitest';
 
 import { renderWithProviders, screen } from './render';
 import { HomePage } from '../pages/home/HomePage';
+import { stubMe } from './stub-me';
 
 function Boom(): never {
   throw new Error('deliberate');
@@ -49,6 +50,11 @@ test('the helper puts the providers in place, so a page renders alone', async ()
   //
   // The heading this used to look for now belongs to the desk shell, so the
   // assertion follows it: rendered alone, HomePage is only its own content.
+  // HomePage now resolves by role — a customer lands on their own tickets —
+  // so it says who is signed in. That is a fact about the page, not about the
+  // helper: the helper still stubs no network, which is what keeps it honest
+  // about what a screen really does.
+  stubMe();
   renderWithProviders(<HomePage />, { signedIn: true });
   expect(await screen.findByText('Support Desk')).toBeInTheDocument();
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument();

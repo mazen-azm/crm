@@ -27,6 +27,7 @@ export const en = {
     navRaiseTicket: 'Raise a ticket',
     navPassword: 'Your password',
     navSetPassword: 'Set a password',
+    navMyTickets: 'Your tickets',
     navHome: 'Home',
     switchToDark: 'Dark theme',
     switchToLight: 'Light theme',
@@ -101,6 +102,15 @@ export const en = {
     // behind the same connection. Telling them they tried too often would be
     // untrue, and there is nothing they could do about it.
     tooMany: 'We are getting a lot of requests from your connection right now. Try again in a minute.',
+  },
+  myTickets: {
+    title: 'Your tickets',
+    emptyTitle: 'Nothing open',
+    emptyBody: 'You have not told us about anything yet.',
+    raiseOne: 'Tell us about something',
+    errorTitle: 'Your tickets did not load',
+    previous: 'Previous',
+    next: 'Next',
   },
   home: {
     heading: 'Support Desk',

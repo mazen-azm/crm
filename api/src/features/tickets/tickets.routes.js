@@ -86,6 +86,22 @@ export function ticketsRouter({ db, now }) {
 
   // One ticket's trail. A missing ticket is 404; an empty history is a 200
   // with an empty page, because those are different answers.
+  // A customer's own. Deliberately not /tickets with a different answer for a
+  // different caller: the queue is the desk's and refuses a customer, and a
+  // route whose meaning depended on who asked would make "what does GET
+  // /tickets return" a question with two answers.
+  router.get('/me/tickets', requireSubject(), (req, res) => {
+    res.json(
+      service.mine(req.subject, {
+        status: req.query?.status,
+        priority: req.query?.priority,
+        categoryId: req.query?.categoryId,
+        sort: req.query?.sort,
+        ...readPagination(req),
+      }),
+    );
+  });
+
   router.get('/tickets/:id/history', requireSubject(), (req, res) => {
     res.json(service.history(req.subject, { id: req.params.id, ...readPagination(req) }));
   });
