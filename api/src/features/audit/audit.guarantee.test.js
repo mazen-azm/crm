@@ -57,7 +57,7 @@ async function start() {
     });
 
   const auditCount = () => real.prepare('SELECT count(*) AS n FROM audit_events').get().n;
-  return { app, real, call, auditCount };
+  return { app, real, call, auditCount, adminPassword };
 }
 
 // Every mutating route this file drives. Compared against the router below.
@@ -66,11 +66,15 @@ const EXERCISED = new Set([
   'PATCH /api/v1/accounts/:id/role',
   'POST /api/v1/accounts/:id/disable',
   'POST /api/v1/accounts/:id/re-enable',
+  'POST /api/v1/accounts/:id/set-password',
+  'POST /api/v1/me/password',
   'POST /api/v1/customers',
   'POST /api/v1/customers/:id/notes',
+  'POST /api/v1/customers/:id/sign-in',
   'POST /api/v1/tickets',
   'PATCH /api/v1/tickets/:id/assignee',
   'PATCH /api/v1/tickets/:id/status',
+  'POST /api/v1/intake/:channel/tickets',
 ]);
 
 test('every mutating route the router serves is exercised by this file', async () => {
@@ -92,7 +96,7 @@ test('every mutating route the router serves is exercised by this file', async (
 });
 
 test('each mutating route writes exactly one audit row', async () => {
-  const { call, auditCount } = await start();
+  const { call, auditCount, adminPassword } = await start();
 
   const steps = [
     ['POST /api/v1/accounts', () =>
@@ -115,6 +119,15 @@ test('each mutating route writes exactly one audit row', async () => {
   // census with a claim rather than a test — which is the failure the census
   // exists to prevent, arriving through its own front door.
   const customer = (await (await call('/api/v1/customers?limit=1')).json()).items[0];
+  // Made here rather than found: the grant needs a customer WITH an email
+  // address, because the address is what they would sign in with, and what the
+  // seed happens to contain is not this test's contract. Raised outside the
+  // counted steps below, like the tickets above it — creating it writes an
+  // audit row of its own.
+  const withEmail = await (await call('/api/v1/customers', {
+    method: 'POST',
+    body: { name: 'Granted A Sign In', email: 'granted@support-desk.local' },
+  })).json();
 
   // Raised outside the counted steps below: each of those asserts exactly one
   // new audit row, and raising a ticket writes one of its own. Driven for real
@@ -154,6 +167,26 @@ test('each mutating route writes exactly one audit row', async () => {
         method: 'POST',
         body: { name: 'Audited By The Census', email: 'census@support-desk.local' },
       })],
+    // Driven with an address ALREADY on file, on purpose. The intake writes two
+    // audit rows for a stranger — the customer it created and the ticket it
+    // raised — and one for somebody it recognised. This loop asserts exactly
+    // one per route, so the recognised case is the one that belongs in it; the
+    // two-row case is pinned in the channels feature's own tests, where the
+    // count is the thing being tested rather than the frame around it.
+    ['POST /api/v1/intake/:channel/tickets', () =>
+      call('/api/v1/intake/web/tickets', {
+        method: 'POST',
+        body: {
+          email: customer.email,
+          subject: 'Arrived through the intake',
+          body: 'So this route is driven.',
+        },
+      })],
+    // A customer WITH an email address: the address is what they would sign in
+    // with, so one without it is refused naming the field. The first seeded
+    // customer is the walk-in counter and has none.
+    ['POST /api/v1/customers/:id/sign-in', () =>
+      call(`/api/v1/customers/${withEmail.id}/sign-in`, { method: 'POST' }), 2],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
         method: 'POST',
@@ -165,13 +198,40 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/accounts/${created.id}/disable`, { method: 'POST' })],
     ['POST /api/v1/accounts/:id/re-enable', () =>
       call(`/api/v1/accounts/${created.id}/re-enable`, { method: 'POST' })],
+    // The admin's own, through the route that asks for the current one. It
+    // runs last of the password steps because it changes the credential this
+    // whole file signed in with — anything after it would be using a token
+    // issued against a password that no longer exists. It still works, because
+    // ending other sessions is IDENTITY-8-API and has not shipped; when it
+    // does, this line is where that shows up.
+    ['POST /api/v1/me/password', () =>
+      call('/api/v1/me/password', {
+        method: 'POST',
+        body: { currentPassword: adminPassword, newPassword: 'a-new-admin-password' },
+      })],
+    // Somebody else's account: an admin may not set their own password here.
+    ['POST /api/v1/accounts/:id/set-password', () =>
+      call(`/api/v1/accounts/${created.id}/set-password`, {
+        method: 'POST',
+        body: { password: 'a-long-enough-password' },
+      })],
   ];
 
-  for (const [name, run] of rest) {
+  // Most routes write one row. Granting a customer a sign-in writes two — the
+  // user account and the link on the customer — and that is not a defect to
+  // paper over: they are two things that happened, in one transaction, and a
+  // trail that recorded only one of them would answer "who created this user"
+  // with silence. The count is stated per route so the exception is a number
+  // somebody chose rather than an assertion quietly relaxed for everybody.
+  for (const [name, run, expected = 1] of rest) {
     const before = auditCount();
     const res = await run();
     assert.ok(res.ok, `${name} should succeed, got ${res.status}`);
-    assert.equal(auditCount(), before + 1, `${name} must write exactly one audit row`);
+    assert.equal(
+      auditCount(),
+      before + expected,
+      `${name} must write exactly ${expected} audit row(s)`,
+    );
   }
 });
 

@@ -1,0 +1,56 @@
+{
+  "runId": "0mtf8gbyh-a0463fc3e5e27f4d",
+  "provider": "anthropic",
+  "model": "claude-opus-4-7",
+  "feature": "channels",
+  "storyId": "CRM-118",
+  "startedAt": "2026-08-30T03:11:29.417Z",
+  "completedAt": "2026-08-30T03:16:45.006Z",
+  "success": true,
+  "partial": false,
+  "planFile": ".squad/plans/channels/53-story-crm-118.md",
+  "stats": {
+    "turns": 33,
+    "inputTokens": 35,
+    "outputTokens": 24489,
+    "cacheCreationTokens": 54278,
+    "cacheReadTokens": 266301,
+    "cacheHitRatio": 1,
+    "durationMs": 197759
+  },
+  "cacheEnabled": true,
+  "durationMs": 315587,
+  "scout": {
+    "enabled": true,
+    "selectedCount": 20,
+    "tokensUsed": 11538,
+    "durationMs": 117760
+  },
+  "validation": {
+    "enabled": true,
+    "issuesCount": 23,
+    "issuesByKind": {
+      "missing_path": 5,
+      "symbol_not_found": 18
+    },
+    "durationMs": 50
+  },
+  "plannerRuntime": {
+    "kind": "agent-sdk",
+    "provider": "anthropic"
+  },
+  "authMode": "subscription",
+  "providerOptionsSnapshot": {
+    "anthropic": {
+      "draft": {
+        "thinking": "adaptive",
+        "effort": "medium"
+      },
+      "scout": {
+        "thinking": "adaptive",
+        "effort": "minimal"
+      }
+    }
+  },
+  "version": 1
+}

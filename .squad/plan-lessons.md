@@ -963,3 +963,140 @@ translated text, the isolation belongs in the string.
 Companion to the standing rule that a green suite has no pixels and no writing
 direction: this whole class of defect is invisible to vitest and takes one
 minute in a browser.
+
+## L-52 — A queue with no order is a queue in the wrong order
+
+**Rule:** anything that picks the next unit of work — a planner, a batch, a
+migration runner — states where its order comes from. If the answer is a glob,
+a directory listing or an `ls`, it has no order: it has whatever the filesystem
+sorts by, which is a fact about filenames and not about the work. Derive the
+order from the dependency data that already exists, and have the deriving step
+check its own output against that data before acting on it.
+
+**Where it came from:** `plan-next.sh` globbed
+`.squad/stories/*/CRM-*/intake.md` and planned the first four unplanned
+stories. Alphabetically by feature, `channels` precedes `customers`. The moment
+a sprint's twelve intakes landed together, the next unattended firing would
+have planned CHANNELS-1-API — whose only job is to call a service method
+CUSTOMERS-5-API has not written — and then CHANNELS-2-API and CHANNELS-3-API,
+which both wait on CHANNELS-1-API. Four plans, each describing code that does
+not exist, written at 02:15 with nobody watching, and each reading as
+considered.
+
+This is L-50 with a schedule behind it. L-50 says a plan must read the code it
+describes; this says the machinery must not hand a planner a story whose code
+cannot be read yet.
+
+The fix derives the order from `backlog.txt`'s own `needs` column rather than
+from a list somebody maintains — a hand-written order file is two statements of
+one dependency graph, agreeing until somebody edits one, which is the defect
+that made the three-repository split fail. And the sort validates its own
+output: ignoring the graph makes it exit 2 naming the offending pair, which is
+how the check was proved rather than assumed.
+
+## L-53 — A new role changes what every old guard means
+
+**Rule:** when a story adds a role, a permission, a tenant or any other axis a
+guard could have leaned on, the story's scope includes **every route already
+written**. Guards are written against the vocabulary of the day, and a word
+that meant one thing when they were written can quietly mean another
+afterwards. Read the whole route table, decide for each one, and leave behind a
+census that reads the set off the router rather than a list.
+
+**Where it came from:** `CUSTOMERS-6-API` gave a customer a sign-in. Until that
+story, no customer could hold a token, so `requireSubject()` — "somebody is
+signed in" — and "staff" were the same sentence, and seventeen routes had been
+written with the first meaning the second. The plan changed the three guards
+that mention `customer` by name and stopped. Shipped that way, the first
+customer ever granted an account could have read every customer on file, the
+whole queue, and the staff list — through routes nobody had touched in months
+and nobody would have thought to look at.
+
+Nothing was wrong with those routes. The sentence under them changed.
+
+The fix is `requireStaff()` and `staff-only.guarantee.test.js`, which walks
+every route the router serves and requires each to refuse a customer or be
+named with a reason — and then checks the named ones really are open, because a
+list of exceptions nobody verifies is a comforting fiction. It is the third
+census in this repository, after the audit one and the ownership one, and all
+three exist for the same reason: a rule enforced route by route lapses the
+first time somebody adds a route.
+
+## L-54 — A guess a check corrects is still a guess
+
+**Rule:** when a check catches the same class of mistake twice, the fix is not
+a better check — it is removing the guess. Ask what the writer did not have,
+and commit it. A guard that keeps catching the same thing is a working guard
+and a broken process: every catch costs a round trip through a person, and the
+guard only sees the cases it happens to cover.
+
+**Where it came from:** `backlog.txt` holds every story's id and no tracker
+key, and `BACKLOG.md` is generated from it, so a plan citing
+`IDENTITY-8-API (CRM-nn)` had nothing to read and worked the number out by
+counting. It named CRM-52 — which is IDENTITY-7-WEB, a different story in the
+same sprint — in two plans, two days apart. `verify-plan` caught both by asking
+Jira, which is exactly what it is for.
+
+Catching it twice was the signal. `scripts/story-keys.mjs` now writes
+`scripts/story-keys.txt` from the tracker, the standing intake hints point the
+planner at it, and `verify-plan` compares the committed file against Jira on
+every run — because a map nobody verifies is a second source of truth, which
+would move the defect rather than remove it. Its absence and its disagreement
+were both proved to fail.
+
+The same shape is worth watching for elsewhere: the four plans that titled
+themselves by their position within a feature rather than by their filename are
+a guess about a number nothing told them either.
+
+## L-55 — A native input type is a validator, and it is not yours
+
+**Rule:** on a form whose rules the API owns, do not reach for `type="email"`,
+`type="url"`, `pattern`, `min`, `max` or `required`. The browser refuses to
+submit a form whose constrained input does not parse, so the API's own rule
+never runs — and the sentence somebody reads is the browser's: in the browser's
+language, unstyled, outside the resource files, and saying whatever that
+browser says. SC-2 puts every rule in the API. `type="password"` is different
+and stays: it changes how a value is displayed, not whether it may be sent.
+
+**Where it came from:** the public intake form used `type="email"`. A test
+asserting that a 422 marks the email field failed, and the reason was not the
+marking — no request had been made at all. The browser had swallowed the
+submit, so the API's email rule, its 422, and the shared sentence were all
+unreachable from that screen. Every one of them had its own passing test
+somewhere else, and the screen a stranger sees had none of them.
+
+The tell was that the failure looked like a state-timing bug. Adding `waitFor`
+made it slower and no greener, which is usually the sign that the thing being
+waited for never happens.
+
+Sign-in has the same `type="email"` on its address field. It is not wrong there
+in the same way — an unparseable address cannot be a real account either — but
+it means that screen's refusal comes from two places, and only one of them is
+translated. Named here rather than changed, because it is not this story's.
+
+## L-56 — A capability split across layers needs a story in each of them
+
+**Rule:** when a capability is decomposed into layer stories, check that every
+question the top layer asks has a layer below it that answers. A WEB story
+whose API half was never written is not a small gap to absorb into its diff —
+it is a missing unit, and absorbing it silently makes the backlog's own count
+wrong for everybody who reads it afterwards.
+
+**Where it came from:** `PORTAL-2-WEB (CRM-122)` — "I sign in and see my
+tickets and nothing else" — is declared `WEB:5:5` and needs `CUS-6-API` and
+`TCK-8-API`. Neither answers "what are my tickets". `GET /tickets` is the
+desk's queue and refuses a customer, which this story's own criteria say it
+should. Nothing in the 138 units gives a customer a list of their own tickets.
+
+The story's intake had the right instruction — "if the API refuses something it
+should not, that is a finding to raise, not a change to make here" — and the
+finding was not a refusal to argue with. It was an absence.
+
+`GET /me/tickets` was written with the story, because the story cannot exist
+without it, and the fact is recorded in the route's comment, the plan, the
+commit and here. What is NOT done is editing `backlog.txt` to add the unit:
+that changes the counts, the points and the tracker, and it is the sort of
+change somebody should make deliberately rather than find in a diff.
+
+The signal to look for, next time: a WEB story whose `needs` are all API
+stories that answer some OTHER question.

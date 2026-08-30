@@ -53,6 +53,10 @@ const publicShape = (row) => ({
   // read back, which is the whole reason it is a column — so it is on the
   // public shape rather than only in the audit trail.
   resolutionNote: row.resolution_note ?? null,
+  // Where it came in from. Provenance, not a filter: the desk reads it to know
+  // whether it is talking to somebody who was on the phone or somebody who
+  // filled in a form, and a support conversation reads differently either way.
+  channel: row.channel,
   // The moves that are legal from where this ticket is. Derived from the same
   // table the refusal reads, so it cannot drift from it — and it is here
   // because a client has no other way to know. Without it a screen either
@@ -76,7 +80,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       const invalid = validateRaisedTicket(input ?? {});
       if (invalid.length > 0) throw unprocessable(invalid);
 
-      const { subject, body, priority, categoryId } = normaliseRaisedTicket(input);
+      const { subject, body, priority, categoryId, channel } = normaliseRaisedTicket(input);
       const id = randomUUID();
       const at = stamp();
 
@@ -116,6 +120,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           subject,
           body,
           priority,
+          channel,
           // Always new. Moving it is the state machine's job (TICKETS-4-API),
           // and there is nothing to move from yet.
           status: 'new',
@@ -131,7 +136,10 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           entityId: id,
           verb: 'ticket.create',
           before: null,
-          after: { customerId: input.customerId, priority, status: 'new' },
+          // The channel is on the audit row as well as the column: BR-2 asks
+          // what changed, and "a ticket appeared, from outside" is a different
+          // event from "an agent raised one" even though the row looks alike.
+          after: { customerId: input.customerId, priority, status: 'new', channel },
           at,
         });
 
@@ -147,7 +155,10 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
     // not because it filters anything.
     //
     // A read writes no audit row.
-    list(actor, { status, priority, assigneeId, categoryId, sort, limit, offset }) {
+    // `scope` is not part of the request. The router calls this with two
+    // arguments; only `mine` above passes a third, and it takes the customer
+    // id from the subject rather than from anything a caller sent.
+    list(actor, { status, priority, assigneeId, categoryId, sort, limit, offset }, scope = {}) {
       const invalid = validateQueueQuery({ status, priority, assigneeId, categoryId, sort });
       if (invalid.length > 0) throw unprocessable(invalid);
 
@@ -158,6 +169,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       // null is how the repository spells "IS NULL"; the sentinel stops at
       // this boundary and no SQL below knows the word.
       if (assigneeId !== undefined) filters.assigneeId = assigneeId === UNASSIGNED ? null : assigneeId;
+      if (scope.customerId !== undefined) filters.customerId = scope.customerId;
 
       return {
         items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map(publicShape),
@@ -166,6 +178,41 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         limit,
         offset,
       };
+    },
+
+    // A customer's own tickets. Not the queue, and a different route: the
+    // queue belongs to the desk (SC-1, one organisation and one queue) and
+    // refuses a customer, which PORTAL-2-WEB's own criteria assert. One route
+    // whose answer changed depending on who asked would make "what does GET
+    // /tickets return" a question with two answers.
+    //
+    // It reuses list() rather than querying again, so a customer's page is
+    // paginated, ordered and shaped by exactly the code the desk's is. The
+    // customer id comes from the SUBJECT and never from a parameter — a
+    // caller-supplied one would be an invitation to read somebody else's.
+    //
+    // NOTE — this route is not in scripts/backlog.txt. Nothing in the 138
+    // units provides a way for a customer to list their own tickets:
+    // PORTAL-2-WEB is declared WEB-only and needs CUSTOMERS-6-API and
+    // TICKETS-8-API, neither of which answers this question. The story could
+    // not be built without it. Recorded here and in the plan rather than
+    // absorbed quietly, because a backlog that is missing a unit should say so
+    // (L-56).
+    mine(actor, { status, priority, categoryId, sort, limit, offset }) {
+      // Staff have the queue. Answering this for them would be a second way to
+      // ask the same question, with a subject that has no customer behind it.
+      if (actor?.role !== 'customer') throw new HttpError(403, 'FORBIDDEN');
+      // A customer-role subject with no customer linked to it cannot be
+      // created today, and if one existed it owns nothing. The safe answer is
+      // an empty page rather than everybody's tickets — which is what an
+      // undefined filter would have produced.
+      if (!actor.customerId) return { items: [], total: 0, limit, offset };
+
+      return this.list(
+        { ...actor, role: 'agent' },
+        { status, priority, categoryId, sort, limit, offset },
+        { customerId: actor.customerId },
+      );
     },
 
     // One customer's open tickets, for the screen that shows a customer whole.
@@ -196,10 +243,16 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
     history(actor, { id, limit, offset }) {
       // An empty history and a missing ticket are different answers, and only
       // one of them is an error. Same 404 the writes throw.
-      if (!findTicketById(db, { id })) throw new HttpError(404, 'NOT_FOUND');
-      // Reading somebody else's trail is acting on their ticket. Same rule,
-      // same refusal — see assign for why it fails closed.
-      if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+      const ticket = findTicketById(db, { id });
+      if (!ticket) throw new HttpError(404, 'NOT_FOUND');
+      // Reading somebody else's trail is acting on their ticket. The link
+      // exists now (CUSTOMERS-6-API), so this is the comparison the earlier
+      // comment promised rather than the blanket refusal that stood in for it:
+      // a customer reads their own ticket's history, and anybody else's ticket
+      // answers exactly what a missing one does.
+      if (actor?.role === 'customer' && ticket.customer_id !== actor.customerId) {
+        throw new HttpError(404, 'NOT_FOUND');
+      }
 
       return {
         items: listAuditEvents(db, { entity: 'ticket', entityId: id, limit, offset }).map((row) => {
@@ -275,12 +328,11 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         // a customer in either direction — so there is nothing to compare and
         // the safe answer is to refuse every customer-role subject here.
         //
-        // WHEN THE LINK LANDS (the identity story that gives a customer a
-        // sign-in), this becomes one comparison in this one place:
-        //
-        //     if (actor?.role === 'customer' && before.customer_id !== actor.customerId)
-        //
-        // and nothing else about the shape changes. Whoever adds the link will
+        // THE LINK HAS LANDED. CUSTOMERS-6-API added customers.user_id and the
+        // subject resolver now carries actor.customerId, so the comparison
+        // this comment promised exists — in `history`, which is the path a
+        // customer has a reason to walk. Here it stayed a refusal, on the
+        // argument in the note below it. Whoever added the link also
         // meet this comment rather than having to think of the rule.
         //
         // 404 rather than 403, and deliberately the same 404 as the line
@@ -292,6 +344,13 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         // not-found refusal. ticket-ownership.guarantee.test.js fails until it
         // does — it reads the routes off the router rather than a list.
         if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+        // Note this stayed a blanket refusal while `history` above became a
+        // comparison, and the difference is deliberate. Reading your own trail
+        // is something a customer does; handing your ticket to a named agent
+        // is the desk operating its own queue, and no story asks for a
+        // customer to do it. It is a rule now rather than the placeholder it
+        // was — the same 404 either way, so nothing about the answer's shape
+        // reveals which of the two it is.
 
         const { changes } = assignTicket(db, { id, assigneeId, revision, at });
         if (changes === 0) {
@@ -328,8 +387,11 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         const before = findTicketById(db, { id });
         if (!before) throw new HttpError(404, 'NOT_FOUND');
 
-        // Ownership, as in assign — see the comment there for why it fails
-        // closed and what changes when the customer link lands.
+        // Ownership, as in assign — and a blanket refusal for the same
+        // reason: moving a ticket through the state machine is the desk's
+        // work. A customer's own actions on their ticket are replies, and
+        // replies reopen it by rule T-5 rather than by a status change
+        // somebody chose.
         if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
 
         // Both refusals below carry the legal moves from where the ticket

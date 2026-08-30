@@ -45,6 +45,23 @@ export function findAnyUserById(db, id) {
     .get(id);
 }
 
+// The hash, alone, for the one caller that has to compare against it.
+//
+// findAnyUserById deliberately does not select it — a general read that
+// carried the hash would put it in every row every caller holds, and the
+// publicShape above it exists precisely so that cannot happen. Widening that
+// query to serve this would undo the reason it is narrow.
+//
+// Returns null for a missing or disabled account, so a caller cannot tell the
+// two apart from what comes back.
+export function findPasswordHashById(db, id) {
+  return (
+    db
+      .prepare('SELECT password_hash AS hash FROM users WHERE id = ? AND deleted_at IS NULL')
+      .get(id)?.hash ?? null
+  );
+}
+
 export function listLiveUsers(db, { limit, offset }) {
   return db
     .prepare(`
@@ -79,8 +96,32 @@ export function disableUser(db, { id, at }) {
     .run(at, at, id).changes;
 }
 
+// The `deleted_at IS NULL` is defence in depth: the service refuses a disabled
+// account before it gets here, and a row-level guard means a disable landing
+// between the two cannot leave a disabled account with a fresh password. The
+// caller reads `changes` for the same reason every other writer here does.
+export function updateUserPassword(db, { id, passwordHash, at }) {
+  return db
+    .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(passwordHash, at, id).changes;
+}
+
 export function reEnableUser(db, { id, at }) {
   return db
     .prepare('UPDATE users SET deleted_at = NULL, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL')
     .run(at, id).changes;
+}
+
+// Which customer this user account belongs to, or null. I-1 puts the link on
+// `customers`, so this reads that table — the same thing tickets does for a
+// customer id, and for the same reason its comment gives: verify-architecture's
+// rule is about imports, not about which table a query names. Importing the
+// customers repository would be reaching into a sibling feature's internals;
+// naming its table here is not.
+export function findCustomerIdByUserId(db, userId) {
+  return (
+    db
+      .prepare('SELECT id FROM customers WHERE user_id = ? AND deleted_at IS NULL')
+      .get(userId)?.id ?? null
+  );
 }

@@ -25,6 +25,9 @@ export const en = {
     navCustomers: 'Customers',
     navQueue: 'The queue',
     navRaiseTicket: 'Raise a ticket',
+    navPassword: 'Your password',
+    navSetPassword: 'Set a password',
+    navMyTickets: 'Your tickets',
     navHome: 'Home',
     switchToDark: 'Dark theme',
     switchToLight: 'Light theme',
@@ -33,6 +36,81 @@ export const en = {
     // whichever way round you are. Do not "translate" these.
     switchToArabic: 'العربية',
     switchToEnglish: 'English',
+  },
+  account: {
+    passwordTitle: 'Change your password',
+    passwordSubtitle: 'You need the one you use now.',
+    passwordCurrent: 'Current password',
+    passwordNew: 'New password',
+    passwordConfirm: 'New password again',
+    passwordSubmit: 'Change it',
+    passwordSubmitting: 'Changing…',
+    // This screen's own sentence for a 401, not the shared one. t.errors
+    // .UNAUTHENTICATED says the session has ended and to sign in again — true
+    // of every other 401 in this product and false of this one, where the
+    // session is fine and the password was wrong. Telling somebody to sign in
+    // again while they are signed in is worse than saying nothing.
+    passwordWrongCurrent: 'That is not the password you use now.',
+    passwordMismatch: 'The two new passwords are not the same.',
+    passwordChanged: 'Your password has been changed.',
+    // Said out loud because the opposite is what people expect.
+    passwordStillSignedIn: 'You are still signed in here.',
+    passwordAgain: 'Change it again',
+    passwordFailed: 'That change did not go through',
+  },
+  setPassword: {
+    title: "Set somebody's password",
+    subtitle: 'For a colleague who cannot sign in. They will need the one you type here.',
+    adminOnly: 'Only an admin can set somebody else’s password.',
+    // An id typed in rather than a person picked: the people screen is a later
+    // story, and a label promising a search that is not here is worse than one
+    // asking for what the screen actually takes.
+    userId: 'User id',
+    password: 'New password',
+    confirm: 'New password again',
+    submit: 'Set it',
+    submitting: 'Setting…',
+    mismatch: 'The two new passwords are not the same.',
+    done: 'The password has been set.',
+    doneFor: 'For the account',
+    doneRead: 'Read it out to them. Nothing here can show it again.',
+    another: 'Set another',
+    failed: 'That password was not set',
+  },
+  portalRaise: {
+    title: 'Tell us what happened',
+    subtitle: 'No account needed. We will use your email address to find you.',
+    email: 'Your email address',
+    name: 'Your name (optional)',
+    subject: 'What is it about',
+    body: 'What happened',
+    bodyPlaceholder: 'What you were doing, and what went wrong.',
+    submit: 'Send it',
+    submitting: 'Sending…',
+    sentTitle: 'We have it',
+    // The reference IS the confirmation. A sentence saying it worked, with
+    // nothing to quote, leaves somebody with nothing to say when they
+    // telephone about it.
+    reference: 'Your reference',
+    sentBody: 'Keep this. Quote it if you get in touch about the same thing.',
+    another: 'Send another',
+    failed: 'That did not send',
+    // The intake's own sentence for a 429, not the shared one. The shared one
+    // says "Too many attempts", and this is told to somebody who may have made
+    // exactly one: the intake counts every arrival from a network address, so
+    // a first-time visitor can meet the ceiling because of somebody else
+    // behind the same connection. Telling them they tried too often would be
+    // untrue, and there is nothing they could do about it.
+    tooMany: 'We are getting a lot of requests from your connection right now. Try again in a minute.',
+  },
+  myTickets: {
+    title: 'Your tickets',
+    emptyTitle: 'Nothing open',
+    emptyBody: 'You have not told us about anything yet.',
+    raiseOne: 'Tell us about something',
+    errorTitle: 'Your tickets did not load',
+    previous: 'Previous',
+    next: 'Next',
   },
   home: {
     heading: 'Support Desk',
@@ -58,6 +136,7 @@ export const en = {
     VALIDATION_FAILED: 'Check the highlighted fields and try again.',
     RATE_LIMITED: 'Too many attempts. Wait a moment and try again.',
     INTERNAL: 'Something went wrong at our end. Try again.',
+    NOT_IMPLEMENTED: 'That is not something this system does yet.',
     REVISION_MISMATCH: 'Somebody changed this while you were working. Reload to see it, then try again.',
     ILLEGAL_TRANSITION: 'That is not a move this ticket can make from where it is.',
     STATUS_UNCHANGED: 'The ticket already has that status.',
@@ -236,6 +315,19 @@ export const en = {
     noteBySystem: 'the system',
     errorTitle: 'That customer did not load',
     retired: 'This customer has been removed. Their history is kept.',
+    signInHeading: 'Sign-in',
+    signInNone: 'This customer cannot sign in yet.',
+    signInGrant: 'Give them a sign-in',
+    signInGranting: 'Setting it up…',
+    signInAlready: 'This customer already has a sign-in.',
+    signInFailed: 'That sign-in was not created',
+    // The one screen in this product that shows a password. It is shown once,
+    // in full, because the agent is on the phone and has to read it out — and
+    // it is never fetchable again, which the sentence has to say plainly
+    // enough that nobody closes the tab expecting to come back to it.
+    signInReady: 'Read this out now. It is not shown again.',
+    signInEmail: 'They sign in with',
+    signInPassword: 'First password',
   },
   states: {
     loading: 'Loading',

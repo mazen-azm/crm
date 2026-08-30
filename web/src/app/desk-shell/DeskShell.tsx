@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth-context';
 import { useTheme } from '../theme-context';
 import { useTranslation } from '../../shared/i18n';
+import { useMe } from '../../shared/session/use-me';
 import { Button, Heading, Stack } from '../../shared/ui';
 import './DeskShell.css';
 
@@ -17,6 +18,7 @@ import './DeskShell.css';
 // layout without a second copy of it.
 export function DeskShell({ children }: { children: ReactNode }) {
   const { t, language, toggleLanguage } = useTranslation();
+  const { isAdmin, isStaff } = useMe();
   const { signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const themeLabel = theme === 'dark' ? t.shell.switchToLight : t.shell.switchToDark;
@@ -45,18 +47,52 @@ export function DeskShell({ children }: { children: ReactNode }) {
             Link, not <a href>: a bare anchor makes the browser fetch the
             document again, throwing away the router, the session and the
             theme to reach the page you are already on. */}
-        <Link to="/" className="desk-shell__nav-item">
-          {t.shell.navHome}
+        {/* The desk's screens, for the desk. A customer signing in sees none
+            of them — not because the links would fail (the API refuses them
+            either way, SC-2) but because offering somebody four doors they
+            cannot open is telling them this system is not for them.
+            `isStaff` is undefined until we know, and nothing is drawn then:
+            a navigation that appears and rearranges is worse than one that
+            arrives a moment late. */}
+        {isStaff === true ? (
+          <>
+            <Link to="/" className="desk-shell__nav-item">
+              {t.shell.navHome}
+            </Link>
+            <Link to="/customers" className="desk-shell__nav-item">
+              {t.shell.navCustomers}
+            </Link>
+            <Link to="/tickets" className="desk-shell__nav-item">
+              {t.shell.navQueue}
+            </Link>
+            <Link to="/tickets/new" className="desk-shell__nav-item">
+              {t.shell.navRaiseTicket}
+            </Link>
+          </>
+        ) : null}
+        {isStaff === false ? (
+          <Link to="/" className="desk-shell__nav-item">
+            {t.shell.navMyTickets}
+          </Link>
+        ) : null}
+        {/* Your own account, and the last item because it is about you rather
+            than about the work. Without a way in, the screen exists and
+            nothing reaches it — the defect the customer screen and the add
+            form each had to fix. */}
+        <Link to="/account/password" className="desk-shell__nav-item">
+          {t.shell.navPassword}
         </Link>
-        <Link to="/customers" className="desk-shell__nav-item">
-          {t.shell.navCustomers}
-        </Link>
-        <Link to="/tickets" className="desk-shell__nav-item">
-          {t.shell.navQueue}
-        </Link>
-        <Link to="/tickets/new" className="desk-shell__nav-item">
-          {t.shell.navRaiseTicket}
-        </Link>
+        {/* Only for an admin, and only once we know they are one. Undefined
+            means the answer has not arrived: drawing the item then taking it
+            away is worse than drawing it a moment late, and drawing nothing
+            for an admin is worse still — so it waits rather than guesses.
+            Courtesy, not enforcement: the API refuses a non-admin whether or
+            not this link is here. */}
+        {isAdmin === true ? (
+          <Link to="/accounts/set-password" className="desk-shell__nav-item">
+            {t.shell.navSetPassword}
+          </Link>
+        ) : null}
       </nav>
 
       <main className="desk-shell__main">{children}</main>

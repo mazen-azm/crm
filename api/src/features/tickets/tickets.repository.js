@@ -1,18 +1,18 @@
 // The only file in this feature with SQL, which verify-architecture enforces.
 const PROJECTION = `
   id, customer_id, category_id, assignee_id, status, priority,
-  subject, body, revision, resolution_note, created_at, updated_at
+  subject, body, revision, resolution_note, channel, created_at, updated_at
 `;
 
-export function insertTicket(db, { id, customerId, categoryId, subject, body, priority, status, at }) {
+export function insertTicket(db, { id, customerId, categoryId, subject, body, priority, status, channel, at }) {
   // revision is not set here. The column defaults to 1 (0007__tickets_revision.sql)
   // and the row is read back afterwards, which is what picks it up.
   return db
     .prepare(`
-      INSERT INTO tickets (id, customer_id, category_id, status, priority, subject, body, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO tickets (id, customer_id, category_id, status, priority, subject, body, channel, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
-    .run(id, customerId, categoryId, status, priority, subject, body, at, at);
+    .run(id, customerId, categoryId, status, priority, subject, body, channel, at, at);
 }
 
 export function findTicketById(db, { id }) {
@@ -80,9 +80,16 @@ export function findLiveCustomerId(db, { customerId }) {
 // and the count is how they drift: a fifth filter is added to one, missed in
 // the other, and `total` starts disagreeing with `items` in a way a test that
 // reads only `items` never sees (the CRM-55 lesson).
-function queueFilter({ status, priority, categoryId, assigneeId }) {
+function queueFilter({ status, priority, categoryId, assigneeId, customerId }) {
   const where = ['deleted_at IS NULL'];
   const params = [];
+
+  // Not a filter a caller may ask for — the service supplies it, and only for
+  // a customer reading their own. It sits here rather than in a second query
+  // so that "the desk's queue" and "my tickets" are one statement with one
+  // set of joins, one pagination and one order; two would drift the first time
+  // either changed.
+  if (customerId !== undefined) { where.push('customer_id = ?'); params.push(customerId); }
 
   if (status !== undefined) { where.push('status = ?'); params.push(status); }
   if (priority !== undefined) { where.push('priority = ?'); params.push(priority); }

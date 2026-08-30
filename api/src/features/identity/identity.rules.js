@@ -55,6 +55,22 @@ export function verifyToken(raw, secret, { now = () => Math.floor(Date.now() / 1
 
 // A credential the API can act on has a shape before it has a truth. The
 // field names are all a refusal may carry — a value could be the password.
+// The one rule about what a password may be. Length, and nothing else: a
+// composition rule that demands a symbol produces the same password with a
+// symbol on the end, and twelve characters is worth more than four classes of
+// character in eight.
+//
+// It applies where a password is CHOSEN, not where one is presented. signIn
+// checks only that a password is non-empty, and must keep doing so: a floor
+// there would refuse an account whose password predates the floor, and would
+// tell whoever typed it something about the stored value.
+export const MIN_PASSWORD_LENGTH = 12;
+
+export function validateNewPassword({ password }) {
+  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) return ['password'];
+  return [];
+}
+
 export function validateCredentials({ email, password }) {
   const missing = [];
   if (typeof email !== 'string' || !email.includes('@') || email.length > 254) missing.push('email');
@@ -64,20 +80,40 @@ export function validateCredentials({ email, password }) {
 
 export const normaliseEmail = (email) => email.trim().toLowerCase();
 
-// Two roles, named once. A third would be a decision, not a string.
-export const ROLES = Object.freeze(['admin', 'agent']);
+// Three roles, named once. Each was a decision rather than a string.
+//
+// `customer` is not a smaller agent. It carries no permission an agent has: a
+// customer reaches their own ticket and nothing else, which requireStaff() in
+// platform/http/permission.js enforces on every route that is not deliberately
+// customer-facing, and a census test reads that off the router.
+export const ROLES = Object.freeze(['admin', 'agent', 'customer']);
 export const isRole = (value) => ROLES.includes(value);
+
+// The roles an admin may hand out through the accounts routes. A customer's
+// account is not created there — it is granted against a customer record by
+// CUSTOMERS-6-API, which is the only thing that can also write the link that
+// makes the role mean anything. Creating a bare `customer` user with no
+// customer behind it would be an account that owns nothing and can reach
+// nothing, and the ownership check would 404 them out of their own tickets.
+export const STAFF_ROLES = Object.freeze(['admin', 'agent']);
+export const isStaffRole = (value) => STAFF_ROLES.includes(value);
 
 export function validateNewAccount({ email, name, role }) {
   const wrong = [];
   if (typeof email !== 'string' || !email.includes('@') || email.length > 254) wrong.push('email');
   if (typeof name !== 'string' || name.trim().length === 0 || name.length > 200) wrong.push('name');
-  if (!isRole(role)) wrong.push('role');
+  // isStaffRole, not isRole: `customer` is a real role and is not one an admin
+  // hands out here. It is granted against a customer record, by the one route
+  // that can also write the link the role depends on.
+  if (!isStaffRole(role)) wrong.push('role');
   return wrong;
 }
 
 export function validateRoleChange({ role }) {
-  return isRole(role) ? [] : ['role'];
+  // Same reasoning: an admin may move somebody between admin and agent, and
+  // may not turn a staff account into a customer. That is not a role change,
+  // it is a different person.
+  return isStaffRole(role) ? [] : ['role'];
 }
 
 // Returned once in the create response and never stored in plaintext. The

@@ -26,7 +26,21 @@ const STORIES = join(ROOT, '.squad/stories')
 
 // Rule E-2 names the whole catalogue. A plan that promises a status outside it
 // promises something the rules forbid — 413 and 501 both arrived this way.
-const CATALOGUE = new Set([400, 401, 403, 404, 409, 422, 429, 500])
+//
+// Read out of rules.txt rather than typed here. It was typed here, and the day
+// 501 was legitimately added to the rule this check would have gone on failing
+// every plan that mentioned it — a guard disagreeing with the document it
+// exists to enforce, which is the two-statements-of-one-fact defect it was
+// written to catch in other people's work.
+const CATALOGUE = (() => {
+  const line = readFileSync(join(HERE, 'rules.txt'), 'utf8')
+    .split('\n')
+    .find((l) => /^RULE E-2\b/.test(l))
+  if (!line) throw new Error('verify-plan: rules.txt has no RULE E-2 to read the catalogue from')
+  const codes = line.match(/\b[45]\d{2}\b/g)
+  if (!codes) throw new Error(`verify-plan: RULE E-2 names no status codes: ${line}`)
+  return new Set(codes.map(Number))
+})()
 const ENGINE = /node:sqlite|SQLite|DatabaseSync/
 const FOREIGN_DIALECT = /TIMESTAMPTZ|CITEXT|pgcrypto|CREATE EXTENSION|pg_advisory|mongoose|prisma|Sequelize/gi
 // Naming a thing in order to forbid it is not doing it: a prohibition, a
@@ -113,6 +127,31 @@ function jiraKeys() {
 let KEYS = null
 try { KEYS = jiraKeys() } catch { KEYS = null }
 if (!KEYS) warn.push('Jira was not reachable — tracker keys in plans were not verified (L-8)')
+
+// scripts/story-keys.txt is what the planner reads instead of counting. A map
+// nobody checks is a second source of truth, which is the defect it was written
+// to remove rather than move — so it is compared against the same answer Jira
+// just gave.
+if (KEYS) {
+  const mapPath = join(HERE, 'story-keys.txt')
+  if (!existsSync(mapPath)) {
+    fail.push('scripts/story-keys.txt is missing — run: node scripts/story-keys.mjs')
+  } else {
+    const onDisk = new Map(
+      read(mapPath)
+        .split('\n')
+        .filter((l) => l && !l.startsWith('#'))
+        .map((l) => l.split(/\s+/)),
+    )
+    for (const [id, key] of KEYS) {
+      if (!ids.has(id)) continue
+      const held = onDisk.get(id)
+      if (held !== key) {
+        fail.push(`story-keys.txt says ${id} is ${held ?? 'absent'}; Jira says ${key} — run: node scripts/story-keys.mjs`)
+      }
+    }
+  }
+}
 
 // ── one plan per story, named with the id's capitals ─────────────────────────
 const planFiles = []

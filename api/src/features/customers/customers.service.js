@@ -3,7 +3,14 @@ import { randomUUID } from 'node:crypto';
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { MAX_LIMIT } from '../../platform/http/pagination.js';
 import { createAuditWriter, transact } from '../audit/index.js';
-import { normaliseCustomer, normaliseNote, phoneDigits, validateCustomer, validateNote } from './customers.rules.js';
+import {
+  normaliseCustomer,
+  normaliseNote,
+  phoneDigits,
+  validateCustomer,
+  validateNote,
+  validateResolveInput,
+} from './customers.rules.js';
 import {
   countCustomerNotes,
   countLiveCustomers,
@@ -13,6 +20,7 @@ import {
   findLiveCustomerById,
   insertCustomer,
   insertCustomerNote,
+  setCustomerUserId,
   listCustomerNotes,
   listLiveCustomers,
   searchLiveCustomers,
@@ -26,6 +34,10 @@ const publicShape = (row) => ({
   name: row.name,
   email: row.email,
   phone: row.phone,
+  // Whether they can sign in, not which account it is. A screen needs to know
+  // that a grant has happened so it can say so instead of offering an action
+  // that will be refused; the user's id is identity's to hand out.
+  hasSignIn: row.user_id !== null && row.user_id !== undefined,
   createdAt: row.created_at ?? null,
   updatedAt: row.updated_at ?? null,
 });
@@ -38,7 +50,7 @@ const noteShape = (row) => ({
   createdAt: row.created_at,
 });
 
-export function createCustomersService({ db, tickets, now = () => Math.floor(Date.now() / 1000) }) {
+export function createCustomersService({ db, tickets, identity, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
   const audit = createAuditWriter({ db });
 
@@ -109,6 +121,130 @@ export function createCustomersService({ db, tickets, now = () => Math.floor(Dat
           verb: 'customer.create',
           before: null,
           after: { name, email, phone },
+          at,
+        });
+
+        return publicShape(created);
+      });
+    },
+
+    // An agent gives a customer a way in. I-1's link, written.
+    //
+    // One transaction covering both writes, which is why identity's makeUser
+    // takes no transaction of its own: a user row without the link is an
+    // account belonging to nobody, and the link without the row is a foreign
+    // key pointing at nothing. Either alone is worse than neither.
+    grantSignIn(actor, { customerId }) {
+      const customer = liveCustomerOr404(customerId);
+
+      // I-4: the address IS the credential. A customer with none has nothing
+      // to sign in with, and inventing one for them would be inventing an
+      // identity.
+      if (!customer.email) throw unprocessable(['email']);
+
+      // Not a second account for one person. The partial unique index on
+      // user_id would refuse it too, and CRM-82's lesson is that an index
+      // firing gives a raw SQLite error and a 500 — which tells the caller
+      // their reasonable question was our fault.
+      if (customer.user_id) throw new HttpError(409, 'CONFLICT');
+
+      return transact(db, () => {
+        const at = stamp();
+        // The role is supplied here and never taken from a request: the
+        // accounts routes cannot mint a `customer`, because a customer user
+        // with no customer behind it is an account that owns nothing and would
+        // be refused from its own tickets.
+        const made = identity.makeUser(actor, {
+          email: customer.email,
+          name: customer.name,
+          role: 'customer',
+        });
+
+        setCustomerUserId(db, { customerId, userId: made.user.id, at });
+
+        audit.record(actor, {
+          entity: 'customer',
+          entityId: customerId,
+          verb: 'customer.grant_sign_in',
+          before: { userId: null },
+          // The id of the account, and nothing about how to get into it. The
+          // audit guarantee test asserts no diff in this API carries a
+          // password or a hash.
+          after: { userId: made.user.id },
+          at,
+        });
+
+        // The password travels once, in this answer, and is never stored in a
+        // form anything can read back — the same contract creating a staff
+        // account has. The agent is on the phone and reads it out.
+        return { customer: publicShape(findCustomerById(db, { id: customerId })), ...made };
+      });
+    },
+
+    // Identity resolution — I-2 and I-4. A service method with no route: the
+    // only caller is CHANNELS-1-API (CRM-118), which is a public intake.
+    //
+    // The address identifies. A request that carries none cannot be attributed
+    // to anybody and is refused naming the field. Two spellings of one address
+    // are one person, and the folding is customers.email COLLATE NOCASE
+    // (0001__customers.sql:4) — a LOWER() here would both restate that and put
+    // the index out of reach.
+    //
+    // A hit is a read: no insert, no audit row, and the stored name is left
+    // exactly as it was. Somebody typing a name into a public form must not be
+    // able to rename a customer already on file.
+    //
+    // A miss creates one then and there, which is what I-2 asks for. The actor
+    // travels through as it arrives and is null from a public intake, so
+    // audit.record writes actorId = null — the system, never a borrowed staff
+    // id (BR-2). The unique index is partial and scoped to live rows
+    // (0001__customers.sql:14-16), so an address held only by a soft-deleted
+    // customer resolves to a NEW row rather than reviving the removed one:
+    // BR-1 keeps that row for the trail, not for writing to.
+    //
+    // CALLER, NOTE: this opens its own transaction, and SQLite refuses a
+    // transaction inside a transaction. An intake that wanted to resolve and
+    // raise a ticket as one atomic act cannot wrap both calls — validate the
+    // ticket's fields first, then resolve, then raise. A customer who arrived
+    // is a fact even when the ticket they were trying to raise is refused.
+    resolveByEmail(actor, input) {
+      const invalid = validateResolveInput(input ?? {});
+      if (invalid.length > 0) throw unprocessable(invalid);
+
+      // normaliseCustomer collapses a blank to null and trims the rest, which
+      // is the same treatment `create` gives. phone is not part of resolution:
+      // an address is the key, and a number arriving on a public form is not
+      // one this method is asked to trust.
+      const { name, email } = normaliseCustomer({
+        name: input.name ?? '',
+        email: input.email,
+        phone: null,
+      });
+
+      return transact(db, () => {
+        const hit = findLiveCustomerByEmail(db, { email });
+        // findLiveCustomerByEmail answers with an id and nothing else, so the
+        // row is re-read to return the same shape the miss branch does.
+        if (hit) return publicShape(findCustomerById(db, { id: hit.id }));
+
+        // The column is NOT NULL and a public form may have collected no name.
+        // The address stands in for it, which reads on a list as "we know how
+        // to reach them and not what to call them" — visibly incomplete rather
+        // than quietly wrong, which a placeholder like "Unknown" would be.
+        const chosen = name === null || name === '' ? email : name;
+        const id = randomUUID();
+        const at = stamp();
+        const created = insertCustomer(db, { id, name: chosen, email, phone: null, at });
+
+        // The same verb `create` writes. A second verb for one event would
+        // make the trail's reader ask what the difference is, and the answer —
+        // who did it — is already in actor_id.
+        audit.record(actor, {
+          entity: 'customer',
+          entityId: id,
+          verb: 'customer.create',
+          before: null,
+          after: { name: chosen, email, phone: null },
           at,
         });
 

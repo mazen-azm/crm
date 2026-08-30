@@ -11,6 +11,12 @@ export type ApiErrorCode =
   | 'VALIDATION_FAILED'
   | 'RATE_LIMITED'
   | 'INTERNAL'
+  // 501. Named, and deliberately not built — the API says so about a channel
+  // it knows and has decided against (E-3). Here because this file mirrors the
+  // API's frozen catalogue and the two move in one commit; and because
+  // t.errors is `satisfies Record<ApiErrorCode, string>`, so a code with no
+  // sentence is a compile error rather than a screen showing nothing.
+  | 'NOT_IMPLEMENTED'
   // The API sends a domain code at a documented status where the status alone
   // would not say enough — errors.js puts it as "409 CONFLICT and 409
   // REVISION_MISMATCH are both honest answers". These three are the ones it

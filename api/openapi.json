@@ -66,6 +66,47 @@
         }
       }
     },
+    "/api/v1/me/password": {
+      "post": {
+        "summary": "Change your own password, knowing the current one. One route for every role: an admin doing this uses it too, which is why the admin route for setting somebody else's password refuses a caller their own account — an admin who could skip the current-password check on themselves would turn a stolen session into a permanent one. Body: { currentPassword, newPassword }. Tokens issued before the change stay valid until they expire; ending them is IDENTITY-8-API, and that is a stated gap.",
+        "responses": {
+          "200": {
+            "description": "{ id, updatedAt }. No password and no hash, here or in the audit row."
+          },
+          "401": {
+            "description": "The current password is wrong. Sign-in gives one refusal for three causes so the response cannot be used to learn which addresses exist; that reasoning does not reach here, because this caller is already authenticated and already knows the account exists. Telling them which half they got wrong leaks nothing."
+          },
+          "422": {
+            "description": "`fields` names it: `currentPassword` when it is missing, `newPassword` when it is missing, below the twelve-character floor, or equal to the current one — a change that changes nothing is a change somebody believes they made."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
+    "/api/v1/me/tickets": {
+      "get": {
+        "summary": "A customer's own tickets. Deliberately not GET /tickets with a different answer for a different caller: the queue belongs to the desk (SC-1) and refuses a customer, and a route whose meaning depended on who asked would make \"what does GET /tickets return\" a question with two answers. The customer is taken from the subject and never from a parameter. Paginated, filterable and ordered by exactly the code the desk's queue uses.",
+        "responses": {
+          "200": {
+            "description": "A page of tickets: { items, total, limit, offset }, the same envelope every list here answers with."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Staff asking. They have the queue; answering this for them would be a second way to ask one question, with a subject that has no customer behind it."
+          },
+          "422": {
+            "description": "A filter or a page window the rules refuse; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
     "/api/v1/accounts": {
       "post": {
         "summary": "Create a staff account. Answers with the account and, once, the password it was given.",
@@ -185,6 +226,34 @@
           },
           "409": {
             "description": "Already live, or the address was taken by a live account while this one was disabled."
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/set-password": {
+      "post": {
+        "summary": "An admin sets another user's password, so somebody locked out gets back in. There is no reset by email in this product — the brief puts it under \"Specified only\" — which is why a person who forgets theirs needs a colleague rather than a link. The body is { password }; twelve characters is the floor and there are no composition rules, because a rule demanding a symbol produces the same password with a symbol on the end. Nothing comes back but the id and the time: the admin typed it, so there is nothing to read. Tokens issued before this stay valid until they expire — ending them is IDENTITY-8-API, and that is a stated gap rather than an oversight.",
+        "responses": {
+          "200": {
+            "description": "{ id, updatedAt }. No password and no hash, here or in the audit row."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Not an admin — or an admin naming themselves. Setting somebody else's password is for a person who is locked out; changing your own is IDENTITY-7-API and asks for the current one, and an admin who could skip that check on themselves would turn a stolen session into a permanent one."
+          },
+          "404": {
+            "description": "No user with that id."
+          },
+          "409": {
+            "description": "The account is disabled. Bringing somebody back is re-enable, with its own route and its own audit row; setting a password through this door would leave the account's state saying one thing and its access saying another."
+          },
+          "422": {
+            "description": "The password is missing or shorter than the floor; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
           }
         }
       }
@@ -434,6 +503,59 @@
           },
           "500": {
             "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/intake/{channel}/tickets": {
+      "post": {
+        "summary": "The public intake. A stranger with no token submits a request and it becomes a ticket — raised through the same service the desk uses, so the same validation, the same service-level clocks and the same audit row apply. This is the only unauthenticated route besides sign-in, and deliberately so: SC-2 says every rule is enforced in the API, and a second write path would be a second set of rules that agree until they do not. The customer is resolved from the email address, or created then and there if nobody has it (I-2, I-4); nobody is signed in, so both audit rows name the system as their actor. The channel is a path segment and is recorded on the ticket.",
+        "responses": {
+          "201": {
+            "description": "The ticket, exactly as a desk-raised one reads: { id, customerId, categoryId, assigneeId, status, priority, subject, body, revision, resolutionNote, allowedTransitions, channel, createdAt, updatedAt }. status is new and assigneeId is null — arriving from outside is not a priority."
+          },
+          "404": {
+            "description": "No channel by that name — one nothing here has ever heard of. A channel this system knows about and has decided against answers 501 instead."
+          },
+          "501": {
+            "description": "Named, and deliberately not built. The channel is one this system knows about — email, whatsapp and sms are under \"Specified only\" in the product brief — and has decided against. The body carries `name`, the channel it is about, beside the shared { code, requestId }: a bare code would say it is not built and not what is not built. Distinct from 404 on purpose (E-3): 404 says there is no such thing, which about a channel somebody considered and rejected would hide the decision rather than state it."
+          },
+          "422": {
+            "description": "The ticket's own fields are malformed: fields names them. Checked before the customer is resolved, so a refused request leaves no customer behind. A missing or malformed email address is refused here too, naming email."
+          },
+          "429": {
+            "description": "Too many requests from this address. The intake counts every arrival — successes as well as refusals — because a flood of well-formed submissions is exactly the shape a public form is attacked with, and a counter that only counted failures could be walked straight past. Sixty per address per minute; the window is anchored to the first arrival in it and reopens on its own. The address is the socket peer: no proxy trust is configured, so behind a reverse proxy this would be the proxy."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{id}/sign-in": {
+      "post": {
+        "summary": "Give a customer a way in. Creates a `users` row with role `customer` and points `customers.user_id` at it — the link rule I-1 describes, written. One transaction: an account with no link belongs to nobody, and a link with no account points at nothing. The role carries no permission an agent has; a customer reads their own ticket's history and every other route refuses them. Any signed-in staff member may, because the agent is the one on the phone.",
+        "responses": {
+          "201": {
+            "description": "{ customer, user, initialPassword }. The password travels once, here, and nothing reads it back — the same contract creating a staff account has. The agent reads it out."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "A customer asking. Staff only."
+          },
+          "404": {
+            "description": "No live customer with that id. A removed customer is kept for the trail, not for writing to (BR-1)."
+          },
+          "409": {
+            "description": "That customer already has a sign-in. Checked here rather than left to the partial unique index on user_id, because an index that fires produces a raw SQLite error and a 500 — which tells the caller their reasonable question was our fault."
+          },
+          "422": {
+            "description": "The customer has no email address, and `fields` names it. The address is what they would sign in with (I-4); inventing one for them would be inventing an identity."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
           }
         }
       }

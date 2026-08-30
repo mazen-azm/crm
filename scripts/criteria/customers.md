@@ -150,3 +150,87 @@ An internal note about a customer, on a screen.
   because a note nobody can attribute is a note nobody trusts (BR-2, BR-3).
 - Given every string on the screen, then it came from a resource file, in both
   languages (BR-6).
+
+## CUSTOMERS-5-API
+
+An arriving request matches a customer by address, or creates one.
+
+Written 2026-08-30. This is I-2 and I-4 made mechanical: *"Identity resolution
+creates a customer the moment a request arrives from a new address"* and
+*"Email addresses identify customers."*
+
+*Acceptance criteria*
+- Given an address already on a live customer, when a request arrives from it,
+  then that customer is matched and no second row is written (I-4).
+- Given an address that differs only in case, then it matches the same
+  customer — the column is `COLLATE NOCASE` and two spellings of one address
+  are one person.
+- Given an address nobody has, when a request arrives from it, then a customer
+  is created for it, then and there (I-2), and an audit row records the
+  creation with the system as its actor — nobody was signed in, and "the seed"
+  or a borrowed staff id would be an answer nobody can follow up (BR-2).
+- Given a name arriving with the request, when the address already belongs to
+  somebody, then the stored name is left alone. A stranger typing into a
+  public form must not be able to rename a customer on file.
+- Given an address belonging only to a soft-deleted customer, then a new
+  customer is created rather than the removed one being revived. The partial
+  unique index permits exactly this, and BR-1 says a removed row is kept for
+  the trail, not for writing to.
+- Given a request with no address at all, then it is refused naming the field:
+  addresses identify customers, and a request that cannot be attributed cannot
+  be resolved (I-4).
+- Given resolution, then it never writes a `users` row — a customer who has
+  been resolved has not signed in, and `user_id` stays null (I-1).
+
+*Out of scope*
+- Matching by phone number. Rule I-4 names the address, and a second key is a
+  second answer to who somebody is.
+- The route that calls this — CHANNELS-1-API.
+
+## CUSTOMERS-6-API
+
+An agent gives a customer a sign-in.
+
+*Acceptance criteria*
+- Given a customer with an email address, when an agent grants them a sign-in,
+  then a `users` row is created with the role `customer`, and
+  `customers.user_id` points at it (I-1). The column arrives with this story;
+  the migration is part of it.
+- Given the grant, then the answer carries an initial password once, the way
+  creating a staff account does, and nothing can read it back afterwards.
+- Given a customer with no email address, then the grant is refused naming the
+  field — the address is what they would sign in with (I-4).
+- Given a customer who already has a sign-in, then a second grant is refused
+  rather than creating a second account for one person.
+- Given a soft-deleted customer, then the grant is refused (BR-1).
+- Given the new user, then their role is `customer` and no permission an agent
+  has comes with it — the queue, the staff list and other customers all refuse
+  them.
+- Given the link now existing, then TICKETS-8-API's ownership guard stops
+  failing closed and becomes the comparison its own comment promises: a
+  customer reaches their own ticket and gets the same 404 as a stranger for
+  anybody else's. Both halves are pinned. A guard left refusing every customer
+  would make the portal a set of screens that answer 404 to their own users.
+- Given the grant, then an audit row records it, carrying no password (BR-2).
+
+*Out of scope*
+- The screen — CUSTOMERS-6-WEB.
+- A customer choosing their own password afterwards — that is IDENTITY-7-API,
+  and it already works for any role.
+
+## CUSTOMERS-6-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given a customer with no sign-in, when an agent grants one from the customer
+  screen, then the initial password is shown once, plainly, because the agent
+  has to read it to them.
+- Given a customer who already has one, then the control says so rather than
+  offering an action that will be refused.
+- Given a refusal naming a field, then that field is marked and the sentence
+  is the shared one for the code.
+- Given a submission in flight, then the control cannot be pressed twice —
+  this creates an account.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).

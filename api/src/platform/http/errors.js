@@ -9,9 +9,6 @@
 // This is the whole set — a status outside it is a bug, and the HttpError
 // constructor (below) throws on it. That guard is the enforcement; one unit
 // test on it is the proof.
-// TODO(CHANNELS-2-API/CRM-119): 501 joins this map in that story. It owns rule
-// E-3 ("named and deliberately not built"), and until the entry exists the
-// constructor guard rejects new HttpError(501, ...).
 export const DOCUMENTED = Object.freeze({
   400: 'BAD_REQUEST',
   401: 'UNAUTHENTICATED',
@@ -21,6 +18,10 @@ export const DOCUMENTED = Object.freeze({
   422: 'VALIDATION_FAILED',
   429: 'RATE_LIMITED',
   500: 'INTERNAL',
+  // E-3: named, and deliberately not built. Distinct from 404 on purpose — a
+  // 404 says "there is no such thing", and about a channel this system has
+  // considered and decided against, that would be untrue.
+  501: 'NOT_IMPLEMENTED',
 });
 
 export class HttpError extends Error {
@@ -77,6 +78,28 @@ export class ConflictError extends HttpError {
   }
 }
 
+// A 501 that can say what it is about. E-3's whole point is that the answer
+// names the thing — "we know what you mean and it is not built" — and
+// { code, requestId } has nowhere to put the name. One key, at one status,
+// exactly as ValidationError added `fields` and ConflictError added `allowed`.
+// The base shape is untouched, so E-1 holds.
+export class NotImplementedError extends HttpError {
+  constructor(name, cause) {
+    super(501, 'NOT_IMPLEMENTED', cause);
+    // `name`, not `subject`: the only 501 this API sends today is about a
+    // channel, and that route's request body has a field called `subject`. An
+    // error body carrying `subject: 'email'` beside an endpoint that takes a
+    // ticket subject is a word doing two jobs on one screen.
+    //
+    // Strings only, for ValidationError's reason: whatever goes in here goes
+    // out to the client. An empty one is left off rather than sent blank —
+    // unlike `allowed`, where empty is itself the answer.
+    // Not `this.name`: Error already owns that property and uses it for the
+    // class name. The body key is `name`; the field it is read from cannot be.
+    if (typeof name === 'string' && name !== '') this.notImplemented = name;
+  }
+}
+
 export function unprocessable(fields, cause) {
   return new ValidationError(fields, cause);
 }
@@ -113,6 +136,11 @@ export function errorHandler() {
     // answer and has to travel.
     if (err instanceof ConflictError && err.allowed !== undefined) {
       body.allowed = err.allowed;
+    }
+    // Presence again, but for a different reason: the constructor already
+    // dropped a blank, so anything here is worth sending.
+    if (err instanceof NotImplementedError && err.notImplemented !== undefined) {
+      body.name = err.notImplemented;
     }
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.status(status).json(body);

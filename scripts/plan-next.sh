@@ -76,7 +76,31 @@ if ! mkdir "$LOCK" 2>/dev/null; then
 fi
 trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
 
-for intake in ${ONLY:-.squad/stories/*/CRM-*/intake.md}; do
+# The order comes from the backlog's `needs` column, resolved by
+# scripts/plan-order.mjs, and not from a glob. `.squad/stories/*/CRM-*` is
+# alphabetical by feature, which is not a wrong order so much as no order: with
+# sprint 5's twelve intakes on disk it put all three channels stories ahead of
+# CUSTOMERS-5-API, and CHANNELS-1-API's whole job is to call a service method
+# that story has not written yet. Four plans in one firing, every one of them
+# describing code that does not exist — and a schedule would have repeated it
+# every five hours with nobody watching.
+#
+# It prints only stories that have no plan, so the skip below is now a
+# backstop rather than the filter.
+if [ -z "$ONLY" ]; then
+  QUEUE=$(node scripts/plan-order.mjs) || {
+    echo "[$(date '+%F %T')] plan-order refused to order the queue — see above"
+    exit 1
+  }
+  if [ -z "$QUEUE" ]; then
+    echo "[$(date '+%F %T')] nothing to plan"
+    exit 0
+  fi
+else
+  QUEUE="$ONLY"
+fi
+
+for intake in ${(f)QUEUE}; do
   key=$(basename "$(dirname "$intake")")            # CRM-47
   if ls .squad/plans/*/ 2>/dev/null | grep -qi "story-${key}.md"; then continue; fi
   if [ "$DRY" = "1" ]; then
@@ -112,6 +136,19 @@ for intake in ${ONLY:-.squad/stories/*/CRM-*/intake.md}; do
     # case-sensitive, so fix it here rather than leaving the story unplanned.
     for f in .squad/plans/*/*"$(echo "$key" | tr 'A-Z' 'a-z')"*.md(N); do
       mv "$f" "${f:h}/${${f:t}//$(echo "$key" | tr 'A-Z' 'a-z')/$key}"
+    done
+    # The heading number, corrected to the filename's.
+    #
+    # squad-kit numbers a plan by its position within its own feature and the
+    # filename by its position in the whole project, so "# Story 07" sits at
+    # the top of 58-story-CRM-51.md. verify-plan has caught that on five plans
+    # in a row (L-21), and a check that keeps catching the same thing is a
+    # working check and a broken process (L-54): the number is knowable here,
+    # from the file that was just written, so it is written rather than
+    # guessed.
+    for f in .squad/plans/*/*"story-${key}.md"(N); do
+      nn="${${f:t}%%-*}"
+      /usr/bin/sed -i '' -E "1,10s/^# Story [0-9]+ —/# Story ${nn} —/" "$f"
     done
     echo "[$(date '+%F %T')] $key planned"
   else

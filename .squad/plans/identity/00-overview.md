@@ -13,6 +13,10 @@ Entry point for the **identity** feature. Stories execute in order by their `NN`
 | 18 | `18-story-CRM-47.md` | IDENTITY-4-API system — failed sign-ins are throttled per account and per address | CRM-47 | — |
 | 19 | `19-story-crm-48.md` | IDENTITY-5-API agent — I read the list of people a ticket can be assigned to | CRM-48 | — |
 | 28 | `28-story-crm-46.md` | IDENTITY-3-WEB any — an expired token returns me to sign-in, not a broken screen | CRM-46 | — |
+| 57 | `57-story-crm-49.md` | IDENTITY-6-API admin — I set a user's password, so a locked-out person gets back in | CRM-49 | — |
+| 58 | `58-story-crm-51.md` | IDENTITY-7-API any — I change my own password, knowing the current one | CRM-51 | — |
+| 60 | `60-story-crm-52.md` | IDENTITY-7-WEB any — I change my own password, knowing the current one | CRM-52 | — |
+| 61 | `61-story-crm-50.md` | IDENTITY-6-WEB admin — I set a user's password, so a locked-out person gets back in | CRM-50 | — |
 
 ## Dependency notes
 

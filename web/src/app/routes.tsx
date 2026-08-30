@@ -7,6 +7,9 @@ import { HomePage } from '../pages/home/HomePage';
 import { CustomersPage } from '../pages/customers/CustomersPage';
 import { CustomerScreenPage } from '../pages/customers/CustomerScreenPage';
 import { AddCustomerPage } from '../pages/customers/AddCustomerPage';
+import { ChangeOwnPasswordPage } from '../pages/account/ChangeOwnPasswordPage';
+import { SetUserPasswordPage } from '../pages/accounts/SetUserPasswordPage';
+import { PublicRaiseTicketPage } from '../pages/portal/PublicRaiseTicketPage';
 import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 
@@ -17,6 +20,10 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/sign-in" element={<SignInPage />} />
+      {/* The one screen a stranger sees. Outside RequireAuth and outside
+          DeskShell, for the reason sign-in is: there is no session, and the
+          desk's navigation would offer four screens they cannot open. */}
+      <Route path="/raise" element={<PublicRaiseTicketPage />} />
       <Route
         path="/"
         element={
@@ -81,6 +88,34 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <RaiseTicketPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Your own account, whoever you are. Not staff-only and not
+          admin-only: the API's route for this takes any signed-in subject,
+          because an admin changing their own password makes the same call an
+          agent or a customer does. */}
+      <Route
+        path="/account/password"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <ChangeOwnPasswordPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Admin-only in the API. The route is not gated here beyond RequireAuth:
+          the screen says so for a non-admin who arrives, and the refusal that
+          matters is the API's (SC-2). A router-level role gate would be a
+          second place deciding one rule. */}
+      <Route
+        path="/accounts/set-password"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <SetUserPasswordPage />
             </DeskShell>
           </RequireAuth>
         }
