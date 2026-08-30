@@ -454,6 +454,9 @@
           "422": {
             "description": "The ticket's own fields are malformed: fields names them. Checked before the customer is resolved, so a refused request leaves no customer behind. A missing or malformed email address is refused here too, naming email."
           },
+          "429": {
+            "description": "Too many requests from this address. The intake counts every arrival — successes as well as refusals — because a flood of well-formed submissions is exactly the shape a public form is attacked with, and a counter that only counted failures could be walked straight past. Sixty per address per minute; the window is anchored to the first arrival in it and reopens on its own. The address is the socket peer: no proxy trust is configured, so behind a reverse proxy this would be the proxy."
+          },
           "500": {
             "description": "Unhandled, logged with the request id."
           }
