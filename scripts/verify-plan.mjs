@@ -128,6 +128,31 @@ let KEYS = null
 try { KEYS = jiraKeys() } catch { KEYS = null }
 if (!KEYS) warn.push('Jira was not reachable — tracker keys in plans were not verified (L-8)')
 
+// scripts/story-keys.txt is what the planner reads instead of counting. A map
+// nobody checks is a second source of truth, which is the defect it was written
+// to remove rather than move — so it is compared against the same answer Jira
+// just gave.
+if (KEYS) {
+  const mapPath = join(HERE, 'story-keys.txt')
+  if (!existsSync(mapPath)) {
+    fail.push('scripts/story-keys.txt is missing — run: node scripts/story-keys.mjs')
+  } else {
+    const onDisk = new Map(
+      read(mapPath)
+        .split('\n')
+        .filter((l) => l && !l.startsWith('#'))
+        .map((l) => l.split(/\s+/)),
+    )
+    for (const [id, key] of KEYS) {
+      if (!ids.has(id)) continue
+      const held = onDisk.get(id)
+      if (held !== key) {
+        fail.push(`story-keys.txt says ${id} is ${held ?? 'absent'}; Jira says ${key} — run: node scripts/story-keys.mjs`)
+      }
+    }
+  }
+}
+
 // ── one plan per story, named with the id's capitals ─────────────────────────
 const planFiles = []
 for (const entry of readdirSync(PLANS, { withFileTypes: true })) {

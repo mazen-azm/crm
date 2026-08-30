@@ -1021,3 +1021,29 @@ list of exceptions nobody verifies is a comforting fiction. It is the third
 census in this repository, after the audit one and the ownership one, and all
 three exist for the same reason: a rule enforced route by route lapses the
 first time somebody adds a route.
+
+## L-54 — A guess a check corrects is still a guess
+
+**Rule:** when a check catches the same class of mistake twice, the fix is not
+a better check — it is removing the guess. Ask what the writer did not have,
+and commit it. A guard that keeps catching the same thing is a working guard
+and a broken process: every catch costs a round trip through a person, and the
+guard only sees the cases it happens to cover.
+
+**Where it came from:** `backlog.txt` holds every story's id and no tracker
+key, and `BACKLOG.md` is generated from it, so a plan citing
+`IDENTITY-8-API (CRM-nn)` had nothing to read and worked the number out by
+counting. It named CRM-52 — which is IDENTITY-7-WEB, a different story in the
+same sprint — in two plans, two days apart. `verify-plan` caught both by asking
+Jira, which is exactly what it is for.
+
+Catching it twice was the signal. `scripts/story-keys.mjs` now writes
+`scripts/story-keys.txt` from the tracker, the standing intake hints point the
+planner at it, and `verify-plan` compares the committed file against Jira on
+every run — because a map nobody verifies is a second source of truth, which
+would move the defect rather than remove it. Its absence and its disagreement
+were both proved to fail.
+
+The same shape is worth watching for elsewhere: the four plans that titled
+themselves by their position within a feature rather than by their filename are
+a guess about a number nothing told them either.
