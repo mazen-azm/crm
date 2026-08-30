@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { Link } from 'react-router-dom';
+
 import { useTranslation } from '../../shared/i18n';
 import { useFormatters } from '../../shared/i18n';
 import {
@@ -7,6 +9,7 @@ import {
   EmptyState,
   ErrorState,
   Field,
+  Isolated,
   Heading,
   Skeleton,
   Stack,
@@ -19,10 +22,22 @@ import './CustomersPage.css';
 function Row({ customer, t }: { customer: Customer; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
     <li className="customer-list__row">
-      <Text>{customer.name}</Text>
+      {/* The name is the way in. Without it the customer screen exists and
+          nothing reaches it — a route nobody can navigate to is a route that
+          is only visible to whoever wrote it. */}
+      <Link to={`/customers/${customer.id}`}>
+        <Text>{customer.name}</Text>
+      </Link>
       <div className="customer-list__contact">
-        <Text variant="muted">{customer.email ?? t.customers.noEmail}</Text>
-        <Text variant="muted">{customer.phone ?? t.customers.noPhone}</Text>
+        {/* Both are left-to-right runs sitting in a paragraph that may be
+            right-to-left. Without isolation the phone number's groups reorder
+            and the leading + lands at the far end. */}
+        <Text variant="muted">
+          <Isolated>{customer.email ?? t.customers.noEmail}</Isolated>
+        </Text>
+        <Text variant="muted">
+          <Isolated>{customer.phone ?? t.customers.noPhone}</Isolated>
+        </Text>
       </div>
     </li>
   );
@@ -30,7 +45,7 @@ function Row({ customer, t }: { customer: Customer; t: ReturnType<typeof useTran
 
 export function CustomersPage() {
   const { t } = useTranslation();
-  const { formatNumber } = useFormatters();
+  const { countOf } = useFormatters();
   const { status, page, error, query, search } = useCustomerSearch();
   const [term, setTerm] = useState('');
 
@@ -74,6 +89,10 @@ export function CustomersPage() {
         <Button type="submit" disabled={busy}>
           {busy ? t.customers.searching : t.customers.search}
         </Button>
+        {/* Beside the search, not only under an empty result: an agent taking
+            a call from somebody they already know is not on file should not
+            have to search for nothing first to be offered the form. */}
+        <Link to="/customers/new">{t.customers.addLink}</Link>
       </Stack>
 
       {/* One of four, off useRequest's status. A success with nothing in it is
@@ -98,18 +117,22 @@ export function CustomersPage() {
           title={t.customers.emptyTitle}
           body={t.customers.emptyBody}
           action={
-            // Clearing the search is the next action there is. Creating a
-            // customer is a different story and does not exist yet, so
-            // offering it would be a button that goes nowhere.
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setTerm('');
-                void search('').catch(() => {});
-              }}
-            >
-              {t.customers.emptyAction}
-            </Button>
+            // Two, because a search that matched nothing has two honest
+            // endings: the name was mistyped, or the caller is not on file.
+            // Adding one used to be a button that went nowhere and was left
+            // out for that reason; the screen it needs now exists.
+            <Stack direction="row" gap={2} align="start">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setTerm('');
+                  void search('').catch(() => {});
+                }}
+              >
+                {t.customers.emptyAction}
+              </Button>
+              <Link to="/customers/new">{t.customers.addLink}</Link>
+            </Stack>
           }
         />
       ) : null}
@@ -117,7 +140,7 @@ export function CustomersPage() {
       {status === 'success' && shown.length > 0 && page ? (
         <Stack gap={3}>
           <Text variant="muted">
-            {formatNumber(page.total)} {t.customers.resultCount}
+            {countOf(page.total, t.customers)}
           </Text>
 
           <ul className="customer-list">

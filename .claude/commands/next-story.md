@@ -122,3 +122,15 @@ in `.squad/plan-lessons.md`? If not, write the lesson now — rule plus the
 defect that paid for it — and commit it with the story. A cycle that found a
 defect and wrote no lesson has thrown the tuition away. If the cycle found
 nothing new, say so explicitly in the report.
+
+## Before a `-WEB` story is closed
+
+Run the app and look at the screen, in both languages. Not as a courtesy — as
+a step with its own findings, because two whole categories of defect are
+invisible to the suite: what a request actually carries (a stub answers 200
+whatever headers arrive) and what the layout actually does (jsdom has no
+layout). Measure rather than squint — read `getBoundingClientRect()` and the
+computed styles, and check that nothing finishes past the column it sits in.
+
+Four screens once shipped without this and an hour with a browser found five
+defects, four of them in code that had passed review, tests and CI (L-46).

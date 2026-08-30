@@ -68,6 +68,14 @@ export const en = {
     searchPlaceholder: 'Name, email address or phone number',
     search: 'Search',
     searching: 'Searching…',
+    // Keyed by Intl.PluralRules. English uses two of the six categories.
+    // One key per plural category, because every value in these files is a
+    // string — Messages says so, and defineLocale's key check depends on it.
+    // English uses two of the six; the rest repeat, which is what English does.
+    resultCountOne: 'customer found',
+    resultCountTwo: 'customers found',
+    resultCountFew: 'customers found',
+    resultCountMany: 'customers found',
     resultCount: 'customers found',
     emptyTitle: 'No customer matched that',
     emptyBody: 'Check the spelling, or try part of a phone number instead.',
@@ -77,6 +85,27 @@ export const en = {
     noPhone: 'No phone number',
     previous: 'Previous',
     next: 'Next',
+    // The add form. It lives in this namespace rather than one of its own
+    // because it is the same subject, and because the two "none" sentences
+    // above are the ones its success card needs — a second pair saying the
+    // same thing would drift the first time one of them is reworded.
+    addTitle: 'Add a customer',
+    addSubtitle: 'For somebody on the phone who is not on file yet.',
+    addLink: 'Add a customer',
+    name: 'Name',
+    email: 'Email address',
+    phone: 'Phone number',
+    // Optional in the label, because the API asks for a name and nothing more.
+    // A field that is optional and does not say so gets filled with something
+    // invented to fill it.
+    emailOptional: 'Email address (optional)',
+    phoneOptional: 'Phone number (optional)',
+    add: 'Add the customer',
+    adding: 'Adding…',
+    addAnother: 'Add another',
+    createdTitle: 'Customer added',
+    createdId: 'Customer id',
+    createdAt: 'Added',
   },
   raiseTicket: {
     title: 'Raise a ticket',
@@ -114,6 +143,10 @@ export const en = {
     unassigned: 'Unassigned',
     apply: 'Apply',
     clear: 'Clear the filters',
+    resultCountOne: 'ticket',
+    resultCountTwo: 'tickets',
+    resultCountFew: 'tickets',
+    resultCountMany: 'tickets',
     resultCount: 'tickets',
     emptyTitle: 'No ticket matched',
     // The filters are named in the body so an agent can see which one is
@@ -156,6 +189,53 @@ export const en = {
     failedTitle: 'That move did not go through',
     staleTitle: 'This ticket changed while you were looking at it',
     reload: 'Reload the queue',
+  },
+  ticketHistory: {
+    heading: 'History',
+    show: 'Show the history',
+    hide: 'Hide the history',
+    emptyTitle: 'Nothing has happened yet',
+    emptyBody: 'This ticket has not been touched since it was raised.',
+    errorTitle: 'The history did not load',
+    loadMore: 'Load more',
+    loading: 'Loading…',
+    // The same word as customerScreen.noteBySystem, in a second namespace.
+    // One shared place for it would be better and no story owns that move;
+    // the two are authored sentences rather than a mapping, so a rewording of
+    // one leaves the other saying the same thing differently, not wrongly.
+    systemActor: 'the system',
+    // Whole sentences with named slots. Never a verb glued to a value: the
+    // Arabic forms below put the actor, the source and the target in a
+    // different order, and concatenation cannot express that.
+    created: '{actor} raised this ticket.',
+    statusChanged: '{actor} moved this from {from} to {to}.',
+    assigned: '{actor} assigned this to {to}.',
+    unassigned: '{actor} took this off {from}.',
+    reassigned: '{actor} moved this from {from} to {to}.',
+    // A verb written before its sentence was. Legible, and it names the verb
+    // so whoever added it can see what is missing.
+    unknownVerb: '{actor} did something recorded as {verb}.',
+  },
+  customerScreen: {
+    contacts: 'Contact',
+    noEmail: 'No email address',
+    noPhone: 'No phone number',
+    openTickets: 'Open tickets',
+    noOpenTickets: 'Nothing open for this customer',
+    noOpenTicketsBody: 'Everything they have raised is resolved or closed.',
+    raiseOne: 'Raise a ticket',
+    notes: 'Notes',
+    noNotes: 'No notes yet',
+    noteLabel: 'Add a note',
+    notePlaceholder: 'What was said, and what happens next.',
+    noteRequired: 'A note needs something in it.',
+    noteSubmit: 'Add the note',
+    noteSubmitting: 'Adding…',
+    noteFailed: 'That note was not added',
+    noteBy: 'by',
+    noteBySystem: 'the system',
+    errorTitle: 'That customer did not load',
+    retired: 'This customer has been removed. Their history is kept.',
   },
   states: {
     loading: 'Loading',

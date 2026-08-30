@@ -52,3 +52,39 @@ export function formatRelativeTime(
 ): string {
   return new Intl.RelativeTimeFormat(localeTag(language), options).format(value, unit);
 }
+
+// A count and its noun, in the shape the language actually needs.
+//
+// "1 tickets" is what a template that glues a number to a fixed plural
+// produces, and English is the easy case: Arabic has six categories and uses
+// four of them for small numbers — one تذكرة, two تذكرتان, a few تذاكر, many
+// تذكرة again. Intl.PluralRules knows all of that, so the resource files
+// supply the forms and none of this is decided in a component.
+//
+// A form the language does not use is simply absent from the object; `other`
+// is the fallback every locale defines.
+export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };
+
+export function plural(count: number, forms: PluralForms, language: string): string {
+  const rule = new Intl.PluralRules(language).select(count);
+  return forms[rule] ?? forms.other;
+}
+
+// Every value in a resource file is a string — Messages says so and
+// defineLocale's key check depends on it — so the forms arrive as separate
+// keys and are gathered here rather than stored as an object.
+export type CountKeys = {
+  resultCountOne: string;
+  resultCountTwo: string;
+  resultCountFew: string;
+  resultCountMany: string;
+  resultCount: string;
+};
+
+export const formsOf = (k: CountKeys): PluralForms => ({
+  one: k.resultCountOne,
+  two: k.resultCountTwo,
+  few: k.resultCountFew,
+  many: k.resultCountMany,
+  other: k.resultCount,
+});

@@ -172,3 +172,50 @@ Resolving a ticket, on a screen.
   then that status is not among them — the 409 is a backstop, not the interface.
 - Given every string on the screen, when it is read, then it came from a resource
   file, in both languages (BR-6).
+
+## TICKETS-7-API
+
+The whole history of one ticket, in order.
+
+*Acceptance criteria*
+- Given a ticket, when its history is read, then every audited change to it is
+  returned oldest first, and the order does not depend on two rows having
+  different timestamps.
+- Given a history entry, when it is read, then it says who, what changed, and
+  from what to what — an entry that records only the new value cannot answer
+  "who took it off me".
+- Given a ticket with a long history, when it is read, then it is paginated with
+  the ceiling every list obeys (BR-4).
+- Given a ticket that is not on file, then the answer is 404 rather than an empty
+  history.
+- Given the read, then it writes no audit row.
+
+## TICKETS-7-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given the history, when it renders, then each entry reads as a sentence a
+  person can follow, built from resource strings rather than the raw verb (BR-6).
+- Given a timestamp, when it is shown, then it is in the reader's locale, not the
+  stored UTC string (BR-3).
+- Given a ticket with no history yet, then the empty state says so (D-2).
+- Given the history, when it is paged, then the screen uses the API's paging and
+  adds none of its own (BR-4).
+
+## TICKETS-8-API
+
+A customer may act only on their own ticket, on every path.
+
+*Acceptance criteria*
+- Given a customer and a ticket that is not theirs, when they read it, then it is
+  refused — and refused the same way a ticket that does not exist is, so the
+  refusal does not confirm that somebody else's ticket exists.
+- Given a customer and a ticket that is not theirs, when they act on it by any
+  route that exists — status, assignment, reply, history — then each one refuses
+  (SC-2). A route that enforces this on three paths out of four enforces nothing.
+- Given a test, when a new route on a ticket is added, then it is enumerated by
+  a check rather than remembered — the failure this rule guards against is a
+  route added later that nobody thinks to protect.
+- Given a staff member, when they act on any ticket, then they are not restricted
+  by ownership: one organisation, one queue (SC-1).

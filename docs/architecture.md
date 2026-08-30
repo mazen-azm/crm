@@ -148,3 +148,33 @@ does not exist.
 
 Both are block-0 deliverables. They are written **before** the first feature, not
 after nine violations have accumulated.
+
+### Which check owns which rule
+
+Written down because guessing wrong is easy and expensive: eight story intakes
+once said `verify-i18n-parity.mjs` refuses a key present in one resource file
+and missing from the other. It does not — it checks which roots carry resource
+files at all, and says so in its own header. The comparison is a vitest suite.
+A hint naming the wrong tool sends a reader to run something that can never
+fail.
+
+| Rule | Enforced by |
+|---|---|
+| Feature boundaries, layering, SQL placement | `scripts/verify-architecture.mjs` |
+| Folder names match `taxonomy.md` | `scripts/verify-taxonomy.mjs` |
+| A path cited in a document exists | `scripts/verify-docs.mjs` |
+| A rule in `rules.txt` has an owning story | `scripts/verify-backlog.mjs` |
+| The SLA table and the seed agree | `scripts/verify-backlog.mjs` |
+| A criteria section names a real story | `scripts/verify-plan.mjs` |
+| A plan's citations, ids, statuses and dialect | `scripts/verify-plan.mjs` |
+| Those plan checks can see their own defects | `scripts/verify-plan.selftest.mjs` |
+| Which roots carry resource files | `scripts/verify-i18n-parity.mjs` |
+| **Both resource files hold the same keys** | `web/src/shared/i18n/parity.test.ts` |
+| No string is written in a component | `web/src/pages/no-hardcoded-strings.test.ts` |
+| Every served route is documented, and the reverse | the OpenAPI contract test |
+| Every mutating route writes exactly one audit row | `api/src/features/audit/audit.guarantee.test.js` |
+| No file in any code root mentions AI assistance | `api/src/platform/http/no-ai-attribution.test.js` |
+
+Before adding a row, **break the rule and watch that check fail.** Four guards
+were found blind that way in one afternoon, including one that read a single
+root of three and reported green over the other two.

@@ -14,8 +14,10 @@ import {
   TextArea,
 } from '../../shared/ui';
 import { useTranslation } from '../../shared/i18n';
+import { priorityLabel, statusLabel } from './ticket-labels';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useAssignees } from './useAssignees';
+import { TicketHistory } from './TicketHistory';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
 import { useTicketCategories } from './useTicketCategories';
@@ -40,28 +42,6 @@ const SEPARATOR = ' · ';
 // question, the other performs a write.
 const UNASSIGN = '__unassigned__';
 
-const statusLabel = (t: T, status: string) =>
-  ({
-    new: t.ticketQueue.statusNew,
-    open: t.ticketQueue.statusOpen,
-    pending: t.ticketQueue.statusPending,
-    resolved: t.ticketQueue.statusResolved,
-    closed: t.ticketQueue.statusClosed,
-    reopened: t.ticketQueue.statusReopened,
-  })[status] ?? status;
-
-const priorityLabel = (t: T, priority: string) =>
-  ({
-    low: t.ticketQueue.priorityLow,
-    normal: t.ticketQueue.priorityNormal,
-    high: t.ticketQueue.priorityHigh,
-    urgent: t.ticketQueue.priorityUrgent,
-  })[priority] ?? priority;
-
-// The row assigns. There is no route that reads one ticket and no story that
-// asks for a detail screen, and there does not need to be: the row already
-// holds the ticket and its revision, which is everything the write needs. An
-// agent assigns from the list they are looking at.
 function Row({
   ticket,
   t,
@@ -92,6 +72,15 @@ function Row({
   };
 
   const stale = assign.status === 'error' && assign.error?.code === 'REVISION_MISMATCH';
+
+  // The API always sends this and a test pins that it does. It is defaulted
+  // anyway, and defaulted to NOTHING rather than to everything: an API old
+  // enough not to send it is an API whose transition table this screen cannot
+  // know, and offering moves that cannot be verified is worse than offering
+  // none. Reading .length straight off it crashed the whole page against a
+  // server started before the field existed — a blank screen for a missing
+  // optional is the wrong failure.
+  const moves = ticket.allowedTransitions ?? [];
   const moveStale = move.status === 'error' && move.error?.code === 'REVISION_MISMATCH';
 
   const submitMove = async () => {
@@ -128,7 +117,7 @@ function Row({
           ].join(SEPARATOR)}
         </Text>
 
-        <Stack direction="row" gap={2} align="end">
+        <Stack direction="row" gap={2}>
           <Field id={`assignee-${ticket.id}`} label={t.ticketAssign.label}>
             {({ id }) => (
               <Select
@@ -180,11 +169,11 @@ function Row({
           <Text variant="muted">{`${t.ticketStatus.resolvedNote}: ${ticket.resolutionNote}`}</Text>
         ) : null}
 
-        {ticket.allowedTransitions.length === 0 ? (
+        {moves.length === 0 ? (
           <Text variant="muted">{t.ticketStatus.noMoves}</Text>
         ) : (
           <Stack gap={2}>
-            <Stack direction="row" gap={2} align="end">
+            <Stack direction="row" gap={2}>
               <Field id={`status-${ticket.id}`} label={t.ticketStatus.label}>
                 {({ id }) => (
                   <Select id={id} value={target} onChange={(event) => setTarget(event.target.value)}>
@@ -193,7 +182,7 @@ function Row({
                         The six statuses and their edges are not copied here —
                         the API sends them with the ticket, derived from the
                         same table the refusal reads. */}
-                    {ticket.allowedTransitions.map((next) => (
+                    {moves.map((next) => (
                       <option key={next} value={next}>
                         {statusLabel(t, next)}
                       </option>
@@ -246,6 +235,11 @@ function Row({
             ) : null}
           </Stack>
         )}
+
+        {/* The trail belongs beside the controls that write to it. Closed by
+            default and fetched on opening — a row that read its own history
+            unasked would make one page of the queue twenty-five requests. */}
+        <TicketHistory ticketId={ticket.id} assignees={assignees} />
       </Stack>
     </Card>
   );
@@ -253,7 +247,7 @@ function Row({
 
 export function TicketQueuePage() {
   const { t } = useTranslation();
-  const { formatDate, formatNumber } = useFormatters();
+  const { formatDate, countOf } = useFormatters();
   const queue = useTicketQueue();
   const categories = useTicketCategories();
   const assignees = useAssignees();
@@ -305,7 +299,6 @@ export function TicketQueuePage() {
         as="form"
         direction="row"
         gap={2}
-        align="end"
         onSubmit={(event) => {
           event.preventDefault();
           queue.apply(draft);
@@ -393,9 +386,7 @@ export function TicketQueuePage() {
 
       {queue.status === 'success' && page && page.items.length > 0 ? (
         <Stack gap={3}>
-          <Text variant="muted">
-            {formatNumber(page.total)} {t.ticketQueue.resultCount}
-          </Text>
+          <Text variant="muted">{countOf(page.total, t.ticketQueue)}</Text>
           {/* Whatever the API returned is what is shown. No filter, no sort,
               no slice here — the total would be right and the rows wrong. */}
           {page.items.map((ticket) => {

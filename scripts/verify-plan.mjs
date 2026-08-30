@@ -32,7 +32,11 @@ const FOREIGN_DIALECT = /TIMESTAMPTZ|CITEXT|pgcrypto|CREATE EXTENSION|pg_advisor
 // Naming a thing in order to forbid it is not doing it: a prohibition, a
 // done-criterion asserting absence, and the grep that proves it all read as
 // matches. The negation lives anywhere on the line, so the line is the unit.
-const NEGATED = /\b(no|not|never|without|forbid\w*|refuse\w*|reject\w*|instead of|must not|do not)\b|NOT|grep/i
+// A bare `NOT` used to sit in here. Under /i and with no word boundaries it
+// matched inside "another", "nothing" and "cannot", which switched the dialect
+// check off on any line unlucky enough to contain one. \bnot\b already covers
+// the word, in either case.
+const NEGATED = /\b(no|not|never|without|forbid\w*|refuse\w*|reject\w*|instead of|must not|do not)\b|grep/i
 // Only a plan that actually writes storage needs the engine named. The bare
 // word "database" appears in every out-of-scope list ever written.
 const PERSISTENCE = /CREATE TABLE|\bmigrations?\/|\.sql\b|db\.(?:exec|prepare)\(/i
@@ -61,7 +65,14 @@ const features = [], ids = new Set(), prefixes = new Map()
 }
 // Longest slug first so KNOWLEDGE-BASE wins over any shorter prefix of it.
 const SLUGS = features.map((f) => f.upper).sort((a, b) => b.length - a.length)
-const ID_RE = new RegExp(`\\b(${SLUGS.join('|')})-(\\d+)-(API|WEB|MOB|ALL)\\b`, 'g')
+// The number part is [A-Za-z0-9]+ rather than \d+ ON PURPOSE. This regex is
+// not parsing well-formed ids — it is catching malformed ones, and an id that
+// cannot match is an id that is never checked. CRM-81's plan invented
+// TICKETS-4B-API alongside TICKETS-4-WEB; the second was caught and the first
+// was invisible, because `4B` is not `\d+` so the match never started. A
+// recogniser stricter than the thing it is looking for finds only the mistakes
+// that were nearly right.
+const ID_RE = new RegExp(`\\b(${SLUGS.join('|')})-([A-Za-z0-9]+)-(API|WEB|MOB|ALL)\\b`, 'g')
 const ABBREV_RE = new RegExp(`\\b(${[...prefixes.keys()].join('|')})-(\\d+)-(API|WEB|MOB|ALL)\\b`, 'g')
 
 // ── the criteria file must speak the backlog's ids (L-7) ─────────────────────
@@ -136,6 +147,11 @@ function checkPlan(p) {
   const bucket = shipped ? warn : fail
   const say = (line, msg) => bucket.push(`${p.file}:${line} ${msg}${shipped ? ' [shipped]' : ''}`)
   const flag = (msg) => bucket.push(`${msg}${shipped ? ' [shipped]' : ''}`)
+  // For findings that are worth a reader's eye but must not stop a build: a
+  // plan naming a file it intends to create is not citing one, and the two
+  // read identically in Markdown. Warning keeps it visible at review without
+  // making every new-file line a failure.
+  const soft = (line, msg) => warn.push(`${p.file}:${line} ${msg}${shipped ? ' [shipped]' : ''}`)
 
   // L-21 — the planner writes the world it read as fact. It titles every plan
   // "Story 01" whatever the filename says, and it has claimed to be the first
@@ -192,10 +208,25 @@ function checkPlan(p) {
 
   // L-5 — name the engine before planning persistence
   for (const m of body.matchAll(FOREIGN_DIALECT)) {
-    if (NEGATED.test(lines[at(m.index) - 1])) continue
+    // The negation has to come BEFORE the token, not anywhere on the line.
+    // Testing the whole line meant `TIMESTAMPTZ NOT NULL` — the commonest way
+    // a Postgres column ever appears in a plan — suppressed itself, and so did
+    // any line containing the word "another", because NEGATED carried a bare
+    // `NOT` with no word boundaries under an /i flag. A check that the text it
+    // is reading can switch off is not a check (L-42).
+    const line = lines[at(m.index) - 1]
+    const before = line.slice(0, Math.max(0, line.indexOf(m[0])))
+    if (NEGATED.test(before)) continue
     say(at(m.index), `uses ${m[0]} — another engine's dialect (L-5)`)
   }
-  if (PERSISTENCE.test(body) && !ENGINE.test(body))
+  // Citations are reads, not plans. A `path.sql` in backticks means "go and
+  // look at this file", and a good web plan cites the schema behind the rule it
+  // is honouring — CRM-61 did, said `api/` is untouched in the same breath, and
+  // was told it plans persistence without naming an engine. Single-backtick
+  // spans come out before the test; fenced blocks (```) stay, so a plan that
+  // actually shows SQL is still caught.
+  const authored = body.replace(/(?<!`)`[^`\n]+`(?!`)/g, ' ')
+  if (PERSISTENCE.test(authored) && !ENGINE.test(body))
     flag(`${p.file} plans persistence without naming the engine (L-5)`)
 
   // L-11 — a status outside rule E-2's catalogue is a promise the rules forbid
@@ -215,9 +246,39 @@ function checkPlan(p) {
   for (const m of body.matchAll(cite)) {
     const [, rel, colon, from, to] = m
     const line = colon ?? from
-    if (!line) continue
     const abs = join(ROOT, rel)
-    if (!existsSync(abs)) { say(at(m.index), `cites ${rel}:${line}, which does not exist`); continue }
+
+    // Existence is checked whether or not a line number was given. It used to
+    // be checked only WITH one, so an invented path with no `:42` after it was
+    // never looked at — which is how CRM-72's plan cited a CustomersPage.css
+    // that has never existed and the script reported green.
+    //
+    // A plan that proposes CREATING a file is not citing one, so those lines
+    // are exempt. The plans say so in a consistent way ("**Create file:**",
+    // "Create `path`", "a new `path`"), and the exemption is deliberately
+    // narrow: it reads only the text before the path on that line.
+    // Only repo-root-relative paths can be resolved from here. A plan often
+    // cites `./prefix.js` or `../audit/index.js`, which are relative to the
+    // file under discussion and not to the root — checking those against the
+    // root reports a hundred failures that are all the check's own confusion.
+    // A check that cannot resolve a thing must say nothing about it rather
+    // than guess.
+    if (!/^(api|web|android|scripts|docs|\.squad|\.github)\//.test(rel)) continue
+
+    const src = lines[at(m.index) - 1]
+    const ahead = src.slice(0, Math.max(0, src.indexOf(m[0])))
+    const proposes = /\b(create|creates|creating|new file|add(?:s|ing)? (?:a )?(?:new )?file)\b/i.test(ahead)
+
+    if (!existsSync(abs)) {
+      // With a line number the plan is quoting specific existing code, and
+      // being wrong about that is a failure. Without one it may be naming a
+      // file to write, which is ordinary — so it is only ever a warning, and
+      // an explicit "create" makes it silent.
+      if (line) say(at(m.index), `cites ${rel}:${line}, which does not exist`)
+      else if (!proposes) soft(at(m.index), `names ${rel}, which does not exist — a citation, or a file to create?`)
+      continue
+    }
+    if (!line) continue
     const len = read(abs).split('\n').length
     const last = Number(to ?? line)
     if (last > len) say(at(m.index), `cites ${rel} line ${last}, but the file ends at ${len}`)
@@ -225,8 +286,12 @@ function checkPlan(p) {
 
   // L-6 — a guard's scope is the surface its rule governs
   for (const line of lines) {
-    if (!/whole (?:working )?tree|entire (?:working )?tree|recursively grep the repo/i.test(line)) continue
-    if (/\bnot\b|NOT|never|rather than|instead of/.test(line)) continue   // saying it is not whole-tree
+    const m = line.match(/whole (?:working )?tree|entire (?:working )?tree|recursively grep the repo/i)
+    if (!m) continue
+    // Only the text BEFORE the phrase can negate it, for L-43's reason: a
+    // line-wide test lets a word further along switch the check off, and
+    // "grep the whole tree, not the app" is still proposing a whole-tree grep.
+    if (/\bnot\b|\bnever\b|rather than|instead of/i.test(line.slice(0, m.index))) continue
     flag(`${p.file} proposes a repo-wide grep — .squad/ names its tools by design, so scope the guard to the code root (L-6)`)
     break
   }

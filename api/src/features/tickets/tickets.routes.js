@@ -71,5 +71,11 @@ export function ticketsRouter({ db, now }) {
     );
   });
 
+  // One ticket's trail. A missing ticket is 404; an empty history is a 200
+  // with an empty page, because those are different answers.
+  router.get('/tickets/:id/history', requireSubject(), (req, res) => {
+    res.json(service.history(req.subject, { id: req.params.id, ...readPagination(req) }));
+  });
+
   return router;
 }

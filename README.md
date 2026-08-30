@@ -50,7 +50,11 @@ Two things worth knowing before they cost you an afternoon:
 - **`npm run seed` does not update rows that already exist** — it inserts what
   is missing and leaves the rest, which is what makes it safe to run twice. If a
   seeded *value* changed, delete `api/data/` and build again; re-seeding will
-  not correct it.
+  not correct it. Delete **the whole directory**, not `app.db` alone: the
+  database runs in WAL mode, so removing only the main file leaves a
+  write-ahead log belonging to a database that no longer exists, and the next
+  run opens an empty file with a megabyte of unreachable data beside it. The
+  symptom is `no such table` on the first request.
 
 ## The checks
 

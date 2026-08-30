@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { ConflictError, HttpError, unprocessable } from '../../platform/http/errors.js';
-import { createAuditWriter, transact } from '../audit/index.js';
+import { countAuditEvents, createAuditWriter, listAuditEvents, transact } from '../audit/index.js';
 import { createServiceLevels } from '../service-levels/index.js';
 import {
   DEFAULT_CATEGORY_SORT,
@@ -23,11 +23,19 @@ import {
   findLiveAssigneeId,
   findLiveCustomerId,
   findTicketById,
+  countCustomerTickets,
   insertTicket,
   listCategories as listCategoryRows,
+  listCustomerTickets,
   listTickets,
   updateTicketStatus,
 } from './tickets.repository.js';
+
+// Every status the desk still owes something on. Not the same as the status
+// literally called `open`: a `pending` ticket is waiting on the customer and a
+// `reopened` one is back on the pile, and both are work. `resolved` and
+// `closed` are the two the desk has finished with.
+const OPEN_ON_THE_DESK = Object.freeze(['new', 'open', 'pending', 'reopened']);
 
 const publicShape = (row) => ({
   id: row.id,
@@ -160,6 +168,54 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       };
     },
 
+    // One customer's open tickets, for the screen that shows a customer whole.
+    //
+    // "Open on the desk" is every status the desk still owes something on —
+    // NOT the status literally called `open`. Naming it as a constant is the
+    // difference between a reader understanding the query and guessing at it.
+    openForCustomer(actor, { customerId, limit, offset }) {
+      return {
+        items: listCustomerTickets(db, {
+          customerId,
+          statuses: OPEN_ON_THE_DESK,
+          limit,
+          offset,
+        }).map(publicShape),
+        total: countCustomerTickets(db, { customerId, statuses: OPEN_ON_THE_DESK }),
+        limit,
+        offset,
+      };
+    },
+
+    // Everything that has happened to one ticket, oldest first.
+    //
+    // A read, so no audit row — reading a trail is not an event on it. The
+    // rows come from the audit feature through its index, not by querying
+    // audit_events from here: one table belongs to one feature, and
+    // verify-architecture would be right to object.
+    history(actor, { id, limit, offset }) {
+      // An empty history and a missing ticket are different answers, and only
+      // one of them is an error. Same 404 the writes throw.
+      if (!findTicketById(db, { id })) throw new HttpError(404, 'NOT_FOUND');
+      // Reading somebody else's trail is acting on their ticket. Same rule,
+      // same refusal — see assign for why it fails closed.
+      if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+
+      return {
+        items: listAuditEvents(db, { entity: 'ticket', entityId: id, limit, offset }).map((row) => {
+          // `diff` is one JSON column holding { before, after } — SQLite has no
+          // JSONB, so the shape is serialised in application code. Parsed here
+          // because a client parsing our storage format makes our storage
+          // format the contract.
+          const { before, after } = JSON.parse(row.diff);
+          return { id: row.id, actorId: row.actor_id, verb: row.verb, at: row.at, before, after };
+        }),
+        total: countAuditEvents(db, { entity: 'ticket', entityId: id }),
+        limit,
+        offset,
+      };
+    },
+
     // The categories a form offers when raising a ticket. A read, so no audit
     // row — and paginated like every other list, because six rows today is not
     // a reason for this one list to be the one that is different (BR-4).
@@ -211,6 +267,32 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         const before = findTicketById(db, { id });
         if (!before) throw new HttpError(404, 'NOT_FOUND');
 
+        // SC-2, and it fails closed on purpose.
+        //
+        // A customer may act only on their own ticket. Today no customer can
+        // hold a token at all — sign-in reads `users`, the subject resolver
+        // returns { id, role, name }, and there is no column linking a user to
+        // a customer in either direction — so there is nothing to compare and
+        // the safe answer is to refuse every customer-role subject here.
+        //
+        // WHEN THE LINK LANDS (the identity story that gives a customer a
+        // sign-in), this becomes one comparison in this one place:
+        //
+        //     if (actor?.role === 'customer' && before.customer_id !== actor.customerId)
+        //
+        // and nothing else about the shape changes. Whoever adds the link will
+        // meet this comment rather than having to think of the rule.
+        //
+        // 404 rather than 403, and deliberately the same 404 as the line
+        // above: a refusal that told "not yours" apart from "not there" would
+        // confirm to a stranger that somebody else's ticket exists.
+        //
+        // A new service method taking an actor and an id under /tickets/:id
+        // runs this same check inside its transaction, right after the
+        // not-found refusal. ticket-ownership.guarantee.test.js fails until it
+        // does — it reads the routes off the router rather than a list.
+        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+
         const { changes } = assignTicket(db, { id, assigneeId, revision, at });
         if (changes === 0) {
           // The row was read a moment ago, in this transaction, on the only
@@ -245,6 +327,10 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       return transact(db, () => {
         const before = findTicketById(db, { id });
         if (!before) throw new HttpError(404, 'NOT_FOUND');
+
+        // Ownership, as in assign — see the comment there for why it fails
+        // closed and what changes when the customer link lands.
+        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
 
         // Both refusals below carry the legal moves from where the ticket
         // IS, not from where the caller wanted it — the caller already knows

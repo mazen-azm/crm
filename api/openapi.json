@@ -225,6 +225,45 @@
             "description": "Internal."
           }
         }
+      },
+      "post": {
+        "summary": "Put a customer on file, typically while somebody is still on the telephone. A name is required and nothing else is: somebody who telephones may have neither an address nor a number worth keeping, and the desk still needs them. A blank email or phone is the same as none — both are stored as absent, so \"one live customer per address\" keeps its meaning. Writes a customers row and no users row: the two are separate tables (I-1), and a customer gets a sign-in through a different story.",
+        "responses": {
+          "201": {
+            "description": "The customer that was created, with the id the caller needs next."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "422": {
+            "description": "A missing name, an email that is not one, or an address already held by a live customer. The body names the fields, never their values. A retired customer does not hold their address against a new one — the unique index is partial and this refusal asks the same question it does."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{id}": {
+      "get": {
+        "summary": "One customer, whole: their details, the tickets the desk still owes them something on, and their notes — in one answer, read inside one transaction. A screen that assembled this from three requests would be showing three different moments as if they were one. \"Open\" here means every status the desk has not finished with (new, open, pending, reopened), which is not the same as the status called open. A retired customer still reads back: the list hides them, reading a known id does not, and their tickets did not stop existing. Nothing is audited — a read is not a mutation.",
+        "responses": {
+          "200": {
+            "description": "{ customer, tickets: { items, total, limit, offset }, notes: { items, total } }. The tickets are paginated with the ceiling every list obeys; the notes come back whole up to that same ceiling and carry their total, so more than a page of them is visible rather than silently dropped."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such customer. A customer with nothing on file is a 200 with empty lists — that is a different answer."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, never clamped (BR-4)."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
       }
     },
     "/api/v1/customers/{id}/notes": {
@@ -370,6 +409,28 @@
           },
           "422": {
             "description": "A status outside the six, a missing or malformed revision, or a resolve with no note — a note that is only whitespace is no note. The body names the fields, never their values. This is 422 and not 409 on purpose: resolving is a legal move, so a missing note is a malformed request and not an illegal transition."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/history": {
+      "get": {
+        "summary": "Everything that has happened to one ticket, oldest first. Each entry says who, what changed, and from what to what — an entry recording only the new value cannot answer \"who took it off me\". The order does not depend on two changes having different timestamps: the clock is whole seconds, so two moves inside one second share a time and insertion order breaks the tie. The stored JSON column is parsed here rather than handed over, because a client parsing the storage format makes the storage format the contract. Reading a trail is not an event on it, so nothing is audited.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each item is { id, actorId, verb, at, before, after }; actorId is null where the system acted, never invented. A ticket with no history yet is an empty page, not an error."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket. A missing ticket and an empty history are different answers, and only one is an error."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, never clamped (BR-4)."
           },
           "500": {
             "description": "Internal."

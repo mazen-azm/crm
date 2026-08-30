@@ -711,3 +711,232 @@ stylesheet), and a `t('key')` function that is a plain object read as
 that does not work; the `description` one would have made the 422's
 `fields: ['body']` name a field the form does not have, and marked the wrong
 input.
+
+## L-42 — A recogniser stricter than the mistake it hunts finds only near-misses
+
+**Rule:** when a check's job is to catch malformed input, the pattern that
+*finds candidates* must be **looser** than the thing it is validating, not the
+same shape. Match anything that looks like the construct, then judge it. A
+regex that only matches well-formed ids will report the invented ones that
+happen to be well-formed and stay silent on the rest — which is the worse half,
+because a wrong id that is nearly right is the one a reader would have spotted
+anyway.
+
+**Where it came from:** CRM-81's plan invented two story ids in adjacent lines:
+`TICKETS-4-WEB` and `TICKETS-4B-API`. `verify-plan.mjs` reported the first and
+said nothing about the second. Not because the second passed a check — because
+`ID_RE` was `(SLUG)-(\d+)-(API|WEB|MOB|ALL)` and `4B` is not `\d+`, so the match
+never began and no check ever ran on it. The fix is one character class:
+`([A-Za-z0-9]+)`, which finds the candidate and lets the existing
+`ids.has(...)` test decide. Three malformed shapes now redden it and the 42
+existing plans still pass, so the looser pattern costs no false positives.
+
+The general form of this is worth carrying: **a guard is only as good as what
+it can see.** Before trusting one, feed it the defect it is supposed to catch.
+
+## L-43 — A negation test that reads the whole line lets the text switch the check off
+
+**Rule:** when a check skips a match because the surrounding prose negates it,
+read only the text **before** the match, not the whole line. A line-wide test
+hands the document a way to disable the check by accident — and the accident is
+usually a word that has nothing to do with the rule.
+
+**Where it came from:** the L-5 dialect check skipped any line whose text
+matched `NEGATED`, and `NEGATED` carried a bare `NOT` with no word boundaries
+under an `/i` flag. So `created_at TIMESTAMPTZ NOT NULL` — the commonest way a
+Postgres column can possibly appear in a plan — switched off the check that
+exists to catch it. So did any line containing "another", "nothing" or
+"cannot", because each contains the letters n-o-t. The bare `NOT` was redundant
+next to `\bnot\b` under `/i`; removing it and scoping the test to the text
+before the token fixed both halves.
+
+The same shape appears wherever a check asks "is this line saying not to do
+it?" — L-6's repo-wide-grep check still tests the whole line, and should be
+read with this in mind.
+
+## L-44 — Point the probe at the tool that actually enforces the rule
+
+**Rule:** before writing "check X enforces rule Y" into an intake or a plan,
+**break Y and watch X fail**. A guarantee can be real and still be enforced
+somewhere other than where everyone says it is — and a hint naming the wrong
+tool sends an executor to run something that will never fail, which is worse
+than naming no tool at all.
+
+**Where it came from:** eight intakes said `verify-i18n-parity.mjs` fails on a
+key present in one resource file and missing from the other. It does not, and
+its own header says so in as many words: it deliberately does not parse the
+dictionaries, because it runs in a CI job with no `npm install` and could only
+scrape TypeScript with a regex that breaks on the first quoted value. The
+comparison lives in `web/src/shared/i18n/parity.test.ts` under vitest, which
+does fail — the guarantee was real the whole time and the sentence describing it
+was wrong. Found by adding an orphan key and watching the script report green.
+
+The corollary is the reason this lesson exists at all: **probing a guard tells
+you where a rule is enforced, not only whether it is.**
+
+## L-45 — A stub that answers 200 whatever arrives cannot see a missing header
+
+**Rule:** a screen's tests are blind to everything the request carries unless
+they assert it. Stub fetch, and the stub answers happily with no token, no
+content type and no body — so authentication, headers and method are invisible
+until something asserts them. **At least one test per app should pin what the
+FIRST request on a fresh mount carries**, because the first request is the one
+whose failure the user meets.
+
+**Where it came from:** `setAuthTokenGetter` was registered in the auth
+provider's `useEffect`. React runs effects child-first, so a page's data effect
+fired before the provider had registered anything, `readToken()` returned the
+module default of `null`, and every request on a fresh load went out with no
+Authorization header. The 401 that came back was read as an expired session,
+which cleared the token and bounced the reader to sign-in: **reloading any
+screen signed you out.** 134 tests were green.
+
+Registering during render fixed half of it. The other half was the effect's
+cleanup, which set the getter back to `null` — under StrictMode's double mount
+the first cleanup ran after the second mount had registered, so one request
+succeeded and the rest failed. That asymmetry is what gave it away, and it was
+only ever visible in a browser: no stub in the suite cared about headers.
+
+Two things follow. **Look at the thing you shipped, in a browser** — four
+screens had never been opened. And when a bug appears only under StrictMode's
+second mount, suspect a cleanup that undoes a registration rather than a race.
+
+**The worst part, found afterwards:** `IDENTITY-1-WEB`'s fourth acceptance
+criterion is *"Given a signed-in session, when the page is reloaded, then it
+survives."* It was written, it was ticked, the story was closed, and it was
+false for two sprints. The criterion was right; nothing in the suite could tell
+whether it held, because a reload is a browser thing and the tests mount a
+component. **A criterion that no test can distinguish from its opposite is not
+covered, however carefully it is worded** — so when writing one, ask what would
+have to be true for a test to see it fail.
+
+## L-46 — Open the thing you built. The suite has no pixels and no headers
+
+**Rule:** before a screen story is called done, **run the app and look at it**,
+in both languages, and measure rather than squint. A plan's verification steps
+should say so explicitly for any `-WEB` story, because a green suite says
+nothing about the two categories of defect that only a browser can show:
+
+- **what the request carries** — stubs answer 200 whatever headers arrive
+- **what the layout does** — jsdom has no layout, so no test can see an
+  element finishing past the column it sits in
+
+**Where it came from:** four screens shipped across two sprints without once
+being opened. One hour with a browser found five defects that 274 green tests
+could not:
+
+1. Every request on a fresh load went out with no token, so reloading any
+   screen signed you out (L-45).
+2. The queue crashed to a blank page against a server started before
+   `allowedTransitions` existed.
+3. `box-sizing` was never set, so a padded control with `inline-size: 100%`
+   finished past its container — the form did, and everything padded would
+   have.
+4. `Stack`'s `align="end"` sets `justify-content`, which on a row moves the
+   whole row; three call sites used it meaning "line the button up".
+5. "1 tickets" in English. Arabic was already right, by accident.
+
+Four of the five were in code that had passed review, tests and CI. The look
+costs ten minutes and it is not optional.
+
+## L-47 — Instructions a message prints are code, and are wrong the same way
+
+**Rule:** a line a program prints telling somebody what to do next is part of
+the product, and it is worth the same scrutiny as a branch. **Write the command
+out in full**, from the configuration rather than from memory, and check that
+following it literally produces the outcome it promises.
+
+**Where it came from:** the seed printed "To start over, delete the database
+file and seed again." Following it exactly leaves `app.db-wal` and `app.db-shm`
+behind. The database runs in WAL mode, so the next run opens a new empty
+`app.db` while the previous megabyte sits in a write-ahead log belonging to a
+database that no longer exists — and the first request answers `no such table:
+users`, which reads like a migration problem and is not one.
+
+It cost two separate hunts on the same evening: once for a password that had
+been printed correctly, and once for a 500 on sign-in. Both times the
+instruction was followed exactly and the instruction was wrong.
+
+The message now prints the full `rm -f` with all three paths, built from
+`config.dbPath` rather than typed, and says why all three. This is the same
+lesson as the password line above it, which was fixed for the same reason: a
+sentence in a terminal is read as an answer.
+
+## L-48 — A truncated listing reads exactly like a complete one
+
+**Rule:** never conclude "there are none" or "this is the whole set" from a
+command whose output you capped. `head`, `-limit`, a default page size and a
+screenful of terminal all end the same way: with a plausible list and no sign
+that it stopped early. If a claim in a plan, an intake or a commit message
+depends on a set being complete, **count it** (`| wc -l`), or ask for the one
+thing directly (`test -f`, `grep -c`), rather than reading the top of a list.
+
+**Where it came from:** a plan proposed a page stylesheet, and the review told
+it "no page in this app has its own stylesheet". The evidence was
+`find web/src -name '*.css' | head`, which printed ten files and stopped —
+`web/src/pages/customers/CustomersPage.css` was the eleventh. The conclusion
+was right for that screen and the reason given for it was false, which is worse
+than no reason: a plan is read later by somebody with no way to tell which of
+its facts were checked.
+
+The same shape has appeared twice more in this repository, both times caught:
+`verify-plan.mjs` reporting nothing because its recogniser could not match
+(L-42), and a guard walking one root of three and passing (L-45). A tool that
+looks at less than you think does not say so.
+
+## L-49 — A column is not a field; check the writer and the projection, not the schema
+
+**Rule:** before a plan gives a form an input, prove the API stores and returns
+that value — read the INSERT and the SELECT projection, not the `CREATE TABLE`.
+A column the migration declares and the repository never writes is not part of
+the contract, and a plan that reads only the schema will invent a field for it.
+The same applies in the other direction: a response field a plan asserts must
+be found in the shape function, not assumed from the table.
+
+**Where it came from:** the plan for CUSTOMERS-4-WEB gave the add-customer form
+four inputs — name, email, phone and **address** — and listed `address` in the
+success view and in a Done Criteria box. `customers` does have an `address`
+column (`0001__customers.sql:6`). Nothing writes it: `insertCustomer` names six
+columns and not that one, `PROJECTION` does not select it, `validateCustomer`
+and `normaliseCustomer` do not know it, and the repository carries a comment
+saying exactly why — "No address either: nothing asks for it and PROJECTION
+does not return it, so a value written here would be invisible to every
+reader."
+
+Built as planned, the form would have posted a property the API discards and
+rendered `undefined` beside a label, with every test green: the API answers
+201, the value simply is not in the reply. Nothing in the suite compares the
+form's fields to the API's. The screen shipped with three.
+
+The plan also invented `createdEmailNone`, a resource key for "no email
+address", where `t.customers.noEmail` had said that since CUSTOMERS-1-WEB. Two
+strings for one sentence drift the first time one is reworded — the same defect
+as the duplicated status maps CRM-58 pulled into a shared module.
+
+## L-50 — A plan for a screen must read the route, not describe it
+
+**Rule:** before a plan types a response type, a hook signature or a paging
+control, open the route handler and the service method it calls and copy the
+envelope out of them. Every field name, the paging shape, the error codes and
+the vocabulary of any enumerated value (verbs, statuses) come from the code
+that produces them. A plan that says "or whatever path X exposes — confirm" or
+"likely `foo_bar`" has moved the reading to the executor and taken the
+authority with it: the plan is still read as fact.
+
+**Where it came from:** the plan for TICKETS-7-WEB was written against an
+imagined `GET /history`. It gave the response a `nextCursor` (the API pages by
+`limit`/`offset`/`total`, as every list here does), gave each entry an
+`actor: { id, name }` (the API returns `actorId`), named three new error codes
+as "likely" (the catalogue is frozen and the route throws only `NOT_FOUND`),
+called a formatter that does not exist, read status words from a namespace that
+does not exist, and wrote sentences for eight audit verbs where the API writes
+three.
+
+None of it would have failed loudly. `entry.actor?.name` is `undefined`,
+`nextCursor` is `undefined` so the "load more" control never appears, and five
+sentences sit in both resource files forever, in parity, translated, for verbs
+nothing emits. The suite would have been green.
+
+The tell was in the plan's own words — "or whatever path CRM-83 exposes",
+"likely `ticket_not_found`". A plan that hedges is a plan that did not look,
+and the hedge is the part a reader skips.

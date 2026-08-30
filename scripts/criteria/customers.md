@@ -75,3 +75,78 @@ An agent writes an internal note about a customer.
   (L-19).
 - Given a note, when it is read, then it is internal: nothing in the customer
   portal's own responses ever carries it.
+
+## CUSTOMERS-2-API
+
+Everything about one customer, in one answer.
+
+*Acceptance criteria*
+- Given a customer id, when the screen's data is read, then contacts, open
+  tickets and the notes come back together — a screen that assembles this from
+  four requests shows four different moments as if they were one.
+- Given a customer with many tickets, when they are read, then the tickets are
+  paginated with the ceiling every list obeys (BR-4); the customer's own fields
+  are not.
+- Given a customer id that is not on file, then the answer is 404 rather than an
+  empty shape that looks like a customer with nothing.
+- Given a retired customer, when they are read, then they still read back — a
+  removed customer is not a missing one, and their tickets did not stop existing.
+- Given the read, then it writes no audit row.
+
+## CUSTOMERS-2-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given the screen, when it loads, then the customer, their open tickets and
+  their notes are one request, not four.
+- Given a customer with no tickets, when the screen renders, then the empty
+  state says so and offers to raise one (D-2).
+- Given a ticket in the list, when it is read, then its status and priority are
+  words from the resource files, not the API's raw values (BR-6).
+- Given a failed load, when the screen renders, then it shows the documented
+  code's meaning and offers retry.
+
+## CUSTOMERS-4-API
+
+Adding a customer while the phone is still ringing.
+
+*Acceptance criteria*
+- Given a new customer, when they are added, then a `customers` row is written
+  and no `users` row is — the two are separate tables and `user_id` stays null
+  until a first sign-in (I-1).
+- Given an email address already on file, when a customer is added with it, then
+  the request is refused naming the field rather than creating a second customer
+  for one person (I-4).
+- Given a customer added with no email address, then it is accepted — somebody
+  who telephones may not have one, and the desk still needs them on file.
+- Given a successful add, then an audit row records it (BR-2), and the answer is
+  the customer that was created.
+
+## CUSTOMERS-4-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given the form, when a field the API named is refused, then that field is
+  marked and the message is the shared one for the code.
+- Given a submission in flight, then the control cannot be pressed twice — this
+  request creates a row, so a second press is a second customer.
+- Given a created customer, then the screen shows the customer it created,
+  rather than a message saying it worked.
+- Given every string on the screen, then it came from a resource file, in both
+  languages (BR-6).
+
+## CUSTOMERS-3-WEB
+
+An internal note about a customer, on a screen.
+
+*Acceptance criteria*
+- Given a note, when it is written, then it appears in the customer's notes
+  without the screen reloading everything it already had.
+- Given a blank or whitespace-only note, when it is submitted, then the screen
+  refuses it the way the API does and says so on the field.
+- Given the notes, when they are read, then the author and the time are shown,
+  because a note nobody can attribute is a note nobody trusts (BR-2, BR-3).
+- Given every string on the screen, then it came from a resource file, in both
+  languages (BR-6).

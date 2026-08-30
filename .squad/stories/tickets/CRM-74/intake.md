@@ -164,7 +164,7 @@ Stack, Text`, and `web/src/shared/hooks/useRequest.ts` is the four-state
 of doing what that page already does is the defect, not the feature.
 
 **BR-6: no string is written in a component.** Both `web/src/shared/i18n/en.ts`
-and `ar.ts` carry every user-facing string, and `verify-i18n-parity.mjs` fails
+and `ar.ts` carry every user-facing string, and `web/src/shared/i18n/parity.test.ts` fails — it is the vitest suite that compares the two objects, not `verify-i18n-parity.mjs`, which checks which roots carry resource files at all and says so in its own header
 on a key present in one file and missing from the other. Add keys to both in
 the same edit, and keep the Arabic a real translation rather than the English
 copied across — the check tests for parity of keys, and a human reads the rest.
