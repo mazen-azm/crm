@@ -12,6 +12,7 @@ Entry point for the **conversation** feature. Stories execute in order by their 
 | 70 | `70-story-crm-104.md` | CONVERSATION-3-API customer — I reply on my own ticket; replying to a resolved one reopens it | CRM-104 | — |
 | 71 | `71-story-crm-100.md` | CONVERSATION-1-WEB agent — I reply; the first public reply opens the ticket and stops the clock, once | CRM-100 | — |
 | 72 | `72-story-crm-103.md` | CONVERSATION-2-WEB agent — my internal note never reaches a customer, in any response | CRM-103 | — |
+| 73 | `73-story-crm-106.md` | CONVERSATION-4-API agent — a long thread pages rather than arriving whole | CRM-106 | — |
 
 ## Dependency notes
 
