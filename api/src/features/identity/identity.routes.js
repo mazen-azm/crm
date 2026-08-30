@@ -57,6 +57,17 @@ export function identityRouter({ service }) {
     res.json(service.reEnableAccount(req.subject, { id: req.params.id }));
   });
 
+  // Anybody, changing their own. requireSubject() and nothing more: an admin
+  // doing this is the same call an agent or a customer makes, and a role gate
+  // here would be a second way to change a password with a second set of
+  // rules.
+  router.post('/me/password', requireSubject(), (req, res) => {
+    res.json(service.changeOwnPassword(req.subject, {
+      currentPassword: req.body?.currentPassword,
+      newPassword: req.body?.newPassword,
+    }));
+  });
+
   // An admin sets somebody else's password. Not their own: that is a different
   // route with a different question, and this one never asks for a current
   // password because the person it is for cannot supply one.

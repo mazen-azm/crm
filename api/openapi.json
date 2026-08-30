@@ -66,6 +66,25 @@
         }
       }
     },
+    "/api/v1/me/password": {
+      "post": {
+        "summary": "Change your own password, knowing the current one. One route for every role: an admin doing this uses it too, which is why the admin route for setting somebody else's password refuses a caller their own account — an admin who could skip the current-password check on themselves would turn a stolen session into a permanent one. Body: { currentPassword, newPassword }. Tokens issued before the change stay valid until they expire; ending them is IDENTITY-8-API, and that is a stated gap.",
+        "responses": {
+          "200": {
+            "description": "{ id, updatedAt }. No password and no hash, here or in the audit row."
+          },
+          "401": {
+            "description": "The current password is wrong. Sign-in gives one refusal for three causes so the response cannot be used to learn which addresses exist; that reasoning does not reach here, because this caller is already authenticated and already knows the account exists. Telling them which half they got wrong leaks nothing."
+          },
+          "422": {
+            "description": "`fields` names it: `currentPassword` when it is missing, `newPassword` when it is missing, below the twelve-character floor, or equal to the current one — a change that changes nothing is a change somebody believes they made."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
     "/api/v1/accounts": {
       "post": {
         "summary": "Create a staff account. Answers with the account and, once, the password it was given.",

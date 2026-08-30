@@ -45,6 +45,23 @@ export function findAnyUserById(db, id) {
     .get(id);
 }
 
+// The hash, alone, for the one caller that has to compare against it.
+//
+// findAnyUserById deliberately does not select it — a general read that
+// carried the hash would put it in every row every caller holds, and the
+// publicShape above it exists precisely so that cannot happen. Widening that
+// query to serve this would undo the reason it is narrow.
+//
+// Returns null for a missing or disabled account, so a caller cannot tell the
+// two apart from what comes back.
+export function findPasswordHashById(db, id) {
+  return (
+    db
+      .prepare('SELECT password_hash AS hash FROM users WHERE id = ? AND deleted_at IS NULL')
+      .get(id)?.hash ?? null
+  );
+}
+
 export function listLiveUsers(db, { limit, offset }) {
   return db
     .prepare(`

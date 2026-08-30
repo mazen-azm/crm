@@ -57,7 +57,7 @@ async function start() {
     });
 
   const auditCount = () => real.prepare('SELECT count(*) AS n FROM audit_events').get().n;
-  return { app, real, call, auditCount };
+  return { app, real, call, auditCount, adminPassword };
 }
 
 // Every mutating route this file drives. Compared against the router below.
@@ -67,6 +67,7 @@ const EXERCISED = new Set([
   'POST /api/v1/accounts/:id/disable',
   'POST /api/v1/accounts/:id/re-enable',
   'POST /api/v1/accounts/:id/set-password',
+  'POST /api/v1/me/password',
   'POST /api/v1/customers',
   'POST /api/v1/customers/:id/notes',
   'POST /api/v1/customers/:id/sign-in',
@@ -95,7 +96,7 @@ test('every mutating route the router serves is exercised by this file', async (
 });
 
 test('each mutating route writes exactly one audit row', async () => {
-  const { call, auditCount } = await start();
+  const { call, auditCount, adminPassword } = await start();
 
   const steps = [
     ['POST /api/v1/accounts', () =>
@@ -197,6 +198,17 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/accounts/${created.id}/disable`, { method: 'POST' })],
     ['POST /api/v1/accounts/:id/re-enable', () =>
       call(`/api/v1/accounts/${created.id}/re-enable`, { method: 'POST' })],
+    // The admin's own, through the route that asks for the current one. It
+    // runs last of the password steps because it changes the credential this
+    // whole file signed in with — anything after it would be using a token
+    // issued against a password that no longer exists. It still works, because
+    // ending other sessions is IDENTITY-8-API and has not shipped; when it
+    // does, this line is where that shows up.
+    ['POST /api/v1/me/password', () =>
+      call('/api/v1/me/password', {
+        method: 'POST',
+        body: { currentPassword: adminPassword, newPassword: 'a-new-admin-password' },
+      })],
     // Somebody else's account: an admin may not set their own password here.
     ['POST /api/v1/accounts/:id/set-password', () =>
       call(`/api/v1/accounts/${created.id}/set-password`, {

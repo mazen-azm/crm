@@ -163,16 +163,60 @@ Run all identity and audit tests locally after: `cd api && npm test`.
 
 ## Done Criteria
 
-- [ ] `POST /api/v1/identity/me/password` accepts `{ currentPassword, newPassword }` behind `requireSubject()` and no other guard.
-- [ ] Correct current + valid new → 200; the new password signs the user in.
-- [ ] Wrong current → 401 with a code comment beside it explaining why this differs from sign-in (references the note above `errorUnauthenticated`).
-- [ ] Missing field, weak new password, or new-equals-current → 422 naming the offending field.
-- [ ] Every role (admin, agent, customer-with-sign-in) uses this route; admins do **not** route through `setPassword` for their own password.
-- [ ] Current-password verification calls the same shared password module sign-in uses — no second implementation.
-- [ ] One audit row per successful change, `action: 'change-own-password'`, `actor === entityId`, diff contains no password or hash material (BR-2).
-- [ ] OpenAPI updated; contract test passes.
-- [ ] New test file `api/src/features/identity/change-own-password.test.js` covers every criterion above.
-- [ ] Stated-gap comment about existing tokens remaining valid until expiry (owned by IDENTITY-8-API) sits next to the successful return.
-- [ ] No `web/` or `android/` changes.
+- [x] `POST /api/v1/identity/me/password` accepts `{ currentPassword, newPassword }` behind `requireSubject()` and no other guard.
+- [x] Correct current + valid new → 200; the new password signs the user in.
+- [x] Wrong current → 401 with a code comment beside it explaining why this differs from sign-in (references the note above `errorUnauthenticated`).
+- [x] Missing field, weak new password, or new-equals-current → 422 naming the offending field.
+- [x] Every role (admin, agent, customer-with-sign-in) uses this route; admins do **not** route through `setPassword` for their own password.
+- [x] Current-password verification calls the same shared password module sign-in uses — no second implementation.
+- [x] One audit row per successful change, `action: 'change-own-password'`, `actor === entityId`, diff contains no password or hash material (BR-2).
+- [x] OpenAPI updated; contract test passes.
+- [x] New test file `api/src/features/identity/change-own-password.test.js` covers every criterion above.
+- [x] Stated-gap comment about existing tokens remaining valid until expiry (owned by IDENTITY-8-API) sits next to the successful return.
+- [x] No `web/` or `android/` changes.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+
+
+---
+
+## Review note
+
+The plan corrected its own first guess — the Story Goal says
+`/api/v1/identity/me/password` and task 2 says `/me/password`, which is the
+right one; this API mounts routes flat. Its reasoning on 401-versus-422 was
+right and is quoted in the code.
+
+Four corrections:
+
+1. **The audit call shape was invented.** `{ actor: actor.id, entity, entityId,
+   action, before: {}, after: {} }` — the writer takes the actor as its first
+   argument and the field is `verb`, not `action`. And `before: {} / after: {}`
+   says nothing: a diff whose two halves are identical reads as a change that
+   changed nothing, which is precisely what this route refuses to let a person
+   make. It matches `setPassword`'s: `before: null, after: { passwordSetAt }`.
+
+2. **The return shape was guessed at.** "Mirror setPassword's return exactly
+   (typically the updated user projection without hash fields)" — the
+   parenthetical is wrong; it returns `{ id, updatedAt }`. Mirroring it exactly
+   and describing it wrongly in the same sentence is the shape of a plan
+   written from memory.
+
+3. **`findAnyUserById` does not select the password hash, on purpose.** Task 1
+   step 3 said to load the row "via the same repository read `setPassword`
+   uses" and step 4 to verify against it. That row has no `password_hash`, so
+   `verifyPassword` would compare against `undefined` and every correct current
+   password would answer 401 — which is what happened, in the audit census,
+   before this was found. The narrow projection is right: a general read
+   carrying the hash puts it in every row every caller holds. So there is a
+   `findPasswordHashById` that selects the one thing, for the one caller that
+   compares against it.
+
+   Same shape as CUSTOMERS-6-API's `findLiveCustomerById` reading `id, name`,
+   two stories ago. A function whose name says "find the user" and whose query
+   says "some columns of the user" is a trap laid for its next caller.
+
+4. **The staff-only census caught the new route immediately**, which is what it
+   is for. `/me/password` is reachable by a customer — deliberately, since a
+   customer changes their own password through the same route every role uses —
+   so it is named in `OPEN_TO_A_CUSTOMER` with that reason rather than guarded.
