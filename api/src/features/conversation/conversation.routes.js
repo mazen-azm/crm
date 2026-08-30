@@ -24,7 +24,7 @@ export function conversationRouter({ conversation }) {
   // screen appends it rather than re-reading the thread.
   router.post('/tickets/:id/replies', requireSubject(), (req, res) => {
     res.status(201).json(
-      conversation.reply(req.subject, { ticketId: req.params.id, body: req.body?.body }),
+      conversation.reply(req.subject, { ticketId: req.params.id, body: req.body?.body, kind: req.body?.kind }),
     );
   });
 

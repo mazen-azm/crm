@@ -80,7 +80,9 @@ test('an agent replies from the row, and the reply is what was sent', async () =
   await waitFor(() => expect(sent).toHaveLength(1));
   // Trimmed by the screen: the API trims too, so the round trip would come
   // back with the answer it already had.
-  expect(sent[0]).toEqual({ body: 'We are looking at it.' });
+  // The kind travels with it. The desk chooses, and 'public' is the choice the
+  // box opens on — not an absence the API has to interpret.
+  expect(sent[0]).toEqual({ body: 'We are looking at it.', kind: 'public' });
 });
 
 test('the row follows the ticket the reply changed', async () => {

@@ -20,6 +20,8 @@ import { useAssignees } from './useAssignees';
 import { useMe } from '../../shared/session/use-me';
 import { TicketHistory } from './TicketHistory';
 import { ReplyBox } from './ReplyBox';
+import { TicketThread } from './TicketThread';
+import type { Message } from './useReply';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
 import { useTicketCategories } from './useTicketCategories';
@@ -67,6 +69,10 @@ function Row({
   const [target, setTarget] = useState('');
   const [note, setNote] = useState('');
   const [noteMissing, setNoteMissing] = useState(false);
+  // Messages written from this row since it was rendered, public and internal
+  // alike. They belong to the row rather than to the thread because the thread
+  // is closed until somebody opens it.
+  const [posted, setPosted] = useState<Message[]>([]);
 
   const submit = async () => {
     const next = choice === UNASSIGN ? null : choice;
@@ -247,12 +253,19 @@ function Row({
             unasked would make one page of the queue twenty-five requests. */}
         <TicketHistory ticketId={ticket.id} assignees={assignees} />
 
-        {/* And the reply, under it. The queue row is where a ticket is
-            inspected today; a detail screen opened for this would be a second
-            place a ticket is read. */}
+        {/* The conversation, then the box that writes into it. In that order
+            because an agent reads what has been said before saying the next
+            thing — and because the box's mode is the last thing they see
+            before they type. */}
+        <TicketThread ticketId={ticket.id} assignees={assignees} posted={posted} />
+
         <ReplyBox
           ticketId={ticket.id}
-          onReplied={({ ticket: updated }) => {
+          onReplied={({ message, ticket: updated }) => {
+            // Held here rather than in the thread: the thread may never have
+            // been opened, and a reply that vanished because nobody had
+            // expanded the list yet reads as a reply that was not sent.
+            setPosted((held) => [...held, message]);
             // The row follows the ticket. The first public reply on a `new`
             // ticket opens it, server-side — a row still saying New after the
             // reply that opened it is the screen disagreeing with the ticket.

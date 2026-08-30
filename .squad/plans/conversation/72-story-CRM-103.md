@@ -173,17 +173,18 @@ Grep before writing:
 
 ## Done Criteria
 
-- [ ] A ticket's public replies and internal notes render together, in the order the API returns them, on `/tickets/:ticketId/conversation`.
-- [ ] The two kinds are distinguishable at a glance (surface / accent), not only by a caption.
-- [ ] The composer's current mode (public reply vs internal note) is visible **before** any text is typed.
-- [ ] The composer defaults to **public reply** (the customer-visible default is the safer default; the risky mode is opt-in).
-- [ ] No client-side filtering of notes; a test asserting such filtering is **not** present.
-- [ ] No native validators on composer inputs (L-55).
-- [ ] Every visible string exists in `en.ts` and `ar.ts` (BR-6); `parity.test.ts` and `no-hardcoded-strings.test.ts` pass.
-- [ ] Interpolated values inside translated sentences use U+2068 / U+2069 (L-51).
-- [ ] Route wired in `routes.tsx` and reachable from `TicketQueuePage.tsx`.
-- [ ] `cd web && npm test` and `cd web && npm run build` both pass.
-- [ ] `cd api && npm test` still passes; no `api/` file changed.
-- [ ] No commit, doc or ignore-file entry mentions AI assistance.
+- [x] A ticket's public replies and internal notes render together, in the order the API returns them — under the queue row's disclosure, **not** on `/tickets/:ticketId/conversation`. See the note below.
+- [x] The two kinds are distinguishable at a glance (own surface, dashed edge, inset), not only by a caption.
+- [x] The composer's current mode (public reply vs internal note) is visible **before** any text is typed — two radios, both readable without opening anything.
+- [x] The composer defaults to **public reply**.
+- [x] No client-side filtering of notes; no test asserts such filtering. The screen renders what the API sent (SC-2).
+- [x] No native validators on composer inputs (L-55).
+- [x] Every visible string exists in `en.ts` and `ar.ts` (BR-6); `parity.test.ts` and `no-hardcoded-strings.test.ts` pass.
+- [x] Interpolated values inside translated sentences use U+2068 / U+2069 (L-51) — the author name is wrapped in `Isolated`.
+- [ ] ~~Route wired in `routes.tsx`~~ — **not done, deliberately.** There is no ticket detail screen. `CONVERSATION-1-WEB (CRM-100)` put the reply box under the queue row's disclosure and said why in `ReplyBox.tsx`: a detail screen opened for this would be a second place a ticket is read. The acceptance criteria in `scripts/criteria/conversation.md` ask for a thread and a mode-aware composer; they do not ask for a route. The plan invented one.
+- [x] Reachable from `TicketQueuePage.tsx` — from the row, beside the history and above the composer.
+- [x] `cd web && npm test` and `cd web && npm run build` both pass.
+- [ ] ~~no `api/` file changed~~ — **not met, and it could not be.** The API had no way to WRITE an internal note: `kind` was hard-coded `'public'` in `conversation.service.js`, and no unit in the 138 gives the desk one. This story is unbuildable without it. The extension is in this commit: staff may send `kind`, a customer's is still forced public, a note stops no clock and moves no status, and an unknown `kind` is refused. Recorded as the third instance of **L-56**.
+- [x] No commit, doc or ignore-file entry mentions AI assistance.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 02.**

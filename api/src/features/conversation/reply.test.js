@@ -264,3 +264,61 @@ test('the clock stops at the reply’s timestamp, not at whenever the stop ran',
   // ticket's creation to the answer, and the answer is the message.
   assert.equal(clock(ticket.id).stopped_at, message.createdAt);
 });
+
+test('an internal note stops no clock and moves no status', async () => {
+  const { staff, raise, clock, ticketRow, messages, audit } = await start();
+  const ticket = await raise();
+  const before = audit().length;
+
+  const res = await staff(`/api/v1/tickets/${ticket.id}/replies`, {
+    method: 'POST',
+    body: { body: 'Checked with billing; their system is down.', kind: 'internal' },
+  });
+  assert.equal(res.status, 201);
+  const { message } = await res.json();
+  assert.equal(message.kind, 'internal');
+
+  // T-2's promise is about answering the customer. A note is the desk talking
+  // to itself, and a clock stopped by one would report a response time to
+  // somebody who never saw a word of it.
+  assert.equal(clock(ticket.id).stopped_at, null);
+  assert.equal(ticketRow(ticket.id).status, 'new');
+  assert.equal(messages(ticket.id).length, 1);
+  // One audit row: the note. No status moved, so nothing else to record.
+  assert.equal(audit().length, before + 1);
+  assert.equal(JSON.parse(audit().at(-1).diff).after.kind, 'internal');
+});
+
+test('a public reply after a note still opens the ticket', async () => {
+  const { staff, raise, reply, clock, ticketRow } = await start();
+  const ticket = await raise();
+  await staff(`/api/v1/tickets/${ticket.id}/replies`, {
+    method: 'POST',
+    body: { body: 'A note first.', kind: 'internal' },
+  });
+
+  await reply(ticket.id, 'And now the answer.');
+
+  // The note did not consume T-2's once: the clock was still running and the
+  // ticket was still new, so the first PUBLIC reply is still the first
+  // response.
+  assert.ok(clock(ticket.id).stopped_at);
+  assert.equal(ticketRow(ticket.id).status, 'open');
+});
+
+test('a kind the vocabulary does not have is refused', async () => {
+  const { staff, raise, messages } = await start();
+  const ticket = await raise();
+
+  const res = await staff(`/api/v1/tickets/${ticket.id}/replies`, {
+    method: 'POST',
+    body: { body: 'Anything.', kind: 'secret' },
+  });
+
+  // Refused rather than quietly treated as public: a caller who sent a kind
+  // meant something by it, and storing the opposite of what they meant is
+  // worse than telling them.
+  assert.equal(res.status, 422);
+  assert.deepEqual((await res.json()).fields, ['kind']);
+  assert.equal(messages(ticket.id).length, 0);
+});
