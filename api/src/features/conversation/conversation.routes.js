@@ -7,18 +7,18 @@ import { readPagination } from '../../platform/http/pagination.js';
 export function conversationRouter({ conversation }) {
   const router = express.Router();
 
-  // requireSubject, not requireStaff, and the refusal is the service's.
+  // requireSubject, and the ownership refusal is the service's: every route
+  // under /tickets/:id answers a customer the same 404 a missing ticket gets,
+  // and a 403 at the door would be a second, different answer to "is this
+  // ticket mine".
   //
-  // Every route under /tickets/:id answers a customer the same 404 a missing
-  // ticket gets — that is the ownership rule, and a 403 at the door would be a
-  // second, different answer to "is this ticket mine". The census that reads
-  // these routes off the router is what holds it.
-  //
-  // A customer replying on their own ticket is CONVERSATION-3-API: a different
-  // rule with a different effect, since their reply reopens a resolved ticket
-  // and stops no clock. Until then this refuses them, the way assign and
-  // status do, and that story turns the refusal into a comparison the way
-  // CUSTOMERS-6-API did for the history.
+  // ONE route for a public reply, whoever writes it. This refused customers
+  // while CONVERSATION-3-API was unwritten, and its comment said that story
+  // would turn the refusal into a comparison. It did — in the service, where
+  // what a reply DOES depends on who wrote it: the desk's answer stops the
+  // clock and opens the ticket, and the customer's reopens a resolved one.
+  // Posting a public message is one act, and two routes would be two write
+  // paths for it.
   //
   // 201 with the message it made, the way every other create here answers: the
   // screen appends it rather than re-reading the thread.

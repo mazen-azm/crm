@@ -51,8 +51,12 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
       };
     },
 
-    // An agent replies, in public. T-2: the first public reply opens a `new`
-    // ticket and stops the response clock — once.
+    // A public reply, from whoever may write one on this ticket.
+    //
+    // An agent's is the desk answering: T-2's first public reply opens a `new`
+    // ticket and stops the response clock — once. A customer's is the customer
+    // answering, which reopens a resolved ticket inside the window (T-5) and
+    // stops nothing.
     //
     // "Once" is a property of the clock and of the status, not of a count.
     // The clock's stop matches `stopped_at IS NULL` and the status move
@@ -69,12 +73,6 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
         // It throws the ownership 404 for a customer reaching somebody else's.
         const ticket = tickets.readForActor(actor, { id: ticketId });
 
-        // And this story refuses a customer their OWN ticket too. Replying is
-        // theirs to do — CONVERSATION-3-API — and it is a different rule: a
-        // customer's reply reopens a resolved ticket and stops no clock. The
-        // refusal wears the same 404 as everything else under a ticket, so
-        // nothing about the answer says which of the two rules stopped it.
-        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
         const at = stamp();
         const id = randomUUID();
 
@@ -102,15 +100,34 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
           at,
         });
 
-        // The clock stops at the REPLY's timestamp, not at whenever this line
-        // runs. S-1 measures the promise from the ticket's creation to the
-        // answer, and "the answer" is the message above.
-        serviceLevels.stopClock({ ticketId, kind: 'first_response', at });
+        // What a reply DOES depends on who wrote it, and this is the whole
+        // difference between the two stories that share this route.
+        //
+        // An agent answering is the desk's first response: it stops the clock
+        // (S-1) and opens a `new` ticket (T-2). A customer answering is not
+        // that — they are answering themselves, and the promise the clock
+        // measures is about the desk. What their reply does instead is reopen
+        // a resolved ticket, inside the window (T-5).
+        //
+        // One route and one message table, because posting a public message on
+        // a ticket is one act. Two routes would be two write paths for it, and
+        // the difference between them is not the writing.
+        if (actor?.role === 'customer') {
+          // Throws when the window has passed, which is a refusal the caller
+          // must not read as a quiet no-op — and nothing is written, because
+          // the whole method is one transaction.
+          tickets.reopenOnReply(actor, { id: ticketId, at });
+        } else {
+          // The clock stops at the REPLY's timestamp, not at whenever this
+          // line runs. S-1 measures the promise from the ticket's creation to
+          // the answer, and "the answer" is the message above.
+          serviceLevels.stopClock({ ticketId, kind: 'first_response', at });
 
-        // T-2's transition, owned by the tickets feature and run inside this
-        // transaction. It answers false when the ticket was not `new`, which
-        // is most replies.
-        tickets.openOnFirstReply(actor, { id: ticketId, at });
+          // T-2's transition, owned by the tickets feature and run inside this
+          // transaction. It answers false when the ticket was not `new`, which
+          // is most replies.
+          tickets.openOnFirstReply(actor, { id: ticketId, at });
+        }
 
         return message;
       });

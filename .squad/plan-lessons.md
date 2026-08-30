@@ -1138,3 +1138,33 @@ visible and then pointed at the wrong cause, and a plausible cause with a
 measurement next to it is exactly the kind of wrong that gets written down and
 believed. The cap stays because it is cheap and it helps; the sentence
 explaining it now says what it is really doing.
+
+## L-58 — A hint is advice; make the correction instead
+
+**Rule:** when a mistake is deterministic to detect AND deterministic to
+correct, correct it in the pipeline rather than adding a line to a document
+asking somebody not to make it. A standing hint reduces a mistake; it does not
+remove it, because a hint is read by whoever chooses to read it. Reserve the
+prose for judgements — the things that cannot be corrected mechanically because
+they need an argument.
+
+**Where it came from:** two mechanical mistakes recurred across plans. The
+heading number (a plan titles itself by its position within its feature, the
+filename by its position in the project) and the tracker key (`backlog.txt` has
+ids and no keys, so a plan citing `X-1-API (CRM-nn)` was counting).
+
+Both were caught by `verify-plan`, repeatedly — five plans for the heading, and
+three for the key. `story-keys.txt` was added so the planner had somewhere to
+read a key instead of counting, and every intake's standing hints were updated
+to point at it. A plan generated after both still cited the wrong story.
+
+So `plan-next.sh` now writes the heading number itself, and runs
+`scripts/fix-plan-keys.mjs` to rewrite the keys from `story-keys.txt`. Both run
+at the moment the file is renamed, when the right answer is already in hand.
+`verify-plan` still checks the result against Jira, so a correction cannot
+introduce a wrong answer of its own — which is the condition that makes this
+safe rather than merely convenient.
+
+The companion to L-54: a guess a check corrects is still a guess, and the
+second half of removing the guess is not always giving the writer a better
+source. Sometimes it is not asking them.

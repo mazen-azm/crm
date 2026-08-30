@@ -13,7 +13,7 @@ import {
   validateAssignment,
   validateCategoryQuery,
   validateRaisedTicket,
-  REOPEN_WINDOW_DAYS,
+  withinReopenWindow,
   normaliseCategoryName,
   validateCategoryName,
   validateCategoryChange,
@@ -553,6 +553,60 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       return ticket;
     },
 
+    // The reopen a REPLY causes (T-5), from inside the caller's transaction.
+    //
+    // It opens none of its own, like openOnFirstReply beside it, because the
+    // message and the status move commit together — a reply that reopened a
+    // ticket and then failed to say so would be worse than either alone.
+    //
+    // It shares the window rule rather than repeating it: `withinReopenWindow`
+    // is the one place that decides when a resolution becomes final, and
+    // changeStatus asks it the same question.
+    //
+    // Answers whether it reopened anything. `false` for a ticket that was not
+    // resolved, which is most replies; the window's refusal throws, because
+    // that is a request the caller must not treat as a quiet no-op.
+    reopenOnReply(actor, { id, at }) {
+      const before = findTicketById(db, { id });
+      if (!before) throw new HttpError(404, 'NOT_FOUND');
+
+      // Closed is terminal, and a reply is not a way round that. It is refused
+      // rather than accepted-and-ignored: a customer replying to a closed
+      // ticket means to reopen it, and storing the message while the reopen
+      // cannot happen would leave them believing they had been heard.
+      //
+      // The same answer the state machine gives, from the same table — T-7's
+      // shape, and `allowed` is empty because from closed nothing is legal.
+      // TICKETS-4-API made that argument and this does not reopen it.
+      if (before.status === 'closed') throw new ConflictError('ILLEGAL_TRANSITION', allowedFrom('closed'));
+
+      // Any other status that is not `resolved` — the reply is just a reply.
+      if (before.status !== 'resolved') return false;
+
+      if (!withinReopenWindow({ resolvedAt: before.resolved_at, nowSeconds: now() })) {
+        throw new ConflictError('REOPEN_WINDOW_CLOSED');
+      }
+
+      const { changes } = updateTicketStatus(db, {
+        id,
+        status: 'reopened',
+        revision: before.revision,
+        at,
+        resolutionNote: null,
+      });
+      if (changes === 0) throw new Error('the ticket moved under a transaction that held it');
+
+      audit.record(actor, {
+        entity: 'ticket',
+        entityId: id,
+        verb: 'ticket.status',
+        before: { status: 'resolved' },
+        after: { status: 'reopened' },
+        at,
+      });
+      return true;
+    },
+
     // T-2's transition, and only that one: a `new` ticket becomes `open` when
     // the desk first answers it.
     //
@@ -647,12 +701,12 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         // anything, and a window any activity resets is not a window. A NULL
         // resolved_at fails the check, which is the safe direction — a ticket
         // whose resolution moment is unknown is not reopenable.
-        if (status === 'reopened' && before.status === 'resolved') {
-          const resolvedAtMs = Date.parse(before.resolved_at ?? '');
-          const openFor = REOPEN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-          if (!(now() * 1000 - resolvedAtMs <= openFor)) {
-            throw new ConflictError('REOPEN_WINDOW_CLOSED');
-          }
+        if (
+          status === 'reopened'
+          && before.status === 'resolved'
+          && !withinReopenWindow({ resolvedAt: before.resolved_at, nowSeconds: now() })
+        ) {
+          throw new ConflictError('REOPEN_WINDOW_CLOSED');
         }
 
         // Both refusals below carry the legal moves from where the ticket

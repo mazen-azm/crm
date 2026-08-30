@@ -9,6 +9,7 @@ Entry point for the **conversation** feature. Stories execute in order by their 
 | _add rows as stories are planned_ |
 | 64 | `64-story-crm-99.md` | CONVERSATION-1-API agent — I reply; the first public reply opens the ticket and stops the clock, once | CRM-99 | — |
 | 69 | `69-story-crm-102.md` | CONVERSATION-2-API agent — my internal note never reaches a customer, in any response | CRM-102 | — |
+| 70 | `70-story-crm-104.md` | CONVERSATION-3-API customer — I reply on my own ticket; replying to a resolved one reopens it | CRM-104 | — |
 
 ## Dependency notes
 
