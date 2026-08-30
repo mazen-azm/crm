@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import {
@@ -7,14 +8,19 @@ import {
   ErrorState,
   Heading,
   Isolated,
+  Field,
   Skeleton,
   Stack,
   Text,
+  TextArea,
 } from '../../shared/ui';
 import { useTranslation } from '../../shared/i18n';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { priorityLabel, statusLabel } from '../tickets/ticket-labels';
+import { useAssignees } from '../tickets/useAssignees';
 import { useCustomer } from './useCustomer';
+import { isBlank, useWriteNote } from './useWriteNote';
+import type { Note } from './useCustomer';
 
 // The separator is punctuation, not words, so it does not belong in the
 // resource files — but it does not belong typed between tags either, where
@@ -26,6 +32,32 @@ export function CustomerScreenPage() {
   const { formatDate } = useFormatters();
   const { id = '' } = useParams();
   const { status, error, screen, reload } = useCustomer(id);
+  const note = useWriteNote(id);
+  // The notes route returns an author id and no name, the way the queue
+  // returned an assignee id. The screen that needs the name is the screen with
+  // the list, so it resolves it rather than the API growing a join.
+  const staff = useAssignees();
+
+  const [draft, setDraft] = useState('');
+  const [missing, setMissing] = useState(false);
+  // Notes added since the screen loaded. The POST answers with the note it
+  // made, so it is appended to what is already in hand — reloading everything
+  // to see one new line is the thing the criterion forbids.
+  const [added, setAdded] = useState<Note[]>([]);
+  useEffect(() => setAdded([]), [screen]);
+
+  const submit = async () => {
+    if (isBlank(draft)) {
+      setMissing(true);
+      return;
+    }
+    setMissing(false);
+    const written = await note.write(draft).catch(() => null);
+    if (written) {
+      setAdded((current) => [...current, written]);
+      setDraft('');
+    }
+  };
 
   if (status === 'loading' || status === 'idle') {
     return <Skeleton lines={6} height="64px" label={t.states.loading} />;
@@ -43,6 +75,7 @@ export function CustomerScreenPage() {
   }
 
   const { customer, tickets, notes } = screen;
+  const allNotes = [...notes.items, ...added];
 
   return (
     <Stack gap={4}>
@@ -98,15 +131,56 @@ export function CustomerScreenPage() {
       )}
 
       <Heading level={2}>{t.customerScreen.notes}</Heading>
-      {notes.items.length === 0 ? (
+
+      <Stack gap={2}>
+        <Field
+          id="note"
+          label={t.customerScreen.noteLabel}
+          error={missing ? t.customerScreen.noteRequired : undefined}
+        >
+          {({ id: fieldId, describedBy, invalid }) => (
+            <TextArea
+              id={fieldId}
+              aria-describedby={describedBy}
+              aria-invalid={invalid}
+              placeholder={t.customerScreen.notePlaceholder}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+            />
+          )}
+        </Field>
+        <Button disabled={note.status === 'loading'} onClick={() => void submit()}>
+          {note.status === 'loading' ? t.customerScreen.noteSubmitting : t.customerScreen.noteSubmit}
+        </Button>
+        {note.status === 'error' && note.error ? (
+          <ErrorState
+            title={t.customerScreen.noteFailed}
+            body={t.errors[note.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+          />
+        ) : null}
+      </Stack>
+
+      {allNotes.length === 0 ? (
         <Text variant="muted">{t.customerScreen.noNotes}</Text>
       ) : (
         <Stack gap={3}>
-          {notes.items.map((note) => (
-            <Card key={note.id}>
+          {allNotes.map((entry) => (
+            <Card key={entry.id}>
               <Stack gap={1}>
-                <Text>{note.body}</Text>
-                <Text variant="muted">{formatDate(note.createdAt)}</Text>
+                <Text>{entry.body}</Text>
+                {/* Who and when. A note nobody can attribute is a note nobody
+                    trusts (BR-2), and the time is in the reader's locale
+                    rather than the stored UTC (BR-3). */}
+                <Text variant="muted">
+                  {[
+                    formatDate(entry.createdAt),
+                    `${t.customerScreen.noteBy} ${
+                      entry.authorId === null
+                        ? t.customerScreen.noteBySystem
+                        : (staff.nameFor(entry.authorId) ?? entry.authorId)
+                    }`,
+                  ].join(SEPARATOR)}
+                </Text>
               </Stack>
             </Card>
           ))}
