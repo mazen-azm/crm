@@ -252,18 +252,59 @@ Add tests to **`api/src/features/identity/accounts.test.js`** following the styl
 
 ## Done Criteria
 
-- [ ] `POST /api/v1/accounts/:id/set-password` exists, is `adminOnly`, and updates `users.password_hash` via `hashPassword` on the incoming plaintext.
-- [ ] Response body contains no `password` and no `passwordHash` field.
-- [ ] Non-admin caller receives `403 FORBIDDEN` and the service is never entered.
-- [ ] Admin cannot set their own password (returns `409 CONFLICT`).
-- [ ] Soft-deleted / disabled target returns `409 CONFLICT`; hash unchanged.
-- [ ] Unknown id returns `404 NOT_FOUND`.
-- [ ] Missing / too-short password returns `422 UNPROCESSABLE`.
-- [ ] After a successful set, target signs in with the new password and not the old one.
-- [ ] Exactly one audit row is written per successful set, with `verb='user.password.set'`, correct `actor` and `entity_id`, and `before`/`after` containing no secret material (BR-2).
-- [ ] `api/src/features/audit/audit.guarantee.test.js` still passes.
-- [ ] `api/openapi.json` documents the new route with the right request/response shapes and admin security.
-- [ ] `cd api && npm test` is green.
-- [ ] `git grep -iE 'copilot|chatgpt|claude|AI[- ]generated'` returns nothing new in the diff.
+- [x] `POST /api/v1/accounts/:id/set-password` exists, is `adminOnly`, and updates `users.password_hash` via `hashPassword` on the incoming plaintext.
+- [x] Response body contains no `password` and no `passwordHash` field.
+- [x] Non-admin caller receives `403 FORBIDDEN` and the service is never entered.
+- [x] Admin cannot set their own password (returns `409 CONFLICT`).
+- [x] Soft-deleted / disabled target returns `409 CONFLICT`; hash unchanged.
+- [x] Unknown id returns `404 NOT_FOUND`.
+- [x] Missing / too-short password returns `422 UNPROCESSABLE`.
+- [x] After a successful set, target signs in with the new password and not the old one.
+- [x] Exactly one audit row is written per successful set, with `verb='user.password.set'`, correct `actor` and `entity_id`, and `before`/`after` containing no secret material (BR-2).
+- [x] `api/src/features/audit/audit.guarantee.test.js` still passes.
+- [x] `api/openapi.json` documents the new route with the right request/response shapes and admin security.
+- [x] `cd api && npm test` is green.
+- [x] `git grep -iE 'copilot|chatgpt|claude|AI[- ]generated'` returns nothing new in the diff.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+
+
+---
+
+## Review note
+
+Two of this plan's defects were caught by `verify-plan` before anybody read it:
+a Jira key off by one, twice (IDENTITY-8-API is CRM-53; CRM-52 is
+IDENTITY-7-WEB, a different story in the same sprint), and persistence planned
+without naming the engine (L-5). Both were fixed in a separate commit before
+the work started, which is the check doing exactly what it is for.
+
+Three more, found here:
+
+1. **`validateCredentials` does not return `[{ field, code }]`.** Every
+   validator in this API returns an array of field names — `['email']` — and
+   `unprocessable` consumes that. The plan described a shape nothing uses.
+
+2. **There is no length floor to "reuse".** The plan said to reuse the one
+   `validateCredentials` already enforces; it checks `password.length === 0`
+   and nothing more. So the floor is new, and it is twelve, with the argument
+   beside it: a composition rule that demands a symbol produces the same
+   password with a symbol on the end.
+
+   It applies where a password is **chosen** and not where one is presented.
+   `signIn` still accepts any non-empty password, because a floor there would
+   refuse an account whose password predates the rule — and would tell whoever
+   typed it something about the stored value.
+
+3. **Refusing an admin their own account is 403, not 409.** The plan used 409
+   for both "the account is disabled" and "that is you". The first is a state
+   conflict and is right. The second is not: they are allowed on this route and
+   not allowed on this target, which is what 403 says.
+
+And one defect in the test rather than the plan, worth recording because it
+survived a first mutation pass. The test asserted the audit diff did not
+contain the stored hash — by value. Adding a fresh hash to the diff passes
+that: hashing the same password twice gives two different strings, so the
+value never matches and the check goes green with the secret in the trail. It
+asserts the diff's KEYS now. The mutation that exposed it was one of four, and
+it is the only one that did not fail the first time.

@@ -55,6 +55,22 @@ export function verifyToken(raw, secret, { now = () => Math.floor(Date.now() / 1
 
 // A credential the API can act on has a shape before it has a truth. The
 // field names are all a refusal may carry — a value could be the password.
+// The one rule about what a password may be. Length, and nothing else: a
+// composition rule that demands a symbol produces the same password with a
+// symbol on the end, and twelve characters is worth more than four classes of
+// character in eight.
+//
+// It applies where a password is CHOSEN, not where one is presented. signIn
+// checks only that a password is non-empty, and must keep doing so: a floor
+// there would refuse an account whose password predates the floor, and would
+// tell whoever typed it something about the stored value.
+export const MIN_PASSWORD_LENGTH = 12;
+
+export function validateNewPassword({ password }) {
+  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) return ['password'];
+  return [];
+}
+
 export function validateCredentials({ email, password }) {
   const missing = [];
   if (typeof email !== 'string' || !email.includes('@') || email.length > 254) missing.push('email');

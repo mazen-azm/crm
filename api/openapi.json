@@ -189,6 +189,34 @@
         }
       }
     },
+    "/api/v1/accounts/{id}/set-password": {
+      "post": {
+        "summary": "An admin sets another user's password, so somebody locked out gets back in. There is no reset by email in this product — the brief puts it under \"Specified only\" — which is why a person who forgets theirs needs a colleague rather than a link. The body is { password }; twelve characters is the floor and there are no composition rules, because a rule demanding a symbol produces the same password with a symbol on the end. Nothing comes back but the id and the time: the admin typed it, so there is nothing to read. Tokens issued before this stay valid until they expire — ending them is IDENTITY-8-API, and that is a stated gap rather than an oversight.",
+        "responses": {
+          "200": {
+            "description": "{ id, updatedAt }. No password and no hash, here or in the audit row."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Not an admin — or an admin naming themselves. Setting somebody else's password is for a person who is locked out; changing your own is IDENTITY-7-API and asks for the current one, and an admin who could skip that check on themselves would turn a stolen session into a permanent one."
+          },
+          "404": {
+            "description": "No user with that id."
+          },
+          "409": {
+            "description": "The account is disabled. Bringing somebody back is re-enable, with its own route and its own audit row; setting a password through this door would leave the account's state saying one thing and its access saying another."
+          },
+          "422": {
+            "description": "The password is missing or shorter than the floor; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
     "/api/v1/assignees": {
       "get": {
         "summary": "The live staff a ticket can be assigned to. Any signed-in staff member may read it — an agent who cannot see the list cannot hand a ticket over.",

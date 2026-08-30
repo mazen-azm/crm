@@ -79,6 +79,16 @@ export function disableUser(db, { id, at }) {
     .run(at, at, id).changes;
 }
 
+// The `deleted_at IS NULL` is defence in depth: the service refuses a disabled
+// account before it gets here, and a row-level guard means a disable landing
+// between the two cannot leave a disabled account with a fresh password. The
+// caller reads `changes` for the same reason every other writer here does.
+export function updateUserPassword(db, { id, passwordHash, at }) {
+  return db
+    .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(passwordHash, at, id).changes;
+}
+
 export function reEnableUser(db, { id, at }) {
   return db
     .prepare('UPDATE users SET deleted_at = NULL, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL')
