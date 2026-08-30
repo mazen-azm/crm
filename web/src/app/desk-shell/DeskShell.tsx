@@ -57,6 +57,13 @@ export function DeskShell({ children }: { children: ReactNode }) {
         <Link to="/tickets/new" className="desk-shell__nav-item">
           {t.shell.navRaiseTicket}
         </Link>
+        {/* Your own account, and the last item because it is about you rather
+            than about the work. Without a way in, the screen exists and
+            nothing reaches it — the defect the customer screen and the add
+            form each had to fix. */}
+        <Link to="/account/password" className="desk-shell__nav-item">
+          {t.shell.navPassword}
+        </Link>
       </nav>
 
       <main className="desk-shell__main">{children}</main>

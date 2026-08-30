@@ -7,6 +7,7 @@ import { HomePage } from '../pages/home/HomePage';
 import { CustomersPage } from '../pages/customers/CustomersPage';
 import { CustomerScreenPage } from '../pages/customers/CustomerScreenPage';
 import { AddCustomerPage } from '../pages/customers/AddCustomerPage';
+import { ChangeOwnPasswordPage } from '../pages/account/ChangeOwnPasswordPage';
 import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 
@@ -81,6 +82,20 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <RaiseTicketPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Your own account, whoever you are. Not staff-only and not
+          admin-only: the API's route for this takes any signed-in subject,
+          because an admin changing their own password makes the same call an
+          agent or a customer does. */}
+      <Route
+        path="/account/password"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <ChangeOwnPasswordPage />
             </DeskShell>
           </RequireAuth>
         }
