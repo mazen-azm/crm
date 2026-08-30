@@ -89,6 +89,10 @@ export function CustomersPage() {
         <Button type="submit" disabled={busy}>
           {busy ? t.customers.searching : t.customers.search}
         </Button>
+        {/* Beside the search, not only under an empty result: an agent taking
+            a call from somebody they already know is not on file should not
+            have to search for nothing first to be offered the form. */}
+        <Link to="/customers/new">{t.customers.addLink}</Link>
       </Stack>
 
       {/* One of four, off useRequest's status. A success with nothing in it is
@@ -113,18 +117,22 @@ export function CustomersPage() {
           title={t.customers.emptyTitle}
           body={t.customers.emptyBody}
           action={
-            // Clearing the search is the next action there is. Creating a
-            // customer is a different story and does not exist yet, so
-            // offering it would be a button that goes nowhere.
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setTerm('');
-                void search('').catch(() => {});
-              }}
-            >
-              {t.customers.emptyAction}
-            </Button>
+            // Two, because a search that matched nothing has two honest
+            // endings: the name was mistyped, or the caller is not on file.
+            // Adding one used to be a button that went nowhere and was left
+            // out for that reason; the screen it needs now exists.
+            <Stack direction="row" gap={2} align="start">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setTerm('');
+                  void search('').catch(() => {});
+                }}
+              >
+                {t.customers.emptyAction}
+              </Button>
+              <Link to="/customers/new">{t.customers.addLink}</Link>
+            </Stack>
           }
         />
       ) : null}

@@ -6,6 +6,7 @@ import { SignInPage } from '../pages/sign-in/SignInPage';
 import { HomePage } from '../pages/home/HomePage';
 import { CustomersPage } from '../pages/customers/CustomersPage';
 import { CustomerScreenPage } from '../pages/customers/CustomerScreenPage';
+import { AddCustomerPage } from '../pages/customers/AddCustomerPage';
 import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 
@@ -36,6 +37,20 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <CustomersPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Before /customers/:id, though the router does not need it to be:
+          react-router ranks a literal segment above a dynamic one whatever the
+          order. Written first because a reader ranks them by order, and a test
+          pins the behaviour rather than the position. */}
+      <Route
+        path="/customers/new"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <AddCustomerPage />
             </DeskShell>
           </RequireAuth>
         }

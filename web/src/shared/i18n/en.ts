@@ -85,6 +85,27 @@ export const en = {
     noPhone: 'No phone number',
     previous: 'Previous',
     next: 'Next',
+    // The add form. It lives in this namespace rather than one of its own
+    // because it is the same subject, and because the two "none" sentences
+    // above are the ones its success card needs — a second pair saying the
+    // same thing would drift the first time one of them is reworded.
+    addTitle: 'Add a customer',
+    addSubtitle: 'For somebody on the phone who is not on file yet.',
+    addLink: 'Add a customer',
+    name: 'Name',
+    email: 'Email address',
+    phone: 'Phone number',
+    // Optional in the label, because the API asks for a name and nothing more.
+    // A field that is optional and does not say so gets filled with something
+    // invented to fill it.
+    emailOptional: 'Email address (optional)',
+    phoneOptional: 'Phone number (optional)',
+    add: 'Add the customer',
+    adding: 'Adding…',
+    addAnother: 'Add another',
+    createdTitle: 'Customer added',
+    createdId: 'Customer id',
+    createdAt: 'Added',
   },
   raiseTicket: {
     title: 'Raise a ticket',

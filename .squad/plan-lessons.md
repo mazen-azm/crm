@@ -883,3 +883,32 @@ The same shape has appeared twice more in this repository, both times caught:
 `verify-plan.mjs` reporting nothing because its recogniser could not match
 (L-42), and a guard walking one root of three and passing (L-45). A tool that
 looks at less than you think does not say so.
+
+## L-49 — A column is not a field; check the writer and the projection, not the schema
+
+**Rule:** before a plan gives a form an input, prove the API stores and returns
+that value — read the INSERT and the SELECT projection, not the `CREATE TABLE`.
+A column the migration declares and the repository never writes is not part of
+the contract, and a plan that reads only the schema will invent a field for it.
+The same applies in the other direction: a response field a plan asserts must
+be found in the shape function, not assumed from the table.
+
+**Where it came from:** the plan for CUSTOMERS-4-WEB gave the add-customer form
+four inputs — name, email, phone and **address** — and listed `address` in the
+success view and in a Done Criteria box. `customers` does have an `address`
+column (`0001__customers.sql:6`). Nothing writes it: `insertCustomer` names six
+columns and not that one, `PROJECTION` does not select it, `validateCustomer`
+and `normaliseCustomer` do not know it, and the repository carries a comment
+saying exactly why — "No address either: nothing asks for it and PROJECTION
+does not return it, so a value written here would be invisible to every
+reader."
+
+Built as planned, the form would have posted a property the API discards and
+rendered `undefined` beside a label, with every test green: the API answers
+201, the value simply is not in the reply. Nothing in the suite compares the
+form's fields to the API's. The screen shipped with three.
+
+The plan also invented `createdEmailNone`, a resource key for "no email
+address", where `t.customers.noEmail` had said that since CUSTOMERS-1-WEB. Two
+strings for one sentence drift the first time one is reworded — the same defect
+as the duplicated status maps CRM-58 pulled into a shared module.
