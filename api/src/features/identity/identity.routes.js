@@ -57,5 +57,12 @@ export function identityRouter({ service }) {
     res.json(service.reEnableAccount(req.subject, { id: req.params.id }));
   });
 
+  // An admin sets somebody else's password. Not their own: that is a different
+  // route with a different question, and this one never asks for a current
+  // password because the person it is for cannot supply one.
+  router.post('/accounts/:id/set-password', adminOnly, (req, res) => {
+    res.json(service.setPassword(req.subject, { id: req.params.id, password: req.body?.password }));
+  });
+
   return router;
 }

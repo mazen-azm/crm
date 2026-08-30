@@ -14,6 +14,7 @@ import {
   insertUser,
   listLiveUsers,
   reEnableUser,
+  updateUserPassword,
   updateUserRole,
 } from './identity.repository.js';
 import {
@@ -22,6 +23,7 @@ import {
   normaliseEmail,
   signToken,
   validateCredentials,
+  validateNewPassword,
   validateNewAccount,
   validateRoleChange,
 } from './identity.rules.js';
@@ -263,6 +265,63 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       }
 
       return { user: publicShape({ ...before, deleted_at: at, updated_at: at }) };
+    },
+
+    // An admin sets somebody else's password, so a locked-out person gets back
+    // in. There is no reset-by-email in this product — the brief puts it under
+    // "Specified only" — which is why a person who forgets theirs needs a
+    // colleague rather than a link.
+    setPassword(actor, { id, password }) {
+      const wrong = validateNewPassword({ password });
+      if (wrong.length > 0) throw unprocessable(wrong);
+
+      const target = findAnyUserById(db, id);
+      if (!target) throw new HttpError(404, 'NOT_FOUND');
+
+      // A disabled account is refused. Bringing somebody back is re-enable,
+      // with its own route and its own audit row; setting a password through
+      // this door would leave the account's state saying one thing and its
+      // access saying another.
+      if (target.deleted_at != null) throw new HttpError(409, 'CONFLICT');
+
+      // Not on yourself, and this is the decision most likely to be missed.
+      // Setting somebody else's is for a person who is locked out; changing
+      // your own is IDENTITY-7-API and asks for the current one. An admin who
+      // can skip that check on themselves turns a stolen session into a
+      // permanent one — the thief never has to know a password.
+      //
+      // 403 rather than 409: they are allowed on this route and not allowed on
+      // this target, which is what 403 says. Nothing about the state conflicts.
+      if (actor?.id === id) throw new HttpError(403, 'FORBIDDEN');
+
+      const at = stamp();
+      db.exec('BEGIN');
+      try {
+        updateUserPassword(db, { id, passwordHash: hashPassword(password), at });
+        record(actor, {
+          entity: 'user', entityId: id, verb: 'user.set-password', at,
+          // Neither the password nor its hash, on either side — the audit
+          // guarantee test asserts that of every diff this API writes. What
+          // the trail needs is that it happened, when, and who did it, and the
+          // row carries all three without the secret.
+          //
+          // before is null rather than { passwordSet: true }: a diff whose two
+          // halves are identical reads as a change that changed nothing.
+          before: null, after: { passwordSetAt: at },
+        });
+        db.exec('COMMIT');
+      } catch (failure) {
+        db.exec('ROLLBACK');
+        throw failure;
+      }
+
+      // No password comes back. The admin typed it; there is nothing to read.
+      //
+      // Tokens issued before this stay valid until they expire. Ending them is
+      // IDENTITY-8-API, and this is a stated gap rather than an oversight: a
+      // password set for somebody locked out does not, today, sign out whoever
+      // may be holding their old session.
+      return { id, updatedAt: at };
     },
 
     reEnableAccount(actor, { id }) {

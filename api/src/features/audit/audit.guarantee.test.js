@@ -66,6 +66,7 @@ const EXERCISED = new Set([
   'PATCH /api/v1/accounts/:id/role',
   'POST /api/v1/accounts/:id/disable',
   'POST /api/v1/accounts/:id/re-enable',
+  'POST /api/v1/accounts/:id/set-password',
   'POST /api/v1/customers',
   'POST /api/v1/customers/:id/notes',
   'POST /api/v1/customers/:id/sign-in',
@@ -196,6 +197,12 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/accounts/${created.id}/disable`, { method: 'POST' })],
     ['POST /api/v1/accounts/:id/re-enable', () =>
       call(`/api/v1/accounts/${created.id}/re-enable`, { method: 'POST' })],
+    // Somebody else's account: an admin may not set their own password here.
+    ['POST /api/v1/accounts/:id/set-password', () =>
+      call(`/api/v1/accounts/${created.id}/set-password`, {
+        method: 'POST',
+        body: { password: 'a-long-enough-password' },
+      })],
   ];
 
   // Most routes write one row. Granting a customer a sign-in writes two — the
