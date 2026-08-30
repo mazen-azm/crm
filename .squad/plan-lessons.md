@@ -1073,3 +1073,30 @@ Sign-in has the same `type="email"` on its address field. It is not wrong there
 in the same way — an unparseable address cannot be a real account either — but
 it means that screen's refusal comes from two places, and only one of them is
 translated. Named here rather than changed, because it is not this story's.
+
+## L-56 — A capability split across layers needs a story in each of them
+
+**Rule:** when a capability is decomposed into layer stories, check that every
+question the top layer asks has a layer below it that answers. A WEB story
+whose API half was never written is not a small gap to absorb into its diff —
+it is a missing unit, and absorbing it silently makes the backlog's own count
+wrong for everybody who reads it afterwards.
+
+**Where it came from:** `PORTAL-2-WEB (CRM-122)` — "I sign in and see my
+tickets and nothing else" — is declared `WEB:5:5` and needs `CUS-6-API` and
+`TCK-8-API`. Neither answers "what are my tickets". `GET /tickets` is the
+desk's queue and refuses a customer, which this story's own criteria say it
+should. Nothing in the 138 units gives a customer a list of their own tickets.
+
+The story's intake had the right instruction — "if the API refuses something it
+should not, that is a finding to raise, not a change to make here" — and the
+finding was not a refusal to argue with. It was an absence.
+
+`GET /me/tickets` was written with the story, because the story cannot exist
+without it, and the fact is recorded in the route's comment, the plan, the
+commit and here. What is NOT done is editing `backlog.txt` to add the unit:
+that changes the counts, the points and the tracker, and it is the sort of
+change somebody should make deliberately rather than find in a diff.
+
+The signal to look for, next time: a WEB story whose `needs` are all API
+stories that answer some OTHER question.

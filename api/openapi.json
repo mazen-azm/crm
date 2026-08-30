@@ -85,6 +85,28 @@
         }
       }
     },
+    "/api/v1/me/tickets": {
+      "get": {
+        "summary": "A customer's own tickets. Deliberately not GET /tickets with a different answer for a different caller: the queue belongs to the desk (SC-1) and refuses a customer, and a route whose meaning depended on who asked would make \"what does GET /tickets return\" a question with two answers. The customer is taken from the subject and never from a parameter. Paginated, filterable and ordered by exactly the code the desk's queue uses.",
+        "responses": {
+          "200": {
+            "description": "A page of tickets: { items, total, limit, offset }, the same envelope every list here answers with."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Staff asking. They have the queue; answering this for them would be a second way to ask one question, with a subject that has no customer behind it."
+          },
+          "422": {
+            "description": "A filter or a page window the rules refuse; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
     "/api/v1/accounts": {
       "post": {
         "summary": "Create a staff account. Answers with the account and, once, the password it was given.",

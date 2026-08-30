@@ -22,6 +22,7 @@ export const ar = defineLocale({
     navRaiseTicket: 'فتح تذكرة',
     navPassword: 'كلمة مرورك',
     navSetPassword: 'ضبط كلمة مرور',
+    navMyTickets: 'تذاكرك',
     navHome: 'الرئيسية',
     switchToDark: 'الوضع الداكن',
     switchToLight: 'الوضع الفاتح',
@@ -78,6 +79,15 @@ export const ar = defineLocale({
     another: 'أرسِل أخرى',
     failed: 'تعذّر الإرسال',
     tooMany: 'يصلنا عدد كبير من الطلبات من اتصالك الآن. حاول بعد دقيقة.',
+  },
+  myTickets: {
+    title: 'تذاكرك',
+    emptyTitle: 'لا يوجد شيء مفتوح',
+    emptyBody: 'لم تخبرنا بشيء بعد.',
+    raiseOne: 'أخبرنا بشيء',
+    errorTitle: 'تعذّر تحميل تذاكرك',
+    previous: 'السابق',
+    next: 'التالي',
   },
   home: {
     heading: 'مكتب الدعم',

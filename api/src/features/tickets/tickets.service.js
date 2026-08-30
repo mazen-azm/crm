@@ -155,7 +155,10 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
     // not because it filters anything.
     //
     // A read writes no audit row.
-    list(actor, { status, priority, assigneeId, categoryId, sort, limit, offset }) {
+    // `scope` is not part of the request. The router calls this with two
+    // arguments; only `mine` above passes a third, and it takes the customer
+    // id from the subject rather than from anything a caller sent.
+    list(actor, { status, priority, assigneeId, categoryId, sort, limit, offset }, scope = {}) {
       const invalid = validateQueueQuery({ status, priority, assigneeId, categoryId, sort });
       if (invalid.length > 0) throw unprocessable(invalid);
 
@@ -166,6 +169,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       // null is how the repository spells "IS NULL"; the sentinel stops at
       // this boundary and no SQL below knows the word.
       if (assigneeId !== undefined) filters.assigneeId = assigneeId === UNASSIGNED ? null : assigneeId;
+      if (scope.customerId !== undefined) filters.customerId = scope.customerId;
 
       return {
         items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map(publicShape),
@@ -174,6 +178,41 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         limit,
         offset,
       };
+    },
+
+    // A customer's own tickets. Not the queue, and a different route: the
+    // queue belongs to the desk (SC-1, one organisation and one queue) and
+    // refuses a customer, which PORTAL-2-WEB's own criteria assert. One route
+    // whose answer changed depending on who asked would make "what does GET
+    // /tickets return" a question with two answers.
+    //
+    // It reuses list() rather than querying again, so a customer's page is
+    // paginated, ordered and shaped by exactly the code the desk's is. The
+    // customer id comes from the SUBJECT and never from a parameter — a
+    // caller-supplied one would be an invitation to read somebody else's.
+    //
+    // NOTE — this route is not in scripts/backlog.txt. Nothing in the 138
+    // units provides a way for a customer to list their own tickets:
+    // PORTAL-2-WEB is declared WEB-only and needs CUSTOMERS-6-API and
+    // TICKETS-8-API, neither of which answers this question. The story could
+    // not be built without it. Recorded here and in the plan rather than
+    // absorbed quietly, because a backlog that is missing a unit should say so
+    // (L-56).
+    mine(actor, { status, priority, categoryId, sort, limit, offset }) {
+      // Staff have the queue. Answering this for them would be a second way to
+      // ask the same question, with a subject that has no customer behind it.
+      if (actor?.role !== 'customer') throw new HttpError(403, 'FORBIDDEN');
+      // A customer-role subject with no customer linked to it cannot be
+      // created today, and if one existed it owns nothing. The safe answer is
+      // an empty page rather than everybody's tickets — which is what an
+      // undefined filter would have produced.
+      if (!actor.customerId) return { items: [], total: 0, limit, offset };
+
+      return this.list(
+        { ...actor, role: 'agent' },
+        { status, priority, categoryId, sort, limit, offset },
+        { customerId: actor.customerId },
+      );
     },
 
     // One customer's open tickets, for the screen that shows a customer whole.
