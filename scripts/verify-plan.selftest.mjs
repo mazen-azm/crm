@@ -11,40 +11,40 @@
 // reported. The last probe carries no defect and asserts silence — without it
 // a check that flags everything would pass every other probe.
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { mkdirSync, writeFileSync, rmSync, existsSync, readdirSync, statSync, renameSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 // The probe has to look like a plan or the script will not pick it up:
 // planFiles matches /^\d{2,}-story-.+\.md$/, and it refuses two files for one
-// story — so borrowing a FIXED story breaks the moment that story is really
-// planned. It was CRM-32, and the evening CRM-32 got its plan every "must stay
-// silent" probe failed on a duplicate-plan error that had nothing to do with
-// what was being tested.
+// story. Two earlier designs failed on that:
 //
-// So the borrowed story is chosen now, at run time: one that has an intake and
-// criteria and no plan yet. Removed in a finally. While it exists plan-next.sh
-// would consider that story planned and skip it; the lock file makes a
-// concurrent planner unlikely, and that is the trade.
+//   a FIXED story broke the evening that story was really planned, and
+//   an UNPLANNED story broke the evening the last one was planned.
+//
+// The second failure is the instructive one: "there is an unplanned story" is
+// a condition that ends, and a test built on it is a test with an expiry date.
+//
+// So it borrows a story that IS planned and moves its plan aside for the
+// duration, restoring it in a finally. A rename leaves the original bytes
+// untouched, and a hard kill leaves a file with an obvious suffix rather than
+// a lost plan.
 function borrow() {
-  const stories = join(ROOT, '.squad/stories')
-  for (const feature of readdirSync(stories)) {
-    const dir = join(stories, feature)
+  const plans = join(ROOT, '.squad/plans')
+  for (const feature of readdirSync(plans)) {
+    const dir = join(plans, feature)
     if (!statSync(dir).isDirectory()) continue
-    for (const key of readdirSync(dir)) {
-      if (!/^[A-Z]+-\d+$/.test(key)) continue
-      if (!existsSync(join(dir, key, 'intake.md'))) continue
-      const plans = join(ROOT, '.squad/plans', feature)
-      const planned = existsSync(plans)
-        && readdirSync(plans).some((f) => f.toLowerCase().endsWith(`story-${key.toLowerCase()}.md`))
-      if (!planned) return { feature, key }
+    for (const file of readdirSync(dir)) {
+      const m = file.match(/^\d{2,}-story-(.+)\.md$/)
+      if (m) return { feature, key: m[1], real: join(dir, file) }
     }
   }
-  throw new Error('verify-plan.selftest: every story is planned — nothing to borrow')
+  throw new Error('verify-plan.selftest: no plan to borrow — has any story been planned?')
 }
 
-const { feature: FEATURE, key: KEY } = borrow()
+const { feature: FEATURE, key: KEY, real: REAL } = borrow()
+const ASIDE = `${REAL}.selftest-moved`
 const DIR = join(ROOT, '.squad/plans', FEATURE)
 const FILE = `99-story-${KEY}.md`
 const PATH = join(DIR, FILE)
@@ -156,6 +156,7 @@ const run = () => {
 
 let failures = 0
 mkdirSync(DIR, { recursive: true })
+renameSync(REAL, ASIDE)
 try {
   for (const probe of probes) {
     writeFileSync(PATH, clean(probe.body))
@@ -172,6 +173,7 @@ try {
   }
 } finally {
   if (existsSync(PATH)) rmSync(PATH)
+  if (existsSync(ASIDE)) renameSync(ASIDE, REAL)
 }
 
 console.log()

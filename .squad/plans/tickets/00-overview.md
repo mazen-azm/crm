@@ -18,6 +18,8 @@ Entry point for the **tickets** feature. Stories execute in order by their `NN` 
 | 41 | `41-story-crm-77.md` | TICKETS-3-WEB agent — I assign a ticket | CRM-77 | — |
 | 42 | `42-story-crm-81.md` | TICKETS-5-WEB agent — resolving a ticket needs a note | CRM-81 | — |
 | 49 | `49-story-crm-83.md` | TICKETS-7-API agent — I read the whole history in order | CRM-83 | — |
+| 50 | `50-story-crm-84.md` | TICKETS-7-WEB agent — I read the whole history in order | CRM-84 | — |
+| 51 | `51-story-crm-86.md` | TICKETS-8-API system — a customer may act only on their own ticket, on every path | CRM-86 | — |
 
 ## Dependency notes
 
