@@ -9,6 +9,7 @@ import { CustomerScreenPage } from '../pages/customers/CustomerScreenPage';
 import { AddCustomerPage } from '../pages/customers/AddCustomerPage';
 import { ChangeOwnPasswordPage } from '../pages/account/ChangeOwnPasswordPage';
 import { SetUserPasswordPage } from '../pages/accounts/SetUserPasswordPage';
+import { PublicRaiseTicketPage } from '../pages/portal/PublicRaiseTicketPage';
 import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 
@@ -19,6 +20,10 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/sign-in" element={<SignInPage />} />
+      {/* The one screen a stranger sees. Outside RequireAuth and outside
+          DeskShell, for the reason sign-in is: there is no session, and the
+          desk's navigation would offer four screens they cannot open. */}
+      <Route path="/raise" element={<PublicRaiseTicketPage />} />
       <Route
         path="/"
         element={
