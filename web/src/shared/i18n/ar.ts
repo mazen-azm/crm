@@ -106,6 +106,7 @@ export const ar = defineLocale({
     REVISION_MISMATCH: 'غيّرها شخص آخر أثناء عملك. أعد التحميل لتراها ثم حاول من جديد.',
     ILLEGAL_TRANSITION: 'هذه ليست نقلة ممكنة للتذكرة من حالتها الحالية.',
     STATUS_UNCHANGED: 'التذكرة بالفعل في هذه الحالة.',
+    REOPEN_WINDOW_CLOSED: 'حُلّت هذه منذ أكثر من أسبوعين. أرسل لنا طلبًا جديدًا بدلًا من ذلك.',
   },
   customers: {
     title: 'العملاء',

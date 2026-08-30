@@ -1,0 +1,20 @@
+-- When the ticket was resolved, so the reopen window (T-5) can be measured
+-- from it.
+--
+-- updated_at will not do: it moves for anything — an assignment, a category
+-- change, a reply — so a window measured from it is a window any activity
+-- resets, and a window that resets is not a window.
+--
+-- A column rather than a scan of the audit trail. The value is read on every
+-- reopen attempt, and reading it from the trail would make the reopen rule
+-- depend on the shape of an audit row, which is a different feature's
+-- business and free to change.
+--
+-- TEXT, like every other timestamp here: ISO-8601, whole seconds, ending
+-- .000Z because the clock is `new Date(now()*1000)`.
+--
+-- Nullable and NOT back-filled. It is set when a ticket enters `resolved` and
+-- cleared when it leaves, so a ticket that has never been resolved has none —
+-- and a NULL fails the window check, which is the safe direction: a ticket
+-- whose resolution moment is unknown is not reopenable.
+ALTER TABLE tickets ADD COLUMN resolved_at TEXT;

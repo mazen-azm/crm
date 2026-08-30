@@ -135,6 +135,15 @@ export function validateCategoryChange({ categoryId, revision }) {
 // The rest follow from those: pending is a pause in ordinary work, so it is
 // reachable from and returns to open; reopened is a ticket that is being
 // worked again, so it moves onward exactly as open does.
+// T-5's window, in days. Named here beside the transitions table because it is
+// the same kind of fact: a rule about when a move is legal, rather than a
+// number some code picked.
+//
+// T-6 closes a resolved ticket after the same fourteen days, which is why the
+// two are one number and not two — the moment reopening stops being possible
+// is the moment the ticket closes itself.
+export const REOPEN_WINDOW_DAYS = 14;
+
 export const TRANSITIONS = Object.freeze({
   new: Object.freeze(['open', 'pending', 'resolved']),
   open: Object.freeze(['pending', 'resolved']),

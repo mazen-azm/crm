@@ -26,7 +26,12 @@ export type ApiErrorCode =
   // quietly reports somebody else's edit as our server failing.
   | 'REVISION_MISMATCH'
   | 'ILLEGAL_TRANSITION'
-  | 'STATUS_UNCHANGED';
+  | 'STATUS_UNCHANGED'
+  // 409. A resolved ticket is reopenable for fourteen days and this one is
+  // older than that (T-5). Distinct from ILLEGAL_TRANSITION because the move
+  // is legal and the moment is not — a screen that said 'you cannot do that'
+  // would be telling somebody the wrong thing about why.
+  | 'REOPEN_WINDOW_CLOSED';
 
 // The client surfaces the code. It does not translate it into a sentence —
 // that is the translations story's job, and a generic "something went wrong"

@@ -471,10 +471,10 @@
             "description": "No token, or one that does not resolve to a live account."
           },
           "404": {
-            "description": "No such ticket, or one that has been removed."
+            "description": "No such ticket, or one that has been removed. A customer gets this for somebody else's ticket, and for any move on their own except reopening it: resolving, closing and pending are the desk saying something about work it is doing."
           },
           "409": {
-            "description": "One of three, told apart by the code. ILLEGAL_TRANSITION: the move is not in the table, and `allowed` lists the statuses that were legal from where the ticket is — an empty array when the ticket is closed, which is an answer and not a missing field. STATUS_UNCHANGED: the ticket already has that status, and `allowed` is present for the same reason. REVISION_MISMATCH: the move was legal but the revision was stale; `allowed` is absent, because nothing else the caller could have asked for would have worked either. Nothing is written in any of the three."
+            "description": "One of three, told apart by the code. ILLEGAL_TRANSITION: the move is not in the table, and `allowed` lists the statuses that were legal from where the ticket is — an empty array when the ticket is closed, which is an answer and not a missing field. STATUS_UNCHANGED: the ticket already has that status, and `allowed` is present for the same reason. REVISION_MISMATCH: the move was legal but the revision was stale; `allowed` is absent, because nothing else the caller could have asked for would have worked either. Nothing is written in any of the three. REOPEN_WINDOW_CLOSED is the third 409 here: a resolved ticket may be reopened for fourteen days (T-5) and this one is older. The move is legal and the moment is not, which is why it is not ILLEGAL_TRANSITION. The window is measured from when the ticket was resolved, not from when it was last touched, and it applies to whoever is asking — T-6 closes a resolved ticket after the same fourteen days, so afterwards there is nothing to reopen."
           },
           "422": {
             "description": "A status outside the six, a missing or malformed revision, or a resolve with no note — a note that is only whitespace is no note. The body names the fields, never their values. This is 422 and not 409 on purpose: resolving is a legal move, so a missing note is a malformed request and not an illegal transition."
