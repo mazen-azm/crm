@@ -1113,17 +1113,28 @@ re-run.
 
 **Where it came from:** the API suite reached 51 test files, nearly all of
 which open an HTTP server on an ephemeral port and drive it over the loopback.
-`node --test` runs files in parallel, so all 51 servers existed at once on a
-15-CPU machine. Three separate failures over one day — a pagination test, an
-identity throttle test, and a clock test — each passing alone, each having
-taken between 200× and 250× its normal time in the run that failed.
+`node --test` runs files in parallel, so all 51 servers existed at once. Three
+failures over one day — a pagination test, a throttle test, a clock test — each
+passing alone, each having taken 200× to 250× its normal time in the run that
+failed. Measured: one failure in three runs at the default concurrency, none in
+four runs capped at four files at a time.
 
-Measured: one failure in three runs at the default concurrency, none in four
-runs capped at four files at a time. The cost is eight seconds becoming
-eighteen. Eighteen deterministic seconds is worth more than eight seconds that
-are right two times in three.
+**And the diagnosis was wrong.** Capping helped and did not fix it: a later run
+failed two tests, one of them in a completely normal 205ms. Reading what those
+two actually reported, rather than how long they took:
 
-The first two of those failures were reported as "could not reproduce" and left
-open, which was honest and not enough. The third made the pattern visible; what
-was missing the first two times was the timing, which was in the output all
-along — `(300945ms)` next to a test that runs in 200.
+- one got a response body of `missing or invalid path argument` — a string this
+  API never sends, and not JSON;
+- the other timed out on response headers, `UND_ERR_HEADERS_TIMEOUT`.
+
+Both are the request not reaching the server. That is loopback interference in
+this environment, not starvation and not a bug in the suite — and the cap
+reduces the incidence only because fewer concurrent sockets means fewer chances
+to be hit.
+
+**So the rule stands and the second half of it matters more:** time the
+failure, and then *read what it actually said*. The timing made a pattern
+visible and then pointed at the wrong cause, and a plausible cause with a
+measurement next to it is exactly the kind of wrong that gets written down and
+believed. The cap stays because it is cheap and it helps; the sentence
+explaining it now says what it is really doing.

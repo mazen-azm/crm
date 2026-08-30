@@ -112,6 +112,11 @@ const drive = (asTheCustomer, ticket, staffId) => ({
       method: 'PATCH',
       body: JSON.stringify({ status: 'open', revision: ticket.revision }),
     }),
+  [`PATCH ${API_V1_PREFIX}/tickets/:id/category`]: () =>
+    asTheCustomer(`/api/v1/tickets/${ticket.id}/category`, {
+      method: 'PATCH',
+      body: JSON.stringify({ categoryId: null, revision: ticket.revision }),
+    }),
   [`GET ${API_V1_PREFIX}/tickets/:id/history`]: () =>
     asTheCustomer(`/api/v1/tickets/${ticket.id}/history`),
   [`POST ${API_V1_PREFIX}/tickets/:id/replies`]: () =>

@@ -47,6 +47,7 @@ const OPEN_TO_A_CUSTOMER = new Map([
   [`GET ${API_V1_PREFIX}/tickets/:id/history`, 'a customer reads their own ticket, and anybody else\'s is the same 404 a missing one gets'],
   [`PATCH ${API_V1_PREFIX}/tickets/:id/assignee`, 'reachable so the refusal is the ownership 404 rather than a 403 that tells the two apart'],
   [`PATCH ${API_V1_PREFIX}/tickets/:id/status`, 'the same'],
+  [`PATCH ${API_V1_PREFIX}/tickets/:id/category`, 'the same'],
   [`POST ${API_V1_PREFIX}/tickets/:id/replies`, 'the same — reachable so the refusal is the ownership 404, and CONVERSATION-3-API turns it into a comparison'],
 ]);
 
