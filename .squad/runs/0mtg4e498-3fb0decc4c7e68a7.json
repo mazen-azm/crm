@@ -1,0 +1,56 @@
+{
+  "runId": "0mtg4e498-3fb0decc4c7e68a7",
+  "provider": "anthropic",
+  "model": "claude-opus-4-7",
+  "feature": "conversation",
+  "storyId": "CRM-107",
+  "startedAt": "2026-08-30T18:05:33.836Z",
+  "completedAt": "2026-08-30T18:09:32.801Z",
+  "success": true,
+  "partial": false,
+  "planFile": ".squad/plans/conversation/74-story-crm-107.md",
+  "stats": {
+    "turns": 25,
+    "inputTokens": 34,
+    "outputTokens": 16197,
+    "cacheCreationTokens": 38841,
+    "cacheReadTokens": 229667,
+    "cacheHitRatio": 1,
+    "durationMs": 160659
+  },
+  "cacheEnabled": true,
+  "durationMs": 238961,
+  "scout": {
+    "enabled": true,
+    "selectedCount": 18,
+    "tokensUsed": 7199,
+    "durationMs": 78235
+  },
+  "validation": {
+    "enabled": true,
+    "issuesCount": 12,
+    "issuesByKind": {
+      "missing_path": 5,
+      "symbol_not_found": 7
+    },
+    "durationMs": 59
+  },
+  "plannerRuntime": {
+    "kind": "agent-sdk",
+    "provider": "anthropic"
+  },
+  "authMode": "subscription",
+  "providerOptionsSnapshot": {
+    "anthropic": {
+      "draft": {
+        "thinking": "adaptive",
+        "effort": "medium"
+      },
+      "scout": {
+        "thinking": "adaptive",
+        "effort": "minimal"
+      }
+    }
+  },
+  "version": 1
+}

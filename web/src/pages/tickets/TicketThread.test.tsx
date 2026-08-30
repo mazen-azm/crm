@@ -7,6 +7,10 @@ import { en } from '../../shared/i18n/en';
 import type { Message } from './useReply';
 import { ar } from '../../shared/i18n/ar';
 
+// The API's own default window. The screen never sends one, so this is what a
+// page is unless a test says otherwise.
+const PAGE = 20;
+
 const json = (body: unknown, status = 200) => () =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -71,6 +75,9 @@ function desk({
 } = {}) {
   const shownTotal = total ?? messages.length;
   const sent: Array<Record<string, unknown>> = [];
+  // Every window the screen asked for, in order — so a test can say what was
+  // requested rather than inferring it from what was rendered.
+  const asked: Array<{ offset: number; limit: string | null }> = [];
   const fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), 'http://desk.test');
     if (url.pathname === '/api/v1/me') {
@@ -85,8 +92,20 @@ function desk({
       );
     }
     if (url.pathname.endsWith('/messages')) {
+      if (thread) return Promise.resolve(thread());
+      // A real window over the fixture, so a paging test asks the stub the
+      // same question the screen asks the server. A stub that answered the
+      // whole list whatever was asked would pass a screen that paged wrongly.
+      const offset = Number(url.searchParams.get('offset') ?? 0);
+      const limit = Number(url.searchParams.get('limit') ?? PAGE);
+      asked.push({ offset, limit: url.searchParams.get('limit') });
       return Promise.resolve(
-        (thread ?? json({ items: messages, total: shownTotal, limit: 20, offset: 0 }))(),
+        json({
+          items: messages.slice(offset, offset + limit),
+          total: shownTotal,
+          limit,
+          offset,
+        })(),
       );
     }
     if (url.pathname.endsWith('/replies')) {
@@ -99,7 +118,7 @@ function desk({
     return Promise.resolve(json({ items: [ticket()], total: 1, limit: 25, offset: 0 })());
   });
   vi.stubGlobal('fetch', fetch);
-  return { fetch, sent };
+  return { fetch, sent, asked };
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -242,4 +261,128 @@ test('every string comes from the resource file, in both languages', async () =>
   expect(screen.getByText(ar.ticketThread.internalTag)).toBeInTheDocument();
   expect(screen.getByRole('radio', { name: ar.ticketReply.modeInternal })).toBeInTheDocument();
   expect(ar.ticketThread.internalTag).not.toBe(en.ticketThread.internalTag);
+});
+
+// A thread longer than one page: forty messages, numbered so a test can say
+// which page it is looking at.
+const longThread = (n = 40): Message[] =>
+  Array.from({ length: n }, (_, i) => ({
+    id: `m-${String(i).padStart(3, '0')}`,
+    ticketId: 't-1',
+    authorId: 'agent-1',
+    kind: i % 2 === 1 ? 'internal' : 'public',
+    body: `Message ${i}`,
+    createdAt: `2026-08-30T10:${String(i).padStart(2, '0')}:00.000Z`,
+  }));
+
+test('a long thread opens on the newest messages, and says that is where it is', async () => {
+  const { asked } = desk({ messages: longThread() });
+  await openThread();
+
+  // Forty messages, twenty to a page: the last page starts at twenty.
+  await waitFor(() => expect(screen.getByText('Message 39')).toBeInTheDocument());
+  expect(screen.queryByText('Message 0')).not.toBeInTheDocument();
+  expect(rows()).toHaveLength(20);
+
+  // And it says so. A screen that silently opened in the middle of a thread
+  // would read as a fault, the same way an unexplained status change does.
+  expect(screen.getByText(/newest messages/i)).toHaveTextContent('21');
+  expect(screen.getByText(/newest messages/i)).toHaveTextContent('40');
+
+  // Two requests to get there: the first to learn the total, the second for
+  // the page it named. There is no shortcut to the last page and the total is
+  // not knowable before the first answer.
+  expect(asked.map((a) => a.offset)).toEqual([0, 20]);
+});
+
+test('“older messages” loads older messages', async () => {
+  const { asked } = desk({ messages: longThread() });
+  await openThread();
+  await waitFor(() => expect(screen.getByText('Message 39')).toBeInTheDocument());
+
+  await userEvent.click(screen.getByRole('button', { name: en.ticketThread.older }));
+
+  // The defect this story exists to fix: the button used to read
+  // "Show older messages" and fetch `offset = messages.length`, which in an
+  // oldest-first thread is the NEWER page. It did the opposite of what it said,
+  // and the test that covered it asserted only that a page arrived.
+  await waitFor(() => expect(screen.getByText('Message 0')).toBeInTheDocument());
+  expect(screen.queryByText('Message 39')).not.toBeInTheDocument();
+  expect(asked.at(-1)?.offset).toBe(0);
+});
+
+test('the ends are ends: no older on the first page, no newer on the last', async () => {
+  desk({ messages: longThread() });
+  await openThread();
+  await waitFor(() => expect(screen.getByText('Message 39')).toBeInTheDocument());
+
+  const older = () => screen.getByRole('button', { name: en.ticketThread.older });
+  const newer = () => screen.getByRole('button', { name: en.ticketThread.newer });
+  expect(newer()).toBeDisabled();
+  expect(older()).toBeEnabled();
+
+  await userEvent.click(older());
+  await waitFor(() => expect(screen.getByText('Message 0')).toBeInTheDocument());
+  expect(older()).toBeDisabled();
+  expect(newer()).toBeEnabled();
+});
+
+test('the screen names no page size; it steps by the one the answer reported', async () => {
+  const { asked } = desk({ messages: longThread(40) });
+  await openThread();
+  await waitFor(() => expect(screen.getByText('Message 39')).toBeInTheDocument());
+  await userEvent.click(screen.getByRole('button', { name: en.ticketThread.older }));
+  await waitFor(() => expect(screen.getByText('Message 0')).toBeInTheDocument());
+
+  // Not one request carries a limit. The window is the API's (BR-4), and a
+  // screen that sent its own would be a second answer to how big a page is —
+  // one that goes wrong quietly the day the server changes its mind.
+  expect(asked.every((a) => a.limit === null)).toBe(true);
+});
+
+test('a thread that fits one page has no pager to read', async () => {
+  desk({ messages: longThread(3) });
+  await openThread();
+
+  await waitFor(() => expect(rows()).toHaveLength(3));
+  // Controls for a journey of one step are noise, and a status line saying
+  // "1 to 3 of 3" tells a reader nothing they cannot see.
+  expect(screen.queryByRole('button', { name: en.ticketThread.older })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: en.ticketThread.newer })).not.toBeInTheDocument();
+});
+
+test('a reply appears at the newest end, and not on an older page', async () => {
+  desk({
+    messages: longThread(40),
+    replied: json({ message: CUSTOMER_MESSAGE, ticket: ticket() }, 201),
+  });
+  renderWithProviders(<TicketQueuePage />, { signedIn: true });
+
+  const box = await screen.findByLabelText(en.ticketReply.label);
+  await userEvent.type(box, 'It is still happening.');
+  await userEvent.click(screen.getByRole('button', { name: en.ticketReply.send }));
+  await waitFor(() => expect(box).toHaveValue(''));
+
+  await userEvent.click(screen.getByRole('button', { name: en.ticketThread.show }));
+  await waitFor(() => expect(screen.getByText(CUSTOMER_MESSAGE.body)).toBeInTheDocument());
+
+  // Then page back. The message belongs at the newest end, so putting it on
+  // page one would put it somewhere it is not.
+  await userEvent.click(screen.getByRole('button', { name: en.ticketThread.older }));
+  await waitFor(() => expect(screen.getByText('Message 0')).toBeInTheDocument());
+  expect(screen.queryByText(CUSTOMER_MESSAGE.body)).not.toBeInTheDocument();
+});
+
+test('the pager sentence is a whole sentence per language, with the numbers isolated', async () => {
+  desk({ messages: longThread() });
+  await openThread('ar');
+
+  await waitFor(() => expect(screen.getByText('Message 39')).toBeInTheDocument());
+  const line = screen.getByText(/أحدث الرسائل/);
+  // Every substituted number carries a first-strong isolate. Without it the
+  // bidi algorithm takes the punctuation after a numeral as part of that
+  // left-to-right run and moves it (L-51).
+  expect(line.textContent).toContain('\u2068');
+  expect(line.textContent).toContain('\u2069');
+  expect(ar.ticketThread.showingNewest).not.toBe(en.ticketThread.showingNewest);
 });

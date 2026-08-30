@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Button, EmptyState, ErrorState, Heading, Isolated, Skeleton, Stack, Text } from '../../shared/ui';
+import { pagerSentence } from './pager-sentence';
 import { useTranslation } from '../../shared/i18n';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useTicketThread } from './useTicketThread';
@@ -40,12 +41,15 @@ export function TicketThread({
   const authorOf = (id: string) =>
     assignees.assignees.find((a) => a.id === id)?.name ?? t.ticketThread.customerAuthor;
 
-  // Loaded plus anything written since, minus what is in both — a message
-  // posted while the thread was closed arrives again when it is opened.
-  const shown = [
-    ...thread.messages,
-    ...posted.filter((one) => !thread.messages.some((held) => held.id === one.id)),
-  ];
+  // Anything written from this row belongs at the newest end, so it is shown
+  // on the page that holds the newest end and nowhere else. Adding it to page
+  // one of four would put a message somewhere it is not.
+  //
+  // Minus what is in both: a message posted before the thread was opened comes
+  // back in the page that was then read.
+  const shown = thread.atNewest
+    ? [...thread.messages, ...posted.filter((one) => !thread.messages.some((held) => held.id === one.id))]
+    : thread.messages;
   const busy = thread.status === 'loading';
 
   if (!open) {
@@ -121,10 +125,23 @@ export function TicketThread({
         </ol>
       ) : null}
 
-      {thread.more ? (
-        <Button variant="secondary" disabled={busy} onClick={thread.loadMore}>
-          {busy ? t.ticketThread.loading : t.ticketThread.loadMore}
-        </Button>
+      {/* One page at a time, and the sentence says which — because a reader
+          who is not told where they are cannot tell a short last page from a
+          thread that is short. The landing page is the newest, and it says so:
+          a status change nobody expected reads as a fault, and so does a
+          thread that opens in the middle. */}
+      {thread.page && thread.page.total > thread.page.limit ? (
+        <Stack gap={2}>
+          <Text variant="muted">{pagerSentence(thread.page, { t, atNewest: thread.atNewest })}</Text>
+          <Stack direction="row" gap={2} align="start">
+            <Button variant="secondary" disabled={busy || thread.atOldest} onClick={thread.previous}>
+              {t.ticketThread.older}
+            </Button>
+            <Button variant="secondary" disabled={busy || thread.atNewest} onClick={thread.next}>
+              {t.ticketThread.newer}
+            </Button>
+          </Stack>
+        </Stack>
       ) : null}
 
       <Button variant="secondary" onClick={() => setOpen(false)}>
