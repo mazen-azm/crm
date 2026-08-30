@@ -940,3 +940,26 @@ nothing emits. The suite would have been green.
 The tell was in the plan's own words — "or whatever path CRM-83 exposes",
 "likely `ticket_not_found`". A plan that hedges is a plan that did not look,
 and the hedge is the part a reader skips.
+
+## L-51 — A translated string is not a bidi-safe string
+
+**Rule:** when a sentence is a template and its slots are filled with names,
+ids or anything a person typed, wrap each substituted value in a first-strong
+isolate (U+2068 … U+2069). `<bdi>` does this in JSX and cannot reach inside a
+string. Without it, a Latin run in an Arabic paragraph swallows the punctuation
+that follows it, and the sentence breaks in the wrong place.
+
+**Where it came from:** the ticket history renders one sentence per entry from
+a per-language template. In Arabic, "أسند Nadia Haddad هذه التذكرة إلى Omar
+Reilly." put the full stop before the name and wrapped the line between the two
+halves of it. Every string came from a resource file, parity was green, and 181
+tests passed. It was found by opening the queue and switching language.
+
+The customers list had already met the same thing and solved it with `<bdi>`
+around a phone number — beside a sentence rather than inside one, which is why
+the fix did not carry over on its own. Anywhere a value is interpolated into
+translated text, the isolation belongs in the string.
+
+Companion to the standing rule that a green suite has no pixels and no writing
+direction: this whole class of defect is invisible to vitest and takes one
+minute in a browser.
