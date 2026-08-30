@@ -156,14 +156,52 @@ Parity is enforced by `web/src/shared/i18n/parity.test.ts`.
 
 ## Done Criteria
 
-- [ ] Signed-in person can change their own password from a screen; on success an in-place confirmation shows and they remain signed in.
-- [ ] Wrong current password marks the current-password field and shows the shared 401 sentence.
-- [ ] Submit control cannot be pressed twice while a request is in flight.
-- [ ] Every visible string comes from `en.ts` and `ar.ts`, added in a single edit (BR-6); parity test passes.
-- [ ] Interpolated values in sentences are bidi-isolated (L-51).
-- [ ] A test pins that the auth-context token is unchanged after a successful change.
-- [ ] `cd web && npm test` and `cd web && npm run build` both pass.
-- [ ] No changes under `api/`.
-- [ ] No AI-attribution strings introduced anywhere in the diff.
+- [x] Signed-in person can change their own password from a screen; on success an in-place confirmation shows and they remain signed in.
+- [x] Wrong current password marks the current-password field and shows the shared 401 sentence.
+- [x] Submit control cannot be pressed twice while a request is in flight.
+- [x] Every visible string comes from `en.ts` and `ar.ts`, added in a single edit (BR-6); parity test passes.
+- [x] Interpolated values in sentences are bidi-isolated (L-51).
+- [x] A test pins that the auth-context token is unchanged after a successful change.
+- [x] `cd web && npm test` and `cd web && npm run build` both pass.
+- [x] No changes under `api/`.
+- [x] No AI-attribution strings introduced anywhere in the diff.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+
+
+---
+
+## Review note
+
+The first plan in this sprint with no wrong Jira key — the standing hint now
+points at `scripts/story-keys.txt`, which exists as of this morning, and the
+planner read it. Its heading number was still its position within the feature
+rather than the filename's, and `plan-next.sh` writes that itself now instead
+of leaving it to the check.
+
+One correction, and it is the interesting one.
+
+**The shared 401 sentence is wrong on this screen.** The plan said to reference
+the sentence `SignInPage.tsx` uses rather than duplicate it, which is the right
+instinct and the wrong answer here. `t.errors.UNAUTHENTICATED` reads *"Your
+session has ended. Sign in again to continue."* — true of every other 401 this
+API sends, and false of this one, where the session is fine and the password
+was wrong. It would tell somebody to sign in again while they are signed in.
+
+So this screen has its own sentence, and the comment beside it says why. It is
+the first place in the product where one error code means two different things
+on two screens, and it is worth knowing that `t.errors[code]` is a default
+rather than a law: the map is keyed by what the API answered, not by what the
+person was doing when it answered.
+
+**The confirm field is not in any criterion**, and it is here on purpose. The
+API cannot check it — it never sees the second copy — and without it a mistyped
+new password is accepted and the person who typed it is locked out of an
+account they were in a moment ago. It is the only mistake on this screen nobody
+can undo themselves.
+
+**And the type error `npm test` could not see.** A destructuring default that
+names an earlier binding of the same pattern (`{ next = '…', confirm = next }`)
+leaves tsc unable to infer either — TS7022 — and vitest never typechecks. Ten
+green tests and a red build. That is exactly the hazard the standing hint in
+every intake names, met in this story rather than read about.

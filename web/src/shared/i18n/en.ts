@@ -25,6 +25,7 @@ export const en = {
     navCustomers: 'Customers',
     navQueue: 'The queue',
     navRaiseTicket: 'Raise a ticket',
+    navPassword: 'Your password',
     navHome: 'Home',
     switchToDark: 'Dark theme',
     switchToLight: 'Light theme',
@@ -33,6 +34,27 @@ export const en = {
     // whichever way round you are. Do not "translate" these.
     switchToArabic: 'العربية',
     switchToEnglish: 'English',
+  },
+  account: {
+    passwordTitle: 'Change your password',
+    passwordSubtitle: 'You need the one you use now.',
+    passwordCurrent: 'Current password',
+    passwordNew: 'New password',
+    passwordConfirm: 'New password again',
+    passwordSubmit: 'Change it',
+    passwordSubmitting: 'Changing…',
+    // This screen's own sentence for a 401, not the shared one. t.errors
+    // .UNAUTHENTICATED says the session has ended and to sign in again — true
+    // of every other 401 in this product and false of this one, where the
+    // session is fine and the password was wrong. Telling somebody to sign in
+    // again while they are signed in is worse than saying nothing.
+    passwordWrongCurrent: 'That is not the password you use now.',
+    passwordMismatch: 'The two new passwords are not the same.',
+    passwordChanged: 'Your password has been changed.',
+    // Said out loud because the opposite is what people expect.
+    passwordStillSignedIn: 'You are still signed in here.',
+    passwordAgain: 'Change it again',
+    passwordFailed: 'That change did not go through',
   },
   home: {
     heading: 'Support Desk',
