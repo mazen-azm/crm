@@ -284,3 +284,51 @@ export function updateTicketStatus(db, { id, status, revision, at, resolutionNot
     )
     .run(status, status, resolutionNote, status, at, at, id, revision);
 }
+
+// One live category by name.
+//
+// The column is COLLATE NOCASE (0002__tickets.sql:3) and there is already a
+// partial unique index on it scoped to live rows — 0005__users.sql added it so
+// the seed's ON CONFLICT(name) had an arbiter, with the same argument this
+// story would have made: a retired category should not block a new one taking
+// its name back. This story wrote a migration for it and then deleted it.
+//
+// So the comparison is case-insensitive without a LOWER() that would defeat
+// the index, and the index is the second guard behind the service's check.
+export function findLiveCategoryByName(db, { name }) {
+  return db
+    .prepare(`SELECT ${CATEGORY_PROJECTION} FROM ticket_categories WHERE name = ? AND deleted_at IS NULL`)
+    .get(name);
+}
+
+// Any category by id, live or retired. A retired one still reads back — the
+// tickets that carry it did not stop existing, which is the whole of BR-1.
+export function findCategoryById(db, { id }) {
+  return db
+    .prepare(`SELECT ${CATEGORY_PROJECTION}, deleted_at FROM ticket_categories WHERE id = ?`)
+    .get(id);
+}
+
+export function insertCategory(db, { id, name, at }) {
+  db.prepare(`
+    INSERT INTO ticket_categories (id, name, created_at, updated_at)
+    VALUES (?, ?, ?, ?)
+  `).run(id, name, at, at);
+  return db.prepare(`SELECT ${CATEGORY_PROJECTION} FROM ticket_categories WHERE id = ?`).get(id);
+}
+
+// Scoped to live rows: renaming a retired category would change what the
+// tickets carrying it say happened, which is the thing BR-1 keeps them for.
+export function renameCategory(db, { id, name, at }) {
+  return db
+    .prepare('UPDATE ticket_categories SET name = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(name, at, id).changes;
+}
+
+// Soft, like every removal here. The tickets that carry it keep it; the list
+// the form offers stops showing it; `findLiveCategoryId` stops accepting it.
+export function retireCategory(db, { id, at }) {
+  return db
+    .prepare('UPDATE ticket_categories SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(at, at, id).changes;
+}

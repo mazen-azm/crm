@@ -433,6 +433,71 @@
             "description": "Internal."
           }
         }
+      },
+      "post": {
+        "summary": "Add a category, without a migration and without touching the seed. SC-3 says the seed produces a working system; it does not say the system is stuck with what the seed produced. Admin only. One live category per name, case-insensitively — the column is COLLATE NOCASE and two categories differing only in case are one category typed twice, in a picker whose reports would then not add up. The name is checked before the unique index can fire, because an index that fires gives a raw SQLite error and a 500 that tells an admin their reasonable request was our fault.",
+        "responses": {
+          "201": {
+            "description": "The category: { id, name, createdAt, updatedAt }."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Not an admin. Reading the list is any staff member’s; managing it is not."
+          },
+          "422": {
+            "description": "The name is missing, blank, too long, or already a live category’s; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
+    "/api/v1/ticket-categories/{id}": {
+      "patch": {
+        "summary": "Rename a category. Every ticket already carrying it reads back with the new name, because a ticket references the category rather than copying its name — which is what makes a rename possible at all. A retired category is not renamed: its name is what the tickets carrying it say happened, and BR-1 keeps them for exactly that. Renaming a category to what it is already called is accepted, because refusing it would make \"no change\" indistinguishable from \"that name is taken\".",
+        "responses": {
+          "200": {
+            "description": "The category, renamed."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "404": {
+            "description": "No live category with that id — including one that has been retired."
+          },
+          "422": {
+            "description": "The name is missing, blank, too long, or another live category’s; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      },
+      "delete": {
+        "summary": "Retire a category. Soft, like every removal here (BR-1): it leaves the list the ticket form offers and stops being choosable for new tickets, and the tickets already carrying it keep it and still read back — a category that vanished from its tickets would rewrite history to tidy a picker. Its name goes back on the shelf, because the unique index is scoped to live rows.",
+        "responses": {
+          "200": {
+            "description": "{ id, retiredAt }."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "404": {
+            "description": "No live category with that id — including one already retired."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
       }
     },
     "/api/v1/tickets/{id}/assignee": {

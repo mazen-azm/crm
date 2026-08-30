@@ -144,6 +144,21 @@ export function validateCategoryChange({ categoryId, revision }) {
 // is the moment the ticket closes itself.
 export const REOPEN_WINDOW_DAYS = 14;
 
+// A category has one field and one way to be wrong. The ceiling matches a
+// ticket's subject: a category name is a label on a picker, and one longer
+// than a subject line is a label nobody can read anyway.
+export function validateCategoryName({ name }) {
+  if (typeof name !== 'string') return ['name'];
+  const trimmed = name.trim();
+  if (trimmed === '' || trimmed.length > MAX_SUBJECT) return ['name'];
+  return [];
+}
+
+// Stored trimmed, the way a note and a message are: "Billing " and "Billing"
+// are one category, and the difference shows up later as two rows the unique
+// index was supposed to prevent.
+export const normaliseCategoryName = (name) => String(name).trim();
+
 export const TRANSITIONS = Object.freeze({
   new: Object.freeze(['open', 'pending', 'resolved']),
   open: Object.freeze(['pending', 'resolved']),

@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { requireStaff, requireSubject } from '../../platform/http/permission.js';
+import { requirePermission, requireStaff, requireSubject } from '../../platform/http/permission.js';
 import { readPagination } from '../../platform/http/pagination.js';
 import { createTicketsService } from './tickets.service.js';
 
@@ -47,6 +47,22 @@ export function ticketsRouter({ db, now }) {
   // The list a form offers when raising a ticket. Named after the table
   // (ticket_categories) rather than /categories, so the knowledge base can have
   // its own later without this one having to be renamed.
+  // Managing the list is an admin's; reading it is any staff member's, because
+  // an agent who cannot see the categories cannot raise a ticket.
+  const adminOnly = requirePermission((subject) => subject.role === 'admin');
+
+  router.post('/ticket-categories', adminOnly, (req, res) => {
+    res.status(201).json(service.addCategory(req.subject, { name: req.body?.name }));
+  });
+
+  router.patch('/ticket-categories/:id', adminOnly, (req, res) => {
+    res.json(service.renameCategory(req.subject, { id: req.params.id, name: req.body?.name }));
+  });
+
+  router.delete('/ticket-categories/:id', adminOnly, (req, res) => {
+    res.json(service.retireCategory(req.subject, { id: req.params.id }));
+  });
+
   router.get('/ticket-categories', requireStaff(), (req, res) => {
     const { q, sort } = req.query ?? {};
     res.json(

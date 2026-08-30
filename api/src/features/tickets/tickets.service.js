@@ -14,6 +14,8 @@ import {
   validateCategoryQuery,
   validateRaisedTicket,
   REOPEN_WINDOW_DAYS,
+  normaliseCategoryName,
+  validateCategoryName,
   validateCategoryChange,
   validateStatusChange,
 } from './tickets.rules.js';
@@ -27,9 +29,14 @@ import {
   findTicketById,
   countCustomerTickets,
   insertTicket,
+  findCategoryById,
+  findLiveCategoryByName,
+  insertCategory,
   listCategories as listCategoryRows,
   listCustomerTickets,
   listTickets,
+  renameCategory as renameCategoryRow,
+  retireCategory as retireCategoryRow,
   updateTicketCategory,
   updateTicketStatus,
 } from './tickets.repository.js';
@@ -38,6 +45,20 @@ import {
 // literally called `open`: a `pending` ticket is waiting on the customer and a
 // `reopened` one is back on the pile, and both are work. `resolved` and
 // `closed` are the two the desk has finished with.
+// What a category looks like to anyone outside this feature. deleted_at is not
+// a field: a retired category is absent from the list, and the one route that
+// reads a retired one by id is answering a question about a ticket rather than
+// about the list.
+//
+// It was written inline inside listCategories until three more callers needed
+// it. Two copies of a shape drift the first time one gains a field.
+const categoryShape = (row) => ({
+  id: row.id,
+  name: row.name,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
 const OPEN_ON_THE_DESK = Object.freeze(['new', 'open', 'pending', 'reopened']);
 
 const publicShape = (row) => ({
@@ -275,6 +296,98 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
     // The categories a form offers when raising a ticket. A read, so no audit
     // row — and paginated like every other list, because six rows today is not
     // a reason for this one list to be the one that is different (BR-4).
+    // An admin adds a category, without a migration and without touching the
+    // seed. SC-3 says the seed produces a working system; it does not say the
+    // system is stuck with what the seed produced.
+    addCategory(actor, { name }) {
+      const invalid = validateCategoryName({ name });
+      if (invalid.length > 0) throw unprocessable(invalid);
+      const clean = normaliseCategoryName(name);
+
+      return transact(db, () => {
+        // Checked here rather than left to the unique index, for CRM-82's
+        // reason: an index that fires gives a raw SQLite error, which escapes
+        // as a 500 and tells an admin their reasonable request was our fault.
+        // The index stays as the second guard.
+        if (findLiveCategoryByName(db, { name: clean })) throw unprocessable(['name']);
+
+        const id = randomUUID();
+        const at = stamp();
+        const created = insertCategory(db, { id, name: clean, at });
+
+        audit.record(actor, {
+          entity: 'ticket-category',
+          entityId: id,
+          verb: 'category.create',
+          before: null,
+          after: { name: clean },
+          at,
+        });
+
+        return categoryShape(created);
+      });
+    },
+
+    // A rename reaches every ticket that carries the category, because a ticket
+    // references it rather than copying its name — which is the thing that
+    // makes a rename possible at all, and the reason `raise` stores an id.
+    renameCategory(actor, { id, name }) {
+      const invalid = validateCategoryName({ name });
+      if (invalid.length > 0) throw unprocessable(invalid);
+      const clean = normaliseCategoryName(name);
+
+      return transact(db, () => {
+        const before = findCategoryById(db, { id });
+        // A retired category is not renamed. Its name is what the tickets
+        // carrying it say happened, and BR-1 keeps them for exactly that.
+        if (!before || before.deleted_at) throw new HttpError(404, 'NOT_FOUND');
+
+        const taken = findLiveCategoryByName(db, { name: clean });
+        // Renaming a category to what it is already called is not a conflict
+        // with itself. It is a no-op the caller may not have meant, and
+        // refusing it would make "no change" indistinguishable from "taken".
+        if (taken && taken.id !== id) throw unprocessable(['name']);
+
+        const at = stamp();
+        renameCategoryRow(db, { id, name: clean, at });
+
+        audit.record(actor, {
+          entity: 'ticket-category',
+          entityId: id,
+          verb: 'category.rename',
+          before: { name: before.name },
+          after: { name: clean },
+          at,
+        });
+
+        return categoryShape(findCategoryById(db, { id }));
+      });
+    },
+
+    // Retiring takes it off the list the form offers. It does NOT take it off
+    // the tickets that carry it: a category that vanished from its tickets
+    // would rewrite history to tidy a picker (BR-1).
+    retireCategory(actor, { id }) {
+      return transact(db, () => {
+        const before = findCategoryById(db, { id });
+        if (!before || before.deleted_at) throw new HttpError(404, 'NOT_FOUND');
+
+        const at = stamp();
+        retireCategoryRow(db, { id, at });
+
+        audit.record(actor, {
+          entity: 'ticket-category',
+          entityId: id,
+          verb: 'category.retire',
+          before: { deletedAt: null },
+          after: { deletedAt: at },
+          at,
+        });
+
+        return { id, retiredAt: at };
+      });
+    },
+
     listCategories(actor, { q, sort, limit, offset }) {
       const invalid = validateCategoryQuery({ q, sort });
       if (invalid.length > 0) throw unprocessable(invalid);
@@ -288,12 +401,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           sort: sort ?? DEFAULT_CATEGORY_SORT,
           limit,
           offset,
-        }).map((row) => ({
-          id: row.id,
-          name: row.name,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-        })),
+        }).map(categoryShape),
         total: countCategories(db, { filters }),
         limit,
         offset,

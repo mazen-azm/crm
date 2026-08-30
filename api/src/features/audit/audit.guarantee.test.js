@@ -75,6 +75,9 @@ const EXERCISED = new Set([
   'PATCH /api/v1/tickets/:id/assignee',
   'PATCH /api/v1/tickets/:id/status',
   'PATCH /api/v1/tickets/:id/category',
+  'POST /api/v1/ticket-categories',
+  'PATCH /api/v1/ticket-categories/:id',
+  'DELETE /api/v1/ticket-categories/:id',
   'POST /api/v1/tickets/:id/replies',
   'POST /api/v1/intake/:channel/tickets',
 ]);
@@ -167,6 +170,14 @@ test('each mutating route writes exactly one audit row', async () => {
     body: { customerId: customer.id, subject: 'To be refiled', body: 'Body.' },
   })).json();
 
+  // A category of its own to rename and retire, so the two steps below do not
+  // depend on the order of anything else. Made outside the counted steps: its
+  // creation writes an audit row.
+  const spare = await (await call('/api/v1/ticket-categories', {
+    method: 'POST',
+    body: { name: 'To Be Renamed And Retired' },
+  })).json();
+
   const rest = [
     ['POST /api/v1/tickets', () =>
       call('/api/v1/tickets', {
@@ -188,6 +199,12 @@ test('each mutating route writes exactly one audit row', async () => {
         method: 'POST',
         body: { body: 'A second reply, so this route is driven.' },
       })],
+    ['POST /api/v1/ticket-categories', () =>
+      call('/api/v1/ticket-categories', { method: 'POST', body: { name: 'Audited By The Census' } })],
+    ['PATCH /api/v1/ticket-categories/:id', () =>
+      call(`/api/v1/ticket-categories/${spare.id}`, { method: 'PATCH', body: { name: 'Renamed By The Census' } })],
+    ['DELETE /api/v1/ticket-categories/:id', () =>
+      call(`/api/v1/ticket-categories/${spare.id}`, { method: 'DELETE' })],
     ['PATCH /api/v1/tickets/:id/category', () =>
       call(`/api/v1/tickets/${categorised.id}/category`, {
         method: 'PATCH',
