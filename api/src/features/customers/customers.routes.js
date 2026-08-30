@@ -2,11 +2,14 @@ import express from 'express';
 
 import { requireSubject } from '../../platform/http/permission.js';
 import { readPagination } from '../../platform/http/pagination.js';
-import { createCustomersService } from './customers.service.js';
 
 // req and res stop here. The service takes values and returns values.
-export function customersRouter({ db, now, tickets }) {
-  const service = createCustomersService({ db, tickets, now });
+//
+// The service is handed in rather than built here: the public intake needs the
+// same one, and two instances would be two answers to what the customers
+// service is — harmless today, because it holds nothing but `db`, and exactly
+// the kind of harmless that stops being harmless without anybody noticing.
+export function customersRouter({ customers: service }) {
   const router = express.Router();
 
   // Any signed-in staff member, not adminOnly: an agent who cannot find a

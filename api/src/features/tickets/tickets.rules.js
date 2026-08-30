@@ -17,10 +17,16 @@ const present = (value) => typeof value === 'string' && value.trim() !== '';
 const MAX_SUBJECT = 200;
 const MAX_BODY = 10_000;
 
-export function validateRaisedTicket({ customerId, subject, body, priority, categoryId }) {
+// The fields a ticket is made of, minus who it is for. Split out because the
+// public intake has to refuse a malformed ticket BEFORE it resolves a customer
+// — otherwise a request with a blank subject leaves a customer row behind and
+// nothing else — and at that moment it has no customerId to check. The
+// alternative was a second copy of these rules in the channels feature, or
+// passing a placeholder id to a validator whose whole job is to refuse
+// placeholders.
+export function validateTicketFields({ subject, body, priority, categoryId }) {
   const fields = [];
 
-  if (!present(customerId)) fields.push('customerId');
   if (!present(subject) || subject.trim().length > MAX_SUBJECT) fields.push('subject');
   if (!present(body) || body.trim().length > MAX_BODY) fields.push('body');
 
@@ -35,11 +41,27 @@ export function validateRaisedTicket({ customerId, subject, body, priority, cate
   return fields;
 }
 
-export const normaliseRaisedTicket = ({ subject, body, priority, categoryId }) => ({
+export function validateRaisedTicket({ customerId, ...rest }) {
+  const fields = present(customerId) ? [] : ['customerId'];
+  return [...fields, ...validateTicketFields(rest)];
+}
+
+// The desk is where a ticket comes from unless somebody says otherwise. It is
+// this feature's default and not a list: which channel names are valid belongs
+// to the channels feature, and a copy of that list here would be a second
+// answer maintained by a different story (and an import verify-architecture
+// refuses — a feature reaches another only through its index).
+export const DESK_CHANNEL = 'desk';
+
+export const normaliseRaisedTicket = ({ subject, body, priority, categoryId, channel }) => ({
   subject: subject.trim(),
   body: body.trim(),
   priority: priority ?? DEFAULT_PRIORITY,
   categoryId: categoryId ?? null,
+  // Only the type is checked. A ticket's channel is provenance recorded by
+  // whoever raised it, and the caller that knows the names is the one that
+  // validated them before calling.
+  channel: typeof channel === 'string' && channel.trim() !== '' ? channel.trim() : DESK_CHANNEL,
 });
 
 // The sorts the queue names. Short on purpose: created_at is the only one any

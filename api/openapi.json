@@ -437,6 +437,25 @@
           }
         }
       }
+    },
+    "/api/v1/intake/{channel}/tickets": {
+      "post": {
+        "summary": "The public intake. A stranger with no token submits a request and it becomes a ticket — raised through the same service the desk uses, so the same validation, the same service-level clocks and the same audit row apply. This is the only unauthenticated route besides sign-in, and deliberately so: SC-2 says every rule is enforced in the API, and a second write path would be a second set of rules that agree until they do not. The customer is resolved from the email address, or created then and there if nobody has it (I-2, I-4); nobody is signed in, so both audit rows name the system as their actor. The channel is a path segment and is recorded on the ticket.",
+        "responses": {
+          "201": {
+            "description": "The ticket, exactly as a desk-raised one reads: { id, customerId, categoryId, assigneeId, status, priority, subject, body, revision, resolutionNote, allowedTransitions, channel, createdAt, updatedAt }. status is new and assigneeId is null — arriving from outside is not a priority."
+          },
+          "404": {
+            "description": "No channel by that name. The channel is a path segment, so an unrecognised one is a path that does not exist. A channel this system knows about and has decided against answers 501 instead — that distinction arrives with CHANNELS-2-API."
+          },
+          "422": {
+            "description": "The ticket's own fields are malformed: fields names them. Checked before the customer is resolved, so a refused request leaves no customer behind. A missing or malformed email address is refused here too, naming email."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
     }
   }
 }
