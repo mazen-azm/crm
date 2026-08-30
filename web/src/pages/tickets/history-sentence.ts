@@ -9,10 +9,24 @@ type T = ReturnType<typeof useTranslation>['t'];
 // not share a word order, so a sentence built by concatenation reads correctly
 // in English and as nonsense in Arabic. The template owns the order; this only
 // fills the holes.
+// A first-strong isolate around every substituted value. This is <bdi> for a
+// string: a slot holds a name somebody typed, and a Latin name dropped into an
+// Arabic sentence is a left-to-right run inside a right-to-left paragraph. The
+// bidi algorithm then takes the full stop that follows it as part of that run
+// and moves it — "أسند … إلى Omar Reilly." puts the stop before the name and
+// wraps the line in the wrong place. Seen on the queue, not in a test.
+//
+// The customers list solved the same thing with <bdi> around a phone number.
+// These values are inside a sentence rather than beside one, so the isolation
+// has to travel in the string.
+const isolate = (value: string) => `\u2068${value}\u2069`;
+
 const fill = (template: string, slots: Record<string, string>) =>
   // A slot the case did not supply becomes nothing rather than a literal
   // {toAssignee} on somebody's screen. The sentence still renders.
-  template.replace(/\{(\w+)\}/g, (_match, name: string) => slots[name] ?? '');
+  template.replace(/\{(\w+)\}/g, (_match, name: string) =>
+    name in slots ? isolate(slots[name]) : '',
+  );
 
 // The API writes three verbs today: ticket.create, ticket.assign and
 // ticket.status. An assignment is one verb covering three different sentences,

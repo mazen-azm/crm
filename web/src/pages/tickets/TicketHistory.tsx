@@ -5,6 +5,7 @@ import { useTranslation } from '../../shared/i18n';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { historySentence } from './history-sentence';
 import { useTicketHistory } from './useTicketHistory';
+import './TicketHistory.css';
 import type { useAssignees } from './useAssignees';
 
 // Behind a disclosure, and fetched only when it is opened. The queue shows
@@ -69,9 +70,9 @@ export function TicketHistory({
         // changes in the same second share a stamp. Nothing is sorted here —
         // a second sort on the client is a second answer to what "in order"
         // means.
-        <ol>
+        <ol className="ticket-history">
           {history.entries.map((entry) => (
-            <li key={entry.id}>
+            <li className="ticket-history__entry" key={entry.id}>
               <Text>{historySentence(entry, { t, nameOf })}</Text>
               {/* Never the raw stamp. The trail is read by whoever is on the
                   phone, in their own locale (BR-3). */}

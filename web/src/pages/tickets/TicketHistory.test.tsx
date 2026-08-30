@@ -80,6 +80,11 @@ const assignees = {
   reload: () => {},
 };
 
+// The sentences carry invisible bidi isolates around every substituted value;
+// they are what keeps a Latin name from dragging the full stop with it in an
+// Arabic paragraph. Stripped here so an assertion reads as the sentence does.
+const plain = (line: string) => line.replace(/[\u2068\u2069]/g, '');
+
 const open = async () =>
   userEvent.click(await screen.findByRole('button', { name: en.ticketHistory.show }));
 
@@ -103,7 +108,7 @@ test('every entry is a sentence, in the order the API gave them', async () => {
   renderWithProviders(<TicketHistory ticketId="t-1" assignees={assignees} />);
   await open();
 
-  const lines = (await screen.findAllByRole('listitem')).map((li) => li.textContent ?? '');
+  const lines = (await screen.findAllByRole('listitem')).map((li) => plain(li.textContent ?? ''));
   expect(lines).toHaveLength(3);
   expect(lines[0]).toContain('Sofia raised this ticket.');
   expect(lines[1]).toContain('Sofia assigned this to Karim.');
@@ -122,7 +127,7 @@ test('the order is the API\u2019s, not one the screen decides', async () => {
   renderWithProviders(<TicketHistory ticketId="t-1" assignees={assignees} />);
   await open();
 
-  const lines = (await screen.findAllByRole('listitem')).map((li) => li.textContent ?? '');
+  const lines = (await screen.findAllByRole('listitem')).map((li) => plain(li.textContent ?? ''));
   expect(lines[0]).toContain('the system moved this');
   expect(lines[1]).toContain('assigned this to Karim');
   expect(lines[2]).toContain('raised this ticket');
@@ -134,8 +139,8 @@ test('the stamp is in the reader’s locale, never the raw UTC string', async ()
   await open();
 
   const line = await screen.findByRole('listitem');
-  expect(line.textContent).not.toContain('2026-08-30T09:00:00.000Z');
-  expect(line.textContent).toMatch(/2026/);
+  expect(plain(line.textContent ?? '')).not.toContain('2026-08-30T09:00:00.000Z');
+  expect(plain(line.textContent ?? '')).toMatch(/2026/);
 });
 
 test('an empty history says so rather than showing a blank region', async () => {
@@ -201,7 +206,7 @@ test('every string comes from the resource file, in both languages', async () =>
 
   expect(await screen.findByRole('heading', { name: ar.ticketHistory.heading })).toBeInTheDocument();
   // The whole sentence, in Arabic, with the status words in Arabic too.
-  expect(screen.getByRole('listitem').textContent).toContain(
+  expect(plain(screen.getByRole('listitem').textContent ?? '')).toContain(
     `نقل ${ar.ticketHistory.systemActor} هذه التذكرة من ${ar.ticketQueue.statusNew} إلى ${ar.ticketQueue.statusOpen}.`,
   );
   expect(ar.ticketHistory.heading).not.toBe(en.ticketHistory.heading);
