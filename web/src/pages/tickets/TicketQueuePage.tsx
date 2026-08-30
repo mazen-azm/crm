@@ -17,6 +17,7 @@ import { useTranslation } from '../../shared/i18n';
 import { priorityLabel, statusLabel } from './ticket-labels';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useAssignees } from './useAssignees';
+import { TicketHistory } from './TicketHistory';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
 import { useTicketCategories } from './useTicketCategories';
@@ -234,6 +235,11 @@ function Row({
             ) : null}
           </Stack>
         )}
+
+        {/* The trail belongs beside the controls that write to it. Closed by
+            default and fetched on opening — a row that read its own history
+            unasked would make one page of the queue twenty-five requests. */}
+        <TicketHistory ticketId={ticket.id} assignees={assignees} />
       </Stack>
     </Card>
   );

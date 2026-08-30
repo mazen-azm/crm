@@ -190,6 +190,32 @@ export const en = {
     staleTitle: 'This ticket changed while you were looking at it',
     reload: 'Reload the queue',
   },
+  ticketHistory: {
+    heading: 'History',
+    show: 'Show the history',
+    hide: 'Hide the history',
+    emptyTitle: 'Nothing has happened yet',
+    emptyBody: 'This ticket has not been touched since it was raised.',
+    errorTitle: 'The history did not load',
+    loadMore: 'Load more',
+    loading: 'Loading…',
+    // The same word as customerScreen.noteBySystem, in a second namespace.
+    // One shared place for it would be better and no story owns that move;
+    // the two are authored sentences rather than a mapping, so a rewording of
+    // one leaves the other saying the same thing differently, not wrongly.
+    systemActor: 'the system',
+    // Whole sentences with named slots. Never a verb glued to a value: the
+    // Arabic forms below put the actor, the source and the target in a
+    // different order, and concatenation cannot express that.
+    created: '{actor} raised this ticket.',
+    statusChanged: '{actor} moved this from {from} to {to}.',
+    assigned: '{actor} assigned this to {to}.',
+    unassigned: '{actor} took this off {from}.',
+    reassigned: '{actor} moved this from {from} to {to}.',
+    // A verb written before its sentence was. Legible, and it names the verb
+    // so whoever added it can see what is missing.
+    unknownVerb: '{actor} did something recorded as {verb}.',
+  },
   customerScreen: {
     contacts: 'Contact',
     noEmail: 'No email address',

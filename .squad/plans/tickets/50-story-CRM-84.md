@@ -211,16 +211,68 @@ Match the fetch-stubbing style of `web/src/pages/tickets/TicketQueuePage.test.ts
 
 ## Done Criteria
 
-- [ ] Each rendered history entry reads as a full sentence built from resource strings, never from the raw verb (BR-6).
-- [ ] Timestamps render in the reader's locale via `useFormatters`, never the raw UTC string (BR-3).
-- [ ] Empty history renders `EmptyState` saying so (D-2).
-- [ ] Paging uses the API's `nextCursor`; the screen adds none of its own (BR-4).
-- [ ] Null-actor entries substitute `t.tickets.history.systemActor`; no name is invented.
-- [ ] Unknown verbs render `t.tickets.history.unknownVerb`; no crash, no blank.
-- [ ] English and Arabic each own the whole sentence per verb; parity test green.
-- [ ] `no-hardcoded-strings.test.ts` green; no literal glyphs between tags.
-- [ ] `cd web && npm test` and `cd web && npm run build` both pass.
-- [ ] `cd api && npm test` still passes.
-- [ ] Nothing in the diff (code, tests, docs, commit messages) mentions AI assistance.
+- [x] Each rendered history entry reads as a full sentence built from resource strings, never from the raw verb (BR-6).
+- [x] Timestamps render in the reader's locale via `useFormatters`, never the raw UTC string (BR-3).
+- [x] Empty history renders `EmptyState` saying so (D-2).
+- [x] Paging uses **the API's window — `limit`/`offset`/`total`, not a cursor**; the screen sends no limit and adds no page size of its own (BR-4). See note 1.
+- [x] Null-actor entries substitute `t.ticketHistory.systemActor`; no name is invented.
+- [x] Unknown verbs render `t.ticketHistory.unknownVerb`; no crash, no blank.
+- [x] English and Arabic each own the whole sentence per case; `parity.test.ts` green.
+- [x] `no-hardcoded-strings.test.ts` green; no literal glyphs between tags.
+- [x] `cd web && npm test` (181 tests, 29 files) and `cd web && npm run build` both pass.
+- [x] `cd api && npm test` still passes (308).
+- [x] Nothing in the diff (code, tests, docs, commit messages) mentions AI assistance.
+
+---
+
+## Review note — what this plan got wrong
+
+The plan was written without reading the route it consumes. Six of its
+statements about the API are inventions, and each one is recorded here because
+a plan is read later by somebody with no way to tell which of its facts were
+checked.
+
+1. **There is no `nextCursor`.** `GET /tickets/:id/history` answers
+   `{ items, total, limit, offset }` — offset paging, like every list in this
+   API (`api/src/features/tickets/tickets.service.js`, `history`). The plan
+   built a type, a hook signature, two edge cases and a Done Criteria box on a
+   cursor that does not exist. The screen reads "is there more" from
+   `entries.length < total` and asks for the next window by offset.
+
+2. **`actor` is not an object.** The route returns `actorId: string | null`.
+   Names are resolved on the client from the staff list, which is the precedent
+   CRM-61 set for note authors and CRM-72 set for assignees — the API answers
+   with ids, and the screen that needs names is the one already holding the
+   list.
+
+3. **The verbs were guessed.** The plan wrote sentences for eight, five of
+   which nothing emits. The API writes three: `ticket.create`, `ticket.assign`
+   and `ticket.status`. Sentences exist for those three and no others; the
+   unknown-verb line is the mechanism by which a fourth arrives legibly, which
+   is what the plan got right.
+
+4. **An assignment is one verb and three sentences.** What happened is in the
+   diff, not in the name — given to somebody, taken off somebody, or moved
+   between two people. Read off `before`/`after` rather than asking the API for
+   three verbs to save a branch here.
+
+5. **`t.errors.unknown` and three new domain codes do not exist.** The
+   catalogue is frozen and UPPER_SNAKE (`web/src/shared/api/errors.ts`); the
+   fallback every other screen uses is `t.errors.INTERNAL`. The history route
+   throws `NOT_FOUND` and nothing else. No error key was added.
+
+6. **`formatDateTime` and `t.tickets.status.*` do not exist.** The formatter is
+   `formatDate(value, options)`; the status words are `statusLabel()` in
+   `web/src/pages/tickets/ticket-labels.ts`, which CRM-58 extracted so two
+   screens could not disagree. A third copy here would have been that defect
+   again.
+
+7. **Where it mounts.** The plan offered "expose it from an index so the next
+   story can drop it in" as a fallback, which ships a component nothing
+   renders. There is no ticket detail screen; the queue row is where a ticket
+   is shown and where its assign and status controls already are, so the trail
+   sits under them behind a disclosure, closed, fetched on opening. A row that
+   read its own history on mount would make one page of the queue twenty-five
+   requests, and a test pins that it does not.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

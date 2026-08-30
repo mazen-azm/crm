@@ -912,3 +912,31 @@ The plan also invented `createdEmailNone`, a resource key for "no email
 address", where `t.customers.noEmail` had said that since CUSTOMERS-1-WEB. Two
 strings for one sentence drift the first time one is reworded — the same defect
 as the duplicated status maps CRM-58 pulled into a shared module.
+
+## L-50 — A plan for a screen must read the route, not describe it
+
+**Rule:** before a plan types a response type, a hook signature or a paging
+control, open the route handler and the service method it calls and copy the
+envelope out of them. Every field name, the paging shape, the error codes and
+the vocabulary of any enumerated value (verbs, statuses) come from the code
+that produces them. A plan that says "or whatever path X exposes — confirm" or
+"likely `foo_bar`" has moved the reading to the executor and taken the
+authority with it: the plan is still read as fact.
+
+**Where it came from:** the plan for TICKETS-7-WEB was written against an
+imagined `GET /history`. It gave the response a `nextCursor` (the API pages by
+`limit`/`offset`/`total`, as every list here does), gave each entry an
+`actor: { id, name }` (the API returns `actorId`), named three new error codes
+as "likely" (the catalogue is frozen and the route throws only `NOT_FOUND`),
+called a formatter that does not exist, read status words from a namespace that
+does not exist, and wrote sentences for eight audit verbs where the API writes
+three.
+
+None of it would have failed loudly. `entry.actor?.name` is `undefined`,
+`nextCursor` is `undefined` so the "load more" control never appears, and five
+sentences sit in both resource files forever, in parity, translated, for verbs
+nothing emits. The suite would have been green.
+
+The tell was in the plan's own words — "or whatever path CRM-83 exposes",
+"likely `ticket_not_found`". A plan that hedges is a plan that did not look,
+and the hedge is the part a reader skips.
