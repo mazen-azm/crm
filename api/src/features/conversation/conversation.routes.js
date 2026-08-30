@@ -1,6 +1,7 @@
 import express from 'express';
 
 import { requireSubject } from '../../platform/http/permission.js';
+import { readPagination } from '../../platform/http/pagination.js';
 
 // req and res stop here. The service takes values and returns values.
 export function conversationRouter({ conversation }) {
@@ -24,6 +25,21 @@ export function conversationRouter({ conversation }) {
   router.post('/tickets/:id/replies', requireSubject(), (req, res) => {
     res.status(201).json(
       conversation.reply(req.subject, { ticketId: req.params.id, body: req.body?.body }),
+    );
+  });
+
+  // The thread. requireSubject and not requireStaff, for the reason the reply
+  // route gives: everything under /tickets/:id answers a customer the same 404
+  // a missing ticket gets, and the service decides which.
+  //
+  // No route reads one message by id, and none is added here. The criterion
+  // about asking for a note by id is conditional — "by any route that takes a
+  // message id" — and nothing needs one. Adding a route to satisfy a criterion
+  // about routes would be inventing the surface the rule is about; the census
+  // covers any that arrives later.
+  router.get('/tickets/:id/messages', requireSubject(), (req, res) => {
+    res.json(
+      conversation.thread(req.subject, { ticketId: req.params.id, ...readPagination(req) }),
     );
   });
 

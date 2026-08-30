@@ -119,6 +119,8 @@ const drive = (asTheCustomer, ticket, staffId) => ({
     }),
   [`GET ${API_V1_PREFIX}/tickets/:id/history`]: () =>
     asTheCustomer(`/api/v1/tickets/${ticket.id}/history`),
+  [`GET ${API_V1_PREFIX}/tickets/:id/messages`]: () =>
+    asTheCustomer(`/api/v1/tickets/${ticket.id}/messages`),
   [`POST ${API_V1_PREFIX}/tickets/:id/replies`]: () =>
     asTheCustomer(`/api/v1/tickets/${ticket.id}/replies`, {
       method: 'POST',
