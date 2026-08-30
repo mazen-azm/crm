@@ -622,6 +622,28 @@
         }
       }
     },
+    "/api/v1/tickets/{id}/messages": {
+      "get": {
+        "summary": "A ticket's thread, for whoever is reading it. A customer sees the public replies and no sign that anything else exists — not a redaction, not a gap, and not a total that counts what they cannot read: a total including the notes would tell them how many there are, which is the leak wearing a number. Staff see both kinds and each row says which it is, because an agent about to write something they would not say to a customer needs to know which they are looking at. The filter is in the query rather than applied to the rows afterwards, so the notes are never fetched for a reader who may not have them. Oldest first, paginated like every list here.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each message is { id, ticketId, authorId, kind, body, createdAt }; for a customer every kind is `public`."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket — and the same answer, byte for byte, for a customer asking about somebody else's."
+          },
+          "422": {
+            "description": "A page window the rules refuse; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
     "/api/v1/intake/{channel}/tickets": {
       "post": {
         "summary": "The public intake. A stranger with no token submits a request and it becomes a ticket — raised through the same service the desk uses, so the same validation, the same service-level clocks and the same audit row apply. This is the only unauthenticated route besides sign-in, and deliberately so: SC-2 says every rule is enforced in the API, and a second write path would be a second set of rules that agree until they do not. The customer is resolved from the email address, or created then and there if nobody has it (I-2, I-4); nobody is signed in, so both audit rows name the system as their actor. The channel is a path segment and is recorded on the ticket.",

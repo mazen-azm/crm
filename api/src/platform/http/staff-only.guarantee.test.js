@@ -49,6 +49,7 @@ const OPEN_TO_A_CUSTOMER = new Map([
   [`PATCH ${API_V1_PREFIX}/tickets/:id/status`, 'the same'],
   [`PATCH ${API_V1_PREFIX}/tickets/:id/category`, 'the same'],
   [`POST ${API_V1_PREFIX}/tickets/:id/replies`, 'the same — reachable so the refusal is the ownership 404, and CONVERSATION-3-API turns it into a comparison'],
+  [`GET ${API_V1_PREFIX}/tickets/:id/messages`, 'a customer reads their own ticket\u2019s thread — the public half of it'],
 ]);
 
 async function start() {

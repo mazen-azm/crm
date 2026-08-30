@@ -532,14 +532,19 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       });
     },
 
-    // The ticket, for a feature that is about to write against it from inside
-    // its own transaction. It opens none of its own, for that reason.
+    // The ticket, with the ownership rule attached, for another feature that
+    // needs it. It opens no transaction — so a caller inside one can use it,
+    // and a caller doing a pure read is not made to open one.
     //
-    // It is a read with the ownership rule attached, so a caller cannot get a
-    // ticket this actor may not act on and then decide for itself what to do
-    // about that — the refusal is the same 404 a missing ticket gets, from
-    // the one place that decides it.
-    readForReply(actor, { id }) {
+    // A read with the rule attached rather than a read and a rule: a caller
+    // cannot get a ticket this actor may not touch and then decide for itself
+    // what to do about that. The refusal is the same 404 a missing ticket
+    // gets, from the one place that decides it.
+    //
+    // It was `readForReply` while replying was the only caller. Reading a
+    // ticket's messages is the second, and a name that says what one caller
+    // wanted is a name that misleads the next one.
+    readForActor(actor, { id }) {
       const ticket = findTicketById(db, { id });
       if (!ticket) throw new HttpError(404, 'NOT_FOUND');
       if (actor?.role === 'customer' && ticket.customer_id !== actor.customerId) {

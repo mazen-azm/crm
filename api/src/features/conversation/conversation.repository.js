@@ -21,8 +21,36 @@ export function insertMessage(db, { id, ticketId, authorId, kind, body, at }) {
   return publicShape(db.prepare(`SELECT ${PROJECTION} FROM ticket_messages WHERE id = ?`).get(id));
 }
 
-export function countMessages(db, { ticketId }) {
+// The thread, for a reader who may see everything or only the public half.
+//
+// One query with a predicate rather than two functions: the ORDER BY, the
+// projection and the window are the same question asked of a different set,
+// and two copies of them would answer it differently the first time one
+// changed.
+//
+// `created_at ASC, rowid ASC` — the clock is whole seconds, so two messages
+// written in the same second share a timestamp and would otherwise swap
+// between two reads. The audit feed had exactly this.
+const PUBLIC_ONLY = "AND kind = 'public'";
+
+export function listMessages(db, { ticketId, publicOnly, limit, offset }) {
   return db
-    .prepare('SELECT count(*) AS n FROM ticket_messages WHERE ticket_id = ?')
+    .prepare(`
+      SELECT ${PROJECTION}
+        FROM ticket_messages
+       WHERE ticket_id = ? ${publicOnly ? PUBLIC_ONLY : ''}
+       ORDER BY created_at ASC, rowid ASC
+       LIMIT ? OFFSET ?
+    `)
+    .all(ticketId, limit, offset)
+    .map(publicShape);
+}
+
+// The count obeys the same predicate as the list, and that is the rule rather
+// than a tidiness: a total that included notes would tell a customer how many
+// there are, which is the leak wearing a number.
+export function countMessages(db, { ticketId, publicOnly }) {
+  return db
+    .prepare(`SELECT count(*) AS n FROM ticket_messages WHERE ticket_id = ? ${publicOnly ? PUBLIC_ONLY : ''}`)
     .get(ticketId).n;
 }

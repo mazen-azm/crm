@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { createAuditWriter, transact } from '../audit/index.js';
-import { insertMessage } from './conversation.repository.js';
+import { countMessages, insertMessage, listMessages } from './conversation.repository.js';
 import { normaliseMessage, validateMessage } from './conversation.rules.js';
 
 // What a ticket says.
@@ -24,6 +24,33 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
   const audit = createAuditWriter({ db });
 
   return {
+    // A ticket's thread, for whoever is reading it.
+    //
+    // One predicate decides what a reader may see, and it is applied in the
+    // query rather than to the rows afterwards: filtering after the fact means
+    // the notes were fetched, counted and held in memory a line away from the
+    // response, and every later change to this method is one mistake from
+    // sending them.
+    //
+    // A customer sees public messages and no sign that anything else exists —
+    // not a redaction, not a gap, not a total that counts what they cannot
+    // read. Staff see both kinds, and each row says which it is, because an
+    // agent about to write something they would not say to a customer needs to
+    // know which they are looking at.
+    thread(actor, { ticketId, limit, offset }) {
+      // The ownership rule, from the feature that owns it: somebody else's
+      // ticket is the same 404 a missing one gets.
+      tickets.readForActor(actor, { id: ticketId });
+
+      const publicOnly = actor?.role === 'customer';
+      return {
+        items: listMessages(db, { ticketId, publicOnly, limit, offset }),
+        total: countMessages(db, { ticketId, publicOnly }),
+        limit,
+        offset,
+      };
+    },
+
     // An agent replies, in public. T-2: the first public reply opens a `new`
     // ticket and stops the response clock — once.
     //
@@ -40,7 +67,7 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
         // Read inside the transaction: the status decides whether the clock
         // stops, so it has to be the status this write is committing against.
         // It throws the ownership 404 for a customer reaching somebody else's.
-        const ticket = tickets.readForReply(actor, { id: ticketId });
+        const ticket = tickets.readForActor(actor, { id: ticketId });
 
         // And this story refuses a customer their OWN ticket too. Replying is
         // theirs to do — CONVERSATION-3-API — and it is a different rule: a
