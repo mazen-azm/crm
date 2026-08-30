@@ -599,7 +599,7 @@
     },
     "/api/v1/tickets/{id}/replies": {
       "post": {
-        "summary": "A public reply, from whoever may write one on this ticket. ONE route, because posting a public message is one act — what the reply DOES depends on who wrote it. An agent's is the desk answering: the first public reply on a `new` ticket moves it to `open` (T-2) and stops the first-response clock at the reply's own timestamp, once — a second reply finds the clock already stopped and the status already moved, and nothing counts replies. A customer's is the customer answering: it stops no clock, because the promise the clock measures is about the desk, and it reopens a resolved ticket inside the fourteen-day window (T-5). Outside the window, and on a closed ticket, the reply is refused and no message is written — one transaction, so a customer is never left with a stored message and a ticket that did not move. The kind is never read from the request: a caller who could name it could name the one they are not allowed.",
+        "summary": "A public reply, from whoever may write one on this ticket. ONE route, because posting a public message is one act — what the reply DOES depends on who wrote it. An agent's is the desk answering: the first public reply on a `new` ticket moves it to `open` (T-2) and stops the first-response clock at the reply's own timestamp, once — a second reply finds the clock already stopped and the status already moved, and nothing counts replies. A customer's is the customer answering: it stops no clock, because the promise the clock measures is about the desk, and it reopens a resolved ticket inside the fourteen-day window (T-5). Outside the window, and on a closed ticket, the reply is refused and no message is written — one transaction, so a customer is never left with a stored message and a ticket that did not move. The kind is the desk's to choose and not the customer's: staff may send `kind`, `public` or `internal`, and a customer's message is forced public whatever they send \u2014 the one place the desk talks to itself is not somewhere a customer can write. An internal note stops no clock and moves no status: the promise the clock measures is about answering the customer, and a note is not that. A `kind` outside the vocabulary is refused rather than quietly treated as public, because a caller who sent one meant something by it.",
         "responses": {
           "201": {
             "description": "{ message, ticket }. The message it made, and the ticket as it now stands — this route changes both, and a caller told only about one of them has to guess at the other. The desk's row needs the status, because a row still saying New after the reply that opened it is the screen disagreeing with the ticket, and the alternative is the screen recomputing T-2 for itself. The revision comes with it: this write bumped it, and every other control on that row is holding the old one."
@@ -611,7 +611,7 @@
             "description": "No such ticket, and the same answer for a customer asking about somebody else's."
           },
           "422": {
-            "description": "The body is missing, blank, or longer than a ticket body may be; `fields` names it."
+            "description": "The body is missing, blank, or longer than a ticket body may be, or `kind` is a word the vocabulary does not have; `fields` names it."
           },
           "500": {
             "description": "Unhandled, logged with the request id."

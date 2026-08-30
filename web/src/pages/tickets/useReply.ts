@@ -4,11 +4,15 @@ import { request } from '../../shared/api/client';
 import { useRequest } from '../../shared/hooks';
 import type { Ticket } from './useTicketQueue';
 
+// The API's vocabulary, and all of it: it refuses a third word rather than
+// treating it as public.
+export type MessageKind = 'public' | 'internal';
+
 export type Message = {
   id: string;
   ticketId: string;
   authorId: string;
-  kind: string;
+  kind: MessageKind;
   body: string;
   createdAt: string;
 };
@@ -22,13 +26,13 @@ export function useReply(ticketId: string) {
   const { status, error, run, reset } = useRequest<Replied>();
 
   const submit = useCallback(
-    (body: string, onReplied: (result: Replied) => void) => {
+    ({ body, kind }: { body: string; kind: MessageKind }, onReplied: (result: Replied) => void) => {
       // A reply creates a row, so a second press is a second reply.
       if (status === 'loading') return;
       run(() =>
         request<Replied>(`/tickets/${ticketId}/replies`, {
           method: 'POST',
-          body: JSON.stringify({ body }),
+          body: JSON.stringify({ body, kind }),
         }),
       )
         .then(onReplied)

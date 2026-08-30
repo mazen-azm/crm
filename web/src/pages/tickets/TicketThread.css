@@ -1,0 +1,65 @@
+/* The two kinds have to be told apart at a glance, so the difference is not
+   only the caption: a note sits on its own surface, behind a dashed edge, and
+   is inset from the replies around it. Somebody scanning the thread sees a
+   different block before they read a word of it.
+
+   Logical properties throughout, so the marks sit on the correct side in
+   Arabic without a second rule. */
+.ticket-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ticket-thread__message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--color-border-subtle);
+}
+
+.ticket-thread__message--internal {
+  padding: var(--space-2) var(--space-3);
+  margin-inline-start: var(--space-4);
+  background: var(--color-bg-surface);
+  border-inline-start: 2px dashed var(--color-border-strong);
+}
+
+/* The caption still exists, because a colour and an indent are not readable by
+   somebody using a screen reader and are not visible to everybody who can see
+   them. The look is the glance; the word is the answer. */
+.ticket-thread__tag {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.ticket-thread__tag--internal {
+  color: var(--color-danger);
+}
+
+/* The composer, tinted while it is in note mode — the same signal the notes in
+   the thread carry, on the box about to write one. */
+.ticket-reply--internal {
+  padding: var(--space-3);
+  background: var(--color-bg-surface);
+  border-inline-start: 2px dashed var(--color-border-strong);
+}
+
+.ticket-reply__modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.ticket-reply__mode {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}

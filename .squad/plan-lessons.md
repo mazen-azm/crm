@@ -1168,3 +1168,32 @@ safe rather than merely convenient.
 The companion to L-54: a guess a check corrects is still a guess, and the
 second half of removing the guess is not always giving the writer a better
 source. Sometimes it is not asking them.
+
+---
+
+## L-59 — Three instances of L-56: the write side is a unit too
+
+**Rule:** when a plan's story is about SEEING something, check that a story
+exists for MAKING it. A read surface for data nothing can produce is not a
+smaller story — it is a story that cannot be demonstrated at all, and the gap
+is always in the layer nobody wrote a unit for.
+
+**Where it came from:** `CONVERSATION-2-WEB (CRM-103)` asks the desk to see
+public replies and internal notes side by side, and to know which it is about
+to write. The API could read both — `CONVERSATION-2-API` shipped the filtered
+thread and a census proving a note never reaches a customer — and could write
+neither: `conversation.service.js` set `kind: 'public'` as a literal, with a
+comment saying the note "has its own story". It has none. Six conversation
+units, and not one of them lets the desk write the thing the other five are
+careful about.
+
+That is the same shape as L-56's `PORTAL-2-WEB`, and it is now the third time:
+a customer listing their own tickets, and now writing a note. Both were found
+at build time, by a screen with nothing to call.
+
+So the check is no longer "does every layer story have its API half" but the
+narrower question that catches these: **for every noun a story reads, name the
+story that writes it.** A literal in the service with a comment deferring to a
+story is a claim about the backlog, and a claim about the backlog is checkable
+— this one was false when it was written.
+

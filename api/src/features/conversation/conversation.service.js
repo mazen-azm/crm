@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { createAuditWriter, transact } from '../audit/index.js';
 import { countMessages, insertMessage, listMessages } from './conversation.repository.js';
-import { normaliseMessage, validateMessage } from './conversation.rules.js';
+import { KINDS, normaliseMessage, validateMessage } from './conversation.rules.js';
 
 // What a ticket says.
 //
@@ -63,9 +63,12 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
     // matches `status = 'new'`; a second reply finds neither and changes
     // neither. Nothing counts replies, because a count is a third statement
     // of a fact the two rows already carry.
-    reply(actor, { ticketId, body }) {
+    reply(actor, { ticketId, body, kind }) {
       const invalid = validateMessage({ body });
       if (invalid.length > 0) throw unprocessable(invalid);
+      // A kind the vocabulary does not have is refused rather than silently
+      // treated as public: a caller who sent one meant something by it.
+      if (kind !== undefined && !KINDS.includes(kind)) throw unprocessable(['kind']);
 
       return transact(db, () => {
         // Read inside the transaction: the status decides whether the clock
@@ -80,10 +83,19 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
           id,
           ticketId,
           authorId: actor.id,
-          // The kind is not read from the request. This route posts public
-          // replies; the internal note has its own story, and a caller that
-          // could name the kind could name the one they are not allowed.
-          kind: 'public',
+          // The desk chooses; a customer does not.
+          //
+          // An internal note is the desk talking to itself, and a customer who
+          // could name the kind could write into the one place that is not for
+          // them. So the kind is read from the request for staff and forced to
+          // public for a customer — not refused for a customer, because a
+          // request that is merely verbose is not a request to punish.
+          //
+          // This began as a hard-coded 'public' with a comment saying the note
+          // had its own story. It has none: no unit in the backlog gives the
+          // desk a way to WRITE one, and CONVERSATION-2-WEB cannot exist
+          // without it (L-56). Written here, recorded there.
+          kind: actor?.role === 'customer' ? 'public' : (kind ?? 'public'),
           body: normaliseMessage(body),
           at,
         });
@@ -96,7 +108,7 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
           // The message's id and its kind, never its body. A trail is a record
           // of what happened, and the message itself is a row anybody entitled
           // to read it can read.
-          after: { messageId: id, kind: 'public' },
+          after: { messageId: id, kind: message.kind },
           at,
         });
 
@@ -112,6 +124,12 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
         // One route and one message table, because posting a public message on
         // a ticket is one act. Two routes would be two write paths for it, and
         // the difference between them is not the writing.
+        // An internal note does neither. T-2's promise is about answering the
+        // customer, and a note is the desk talking to itself — a clock stopped
+        // by one would report a response time to somebody who never saw a
+        // word of it.
+        if (message.kind === 'internal') return { message, ticket: tickets.publicById(ticketId) };
+
         if (actor?.role === 'customer') {
           // Throws when the window has passed, which is a refusal the caller
           // must not read as a quiet no-op — and nothing is written, because
