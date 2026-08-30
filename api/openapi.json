@@ -446,7 +446,10 @@
             "description": "The ticket, exactly as a desk-raised one reads: { id, customerId, categoryId, assigneeId, status, priority, subject, body, revision, resolutionNote, allowedTransitions, channel, createdAt, updatedAt }. status is new and assigneeId is null — arriving from outside is not a priority."
           },
           "404": {
-            "description": "No channel by that name. The channel is a path segment, so an unrecognised one is a path that does not exist. A channel this system knows about and has decided against answers 501 instead — that distinction arrives with CHANNELS-2-API."
+            "description": "No channel by that name — one nothing here has ever heard of. A channel this system knows about and has decided against answers 501 instead."
+          },
+          "501": {
+            "description": "Named, and deliberately not built. The channel is one this system knows about — email, whatsapp and sms are under \"Specified only\" in the product brief — and has decided against. The body carries `name`, the channel it is about, beside the shared { code, requestId }: a bare code would say it is not built and not what is not built. Distinct from 404 on purpose (E-3): 404 says there is no such thing, which about a channel somebody considered and rejected would hide the decision rather than state it."
           },
           "422": {
             "description": "The ticket's own fields are malformed: fields names them. Checked before the customer is resolved, so a refused request leaves no customer behind. A missing or malformed email address is refused here too, naming email."

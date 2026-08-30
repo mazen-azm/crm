@@ -192,17 +192,17 @@ test('a request with no usable address is refused naming it', async () => {
   assert.equal(count('customers'), before);
 });
 
-test('a channel nothing implements is a path that does not exist', async () => {
+test('a name no channel has is a path that does not exist', async () => {
   const { intake, count } = await start();
   const before = count('tickets');
 
   // 404, not 422: the channel is a path segment, and there is no field in the
-  // body to name. CHANNELS-2-API splits this in two — a channel this system
-  // knows about and has decided against will answer 501 — and until that list
-  // exists, every unrecognised name is honestly "no such thing".
-  for (const channel of ['email', 'whatsapp', 'carrier-pigeon']) {
+  // body to name. This is the answer for a name nothing has ever heard of;
+  // a name this system knows and has decided against gets 501 instead
+  // (CHANNELS-2-API, and the test below).
+  for (const channel of ['carrier-pigeon', 'fax', '']) {
     const res = await intake(WELL_FORMED, channel);
-    assert.equal(res.status, 404, `channel ${channel}`);
+    assert.equal(res.status, 404, `channel ${JSON.stringify(channel)}`);
     assert.equal((await res.json()).code, 'NOT_FOUND');
   }
   assert.equal(count('tickets'), before);

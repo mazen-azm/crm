@@ -26,7 +26,21 @@ const STORIES = join(ROOT, '.squad/stories')
 
 // Rule E-2 names the whole catalogue. A plan that promises a status outside it
 // promises something the rules forbid — 413 and 501 both arrived this way.
-const CATALOGUE = new Set([400, 401, 403, 404, 409, 422, 429, 500])
+//
+// Read out of rules.txt rather than typed here. It was typed here, and the day
+// 501 was legitimately added to the rule this check would have gone on failing
+// every plan that mentioned it — a guard disagreeing with the document it
+// exists to enforce, which is the two-statements-of-one-fact defect it was
+// written to catch in other people's work.
+const CATALOGUE = (() => {
+  const line = readFileSync(join(HERE, 'rules.txt'), 'utf8')
+    .split('\n')
+    .find((l) => /^RULE E-2\b/.test(l))
+  if (!line) throw new Error('verify-plan: rules.txt has no RULE E-2 to read the catalogue from')
+  const codes = line.match(/\b[45]\d{2}\b/g)
+  if (!codes) throw new Error(`verify-plan: RULE E-2 names no status codes: ${line}`)
+  return new Set(codes.map(Number))
+})()
 const ENGINE = /node:sqlite|SQLite|DatabaseSync/
 const FOREIGN_DIALECT = /TIMESTAMPTZ|CITEXT|pgcrypto|CREATE EXTENSION|pg_advisory|mongoose|prisma|Sequelize/gi
 // Naming a thing in order to forbid it is not doing it: a prohibition, a

@@ -25,7 +25,7 @@ RULE S-5 | service-levels | A breach is a stored row, never recomputed on read.
 RULE S-6 | service-levels | A resolution breach raises priority one level and notifies an admin exactly once, enforced by a constraint.
 
 RULE E-1 | errors | One shape, every failure, no stack trace.
-RULE E-2 | errors | Every failure returns its documented code: 400 401 403 404 409 422 429 500.
+RULE E-2 | errors | Every failure returns its documented code: 400 401 403 404 409 422 429 500 501.
 RULE E-3 | errors | 501 means named and deliberately not built — never 404.
 
 RULE I-1 | identity | users and customers are two tables; customers.user_id is null until first sign-in.

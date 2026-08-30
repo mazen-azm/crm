@@ -4,6 +4,7 @@
 // plain function, so two stubs are the whole harness.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   ConflictError,
@@ -81,8 +82,13 @@ test('errorHandler delegates when headers are already sent', () => {
 
 test('the constructor refuses a status outside the documented catalogue', () => {
   assert.throws(() => new HttpError(418, 'TEAPOT'), RangeError);
-  // 501 belongs to rule E-3 and joins the catalogue in CHANNELS-2-API.
-  assert.throws(() => new HttpError(501, 'NOT_IMPLEMENTED'), RangeError);
+  // 501 joined the catalogue with CHANNELS-2-API and is legal now. 413 is the
+  // one still outside it: the body ceiling and the answer it deserves belong
+  // to a story nobody has written, and until then a too-large body falls
+  // through to 500 rather than being answered with a status the rules do not
+  // name.
+  assert.throws(() => new HttpError(413, 'PAYLOAD_TOO_LARGE'), RangeError);
+  assert.doesNotThrow(() => new HttpError(501, 'NOT_IMPLEMENTED'));
   assert.doesNotThrow(() => new HttpError(429, 'RATE_LIMITED'));
 });
 
@@ -92,11 +98,19 @@ test('a domain code at a documented status still constructs', () => {
   assert.equal(err.code, 'REVISION_MISMATCH');
 });
 
-test('DOCUMENTED is exactly the eight statuses of rule E-2, and frozen', () => {
-  assert.deepEqual(
-    Object.keys(DOCUMENTED).map(Number).sort((a, b) => a - b),
-    [400, 401, 403, 404, 409, 422, 429, 500],
-  );
+test('DOCUMENTED is exactly the statuses rule E-2 names, and frozen', () => {
+  // Read out of the rule rather than typed here. The list was typed here, and
+  // the day 501 was legitimately added to E-2 this test failed for saying
+  // "eight" about a rule that now says nine — a test disagreeing with the
+  // document it exists to enforce. Two independent statements of one fact are
+  // only worth having when one of them is not a copy.
+  const rule = readFileSync(new URL('../../../../scripts/rules.txt', import.meta.url), 'utf8')
+    .split('\n')
+    .find((line) => line.startsWith('RULE E-2 '));
+  assert.ok(rule, 'scripts/rules.txt has no RULE E-2');
+  const named = rule.match(/\b[45]\d{2}\b/g).map(Number).sort((a, b) => a - b);
+
+  assert.deepEqual(Object.keys(DOCUMENTED).map(Number).sort((a, b) => a - b), named);
   assert.ok(Object.isFrozen(DOCUMENTED));
 });
 

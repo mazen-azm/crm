@@ -7,7 +7,7 @@
 - **IDENTITY-2-API (CRM-44)** completed: `POST /api/v1/accounts` exists and the `adminOnly` middleware is wired in `api/src/features/identity/identity.routes.js` (line 36).
 - **IDENTITY-1-API (CRM-41)** completed: sign-in returns a token, `requireSubject` / `requirePermission` are attached by `createApp`.
 - Coordinate with the owner of the **audit** feature: this story writes an audit row through `createAuditWriter` (`api/src/features/audit/index.js`) and must not break the guarantee test in `api/src/features/audit/audit.guarantee.test.js`.
-- Not blocked, but explicitly deferred to later stories: **IDENTITY-7-API (CRM-51)** (self-service change password with the current one) and **IDENTITY-8-API (CRM-52)** (ending sessions on password change).
+- Not blocked, but explicitly deferred to later stories: **IDENTITY-7-API (CRM-51)** (self-service change password with the current one) and **IDENTITY-8-API (CRM-53)** (ending sessions on password change).
 
 ---
 
@@ -30,6 +30,10 @@ Outcomes:
 ## Context — Read These Files First
 
 1. **`.squad/plan-lessons.md`** — one rule per past defect; read end to end before writing code.
+   Note especially **L-5**: the database is **SQLite**, through node 26's built-in
+   `node:sqlite` `DatabaseSync` — synchronous, no driver, no pool. Migrations are
+   plain `.sql` files under `api/src/platform/db/migrations/`, applied in order by
+   `migrate.js`. No other engine's dialect belongs anywhere in this work.
 2. **`api/src/features/identity/identity.service.js`** — read `createIdentityService` end to end.
    - Lines 51–72: instance wiring (`stamp`, `throttle`, `audit`, `record`, `wouldRemoveLastAdmin`).
    - Lines 120–152: `createAccount` — the template to follow: `validate → begin → write → record → commit → rollback on throw`. Note that hashing is `hashPassword(initialPassword)` and the shape returned excludes `password_hash`.
@@ -132,7 +136,7 @@ setPassword(actor, { id, password }) {
   // read it back, and the response never carries hash material.
   //
   // Note: existing tokens for this user stay valid until they expire.
-  // Ending them is IDENTITY-8-API (CRM-52) and is deliberately out of scope.
+  // Ending them is IDENTITY-8-API (CRM-53) and is deliberately out of scope.
   return { id, updatedAt: at };
 },
 ```

@@ -234,15 +234,58 @@ Do **not** touch `web/src/shared/api/errors.ts`. The intake forbids web changes;
 
 ## Done Criteria
 
-- [ ] `POST /intake/email/tickets`, `/whatsapp/tickets`, `/sms/tickets` each return **501** with body `{ code: 'NOT_IMPLEMENTED', channel: '<name>', requestId }` and write no customer and no ticket. (E-3)
-- [ ] A name outside the known list still returns **404** with body `{ code: 'NOT_FOUND', requestId }`. The distinction between 501 and 404 is covered by tests.
-- [ ] `POST /intake/web/tickets` still returns **201** for a valid body — CHANNELS-1-API behaviour unchanged.
-- [ ] `DOCUMENTED` in `api/src/platform/http/errors.js` contains `501: 'NOT_IMPLEMENTED'`; the errors test asserts nine statuses and still asserts `Object.isFrozen`.
-- [ ] `NotImplementedError` exists and is exported; `errorHandler()` emits `channel` on its body without breaking the E-1 base shape.
-- [ ] `api/openapi.json` documents the `501` response on `POST /intake/{channel}/tickets`; `openapi-contract.test.js` passes.
-- [ ] `SPECIFIED_CHANNELS` and `KNOWN_CHANNELS` live in `api/src/features/channels/channels.rules.js` and are re-exported from the feature's `index.js`. No other file names email/WhatsApp/SMS.
-- [ ] `scripts/rules.txt` E-2 line enumerates nine codes including 501.
-- [ ] `docs/product-brief.md` and `docs/architecture.md` are consistent with the new answer (spot-check the 501 row at `product-brief.md:118`; edit only if it currently marks 501 as pending).
-- [ ] `cd api && npm test` and `cd web && npm run build` both pass. No AI-attribution strings in the diff.
+- [x] `POST /intake/email/tickets`, `/whatsapp/tickets`, `/sms/tickets` each return **501** with body `{ code: 'NOT_IMPLEMENTED', channel: '<name>', requestId }` and write no customer and no ticket. (E-3)
+- [x] A name outside the known list still returns **404** with body `{ code: 'NOT_FOUND', requestId }`. The distinction between 501 and 404 is covered by tests.
+- [x] `POST /intake/web/tickets` still returns **201** for a valid body — CHANNELS-1-API behaviour unchanged.
+- [x] `DOCUMENTED` in `api/src/platform/http/errors.js` contains `501: 'NOT_IMPLEMENTED'`; the errors test asserts nine statuses and still asserts `Object.isFrozen`.
+- [x] `NotImplementedError` exists and is exported; `errorHandler()` emits `channel` on its body without breaking the E-1 base shape.
+- [x] `api/openapi.json` documents the `501` response on `POST /intake/{channel}/tickets`; `openapi-contract.test.js` passes.
+- [x] `SPECIFIED_CHANNELS` and `KNOWN_CHANNELS` live in `api/src/features/channels/channels.rules.js` and are re-exported from the feature's `index.js`. No other file names email/WhatsApp/SMS.
+- [x] `scripts/rules.txt` E-2 line enumerates nine codes including 501.
+- [x] `docs/product-brief.md` and `docs/architecture.md` are consistent with the new answer (spot-check the 501 row at `product-brief.md:118`; edit only if it currently marks 501 as pending).
+- [x] `cd api && npm test` and `cd web && npm run build` both pass. No AI-attribution strings in the diff.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 03.**
+
+
+---
+
+## Review note
+
+A good plan. It found the `TODO(CHANNELS-2-API/CRM-119)` already sitting in
+`errors.js` waiting for this story, took the three channel names from the
+brief's own line rather than inventing a fourth, and modelled
+`NotImplementedError` on `ConflictError` — which is the right precedent, for
+the reason that precedent gives.
+
+Four things it missed, all of the same kind: rule E-2's catalogue is written
+down in more places than the plan looked.
+
+1. **`scripts/rules.txt` line 28 lists the catalogue** and still said eight
+   statuses. Adding 501 to `DOCUMENTED` without it leaves the rule and the code
+   disagreeing, and the rule is the document the plans are checked against.
+
+2. **`scripts/verify-plan.mjs` had the catalogue typed into it** as a literal
+   Set. It now reads the codes out of `RULE E-2`. Left alone it would have
+   failed every future plan that mentioned 501 — a guard contradicting the
+   document it exists to enforce, which is the two-statements-of-one-fact
+   defect this repository keeps catching in other people's work.
+
+3. **`errors.test.js` asserted "exactly the eight statuses of rule E-2"** with
+   the eight typed in beside it. It reads them out of the rule now. A test that
+   copies the thing it is checking is checking that the copy has not been
+   edited.
+
+4. **`web/src/shared/api/errors.ts` mirrors the API's catalogue**, and its own
+   comment says the two move in one commit — and `t.errors` is
+   `satisfies Record<ApiErrorCode, string>`, so a code with no sentence is a
+   compile error rather than a screen that shows nothing. The plan put "any
+   change under `web/`" out of scope, which would have left the mirror stale.
+   Adding the code and its sentence in both languages is what the file asks
+   for.
+
+One naming change. The plan put the channel on the error body as `channel`.
+`NotImplementedError` is a platform class and should not learn a feature's
+vocabulary — and the intake's own request body has a field called `subject`, so
+that was not available either. The body key is `name` and the property behind
+it is `notImplemented`, because `Error` already owns `.name`.
