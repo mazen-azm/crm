@@ -276,17 +276,17 @@ Add all tests under `web/src/pages/customers/`. Match the style of `web/src/page
 
 ## Done Criteria
 
-- [ ] `/customers/:id` route mounts `CustomerDetailPage`.
-- [ ] `useCustomerDetail(id)` makes exactly **one** `GET /customers/:id` request per load, verified by a call-count assertion in the test file.
-- [ ] Customer contact, open tickets and notes render from one payload.
-- [ ] Ticket status and priority render from `t.ticketQueue.status*` / `priority*` via the shared `web/src/pages/tickets/ticket-labels.ts` module (BR-6). No raw codes visible.
-- [ ] Empty state (no open tickets) shows the D-2 sentence and a link to `/tickets/new?customerId=:id`.
-- [ ] Error state shows `t.errors[error.code]` (with `t.errors.unknown` fallback) and a working Retry.
-- [ ] `en.ts` and `ar.ts` updated in the same edit; `parity.test.ts` passes.
-- [ ] `no-hardcoded-strings.test.ts` and `no-mirrored-styles.test.ts` pass.
-- [ ] `cd web && npm test` and `cd web && npm run build` both green.
-- [ ] `TicketQueuePage.tsx` no longer defines `statusLabel` / `priorityLabel` locally; it imports them from `./ticket-labels`.
-- [ ] No file under `api/` was modified.
-- [ ] No AI-attribution string in any diff, doc, or commit message.
+- [x] `/customers/:id` route mounts `CustomerDetailPage`.
+- [x] `useCustomerDetail(id)` makes exactly **one** `GET /customers/:id` request per load, verified by a call-count assertion in the test file.
+- [x] Customer contact, open tickets and notes render from one payload.
+- [x] Ticket status and priority render from `t.ticketQueue.status*` / `priority*` via the shared `web/src/pages/tickets/ticket-labels.ts` module (BR-6). No raw codes visible.
+- [x] Empty state (no open tickets) shows the D-2 sentence and a link to `/tickets/new?customerId=:id`.
+- [x] Error state shows `t.errors[error.code]` (with `t.errors.unknown` fallback) and a working Retry.
+- [x] `en.ts` and `ar.ts` updated in the same edit; `parity.test.ts` passes.
+- [x] `no-hardcoded-strings.test.ts` and `no-mirrored-styles.test.ts` pass.
+- [x] `cd web && npm test` and `cd web && npm run build` both green.
+- [x] `TicketQueuePage.tsx` no longer defines `statusLabel` / `priorityLabel` locally; it imports them from `./ticket-labels`.
+- [x] No file under `api/` was modified.
+- [x] No AI-attribution string in any diff, doc, or commit message.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

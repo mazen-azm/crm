@@ -152,13 +152,21 @@ export type TicketQueueFilters = {
 
 ### 4 — Page CSS
 
-*(corrected)* **No page in this app has its own stylesheet.** Every `.css` file
-sits beside a primitive in `web/src/shared/ui/` (`Card.css`, `Field.css`,
-`tokens.css`, …) — `CustomersPage` renders a list with no CSS of its own, and
-CRM-72 followed it. Compose from `Card`, `Stack` and `Text`. If a row genuinely
-cannot be expressed with those, that is a primitive missing from the library,
-and adding it there is the fix — a page stylesheet is where the design system
-quietly stops applying.
+*(corrected — and the correction was itself wrong; see below.)*
+
+The plan proposed a page stylesheet. **This screen does not need one**: it is
+built from `Card`, `Stack` and `Text`, and where a row genuinely cannot be
+expressed with the primitives, the honest fix is a primitive rather than a
+page-level rule, because a page stylesheet is where the design system quietly
+stops applying.
+
+**But the reason first given here was false.** It said "no page in this app has
+its own stylesheet", and `web/src/pages/customers/CustomersPage.css` has
+existed since CUSTOMERS-1-WEB shipped. The claim came from a `find … | head`
+whose output was cut off at ten lines — a truncation that reads exactly like an
+answer. The conclusion happened to be right for this screen; the evidence for
+it was not, and a plan that carries a false fact teaches the next reader
+something untrue (L-48).
 
 ### 5 — Translations
 

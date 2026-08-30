@@ -5,6 +5,7 @@ import { DeskShell } from './desk-shell';
 import { SignInPage } from '../pages/sign-in/SignInPage';
 import { HomePage } from '../pages/home/HomePage';
 import { CustomersPage } from '../pages/customers/CustomersPage';
+import { CustomerScreenPage } from '../pages/customers/CustomerScreenPage';
 import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 
@@ -35,6 +36,16 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <CustomersPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/customers/:id"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <CustomerScreenPage />
             </DeskShell>
           </RequireAuth>
         }
