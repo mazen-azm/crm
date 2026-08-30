@@ -67,6 +67,27 @@ export function validateCustomer({ name, email, phone }) {
   return fields;
 }
 
+// Resolution requires an address, because the address is the key it resolves by
+// (I-4). validateCustomer above deliberately accepts a customer with no email —
+// "somebody who telephones may not have one" — so the two rules disagree on
+// purpose, and one shared validator would have to pick a meaning and betray the
+// other caller.
+//
+// The name is checked here too, and only for its type. Resolution takes a name
+// from whoever is on the other end of a public form, so it may be absent — but
+// a number or an object arriving where a string was assumed reaches
+// normaliseCustomer's .trim() and becomes a 500 that says the caller's bad
+// input was our fault. The same reasoning the category check in tickets records.
+export function validateResolveInput({ email, name }) {
+  const fields = [];
+  const address = typeof email === 'string' ? email.trim() : email;
+  if (typeof address !== 'string' || address === '' || !EMAIL_SHAPE.test(address)) {
+    fields.push('email');
+  }
+  if (name !== undefined && name !== null && typeof name !== 'string') fields.push('name');
+  return fields;
+}
+
 export const normaliseCustomer = ({ name, email, phone }) => {
   const orNull = (value) => {
     if (typeof value !== 'string') return null;

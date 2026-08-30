@@ -15,6 +15,7 @@ Entry point for the **customers** feature. Stories execute in order by their `NN
 | 46 | `46-story-crm-61.md` | CUSTOMERS-3-WEB agent — I write an internal note about a customer | CRM-61 | — |
 | 47 | `47-story-crm-62.md` | CUSTOMERS-4-API agent — I add a customer while I am on the phone to them | CRM-62 | — |
 | 48 | `48-story-crm-63.md` | CUSTOMERS-4-WEB agent — I add a customer while I am on the phone to them | CRM-63 | — |
+| 52 | `52-story-crm-64.md` | CUSTOMERS-5-API system — an arriving request matches a customer by address, or creates one | CRM-64 | — |
 
 ## Dependency notes
 
