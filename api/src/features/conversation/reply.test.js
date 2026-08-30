@@ -187,7 +187,7 @@ test('a ticket nobody has is the same 404 every route under a ticket gives', asy
   assert.deepEqual(Object.keys(await res.json()).sort(), ['code', 'requestId']);
 });
 
-test('a customer is refused, in this story, with that same 404', async () => {
+test('a customer replies on their own ticket, and not on anybody else’s', async () => {
   const { staff, as, signIn, customerId, raise } = await start();
   const customer = await (await staff('/api/v1/customers', {
     method: 'POST',
@@ -203,17 +203,24 @@ test('a customer is refused, in this story, with that same 404', async () => {
   const other = await raise();
   void customerId;
 
-  // Their own ticket and somebody else's, both 404 — replying is theirs to do
-  // and it is CONVERSATION-3-API's rule, with a different effect. Nothing
-  // about the answer says which of the two refusals it was.
-  for (const id of [mine.id, other.id]) {
-    const res = await theirs(`/api/v1/tickets/${id}/replies`, {
-      method: 'POST',
-      body: { body: 'Let me in.' },
-    });
-    assert.equal(res.status, 404, id);
-    assert.equal((await res.json()).code, 'NOT_FOUND');
-  }
+  // This test asserted BOTH were 404 when CONVERSATION-1-API shipped, and the
+  // route's comment said CONVERSATION-3-API would turn the refusal into a
+  // comparison. It did: one route, one message table, and what the reply DOES
+  // depends on who wrote it.
+  const own = await theirs(`/api/v1/tickets/${mine.id}/replies`, {
+    method: 'POST',
+    body: { body: 'It is still happening.' },
+  });
+  assert.equal(own.status, 201);
+  assert.equal((await own.json()).kind, 'public');
+
+  // Somebody else's is still the same 404 a missing ticket gets.
+  const notTheirs = await theirs(`/api/v1/tickets/${other.id}/replies`, {
+    method: 'POST',
+    body: { body: 'Let me in.' },
+  });
+  assert.equal(notTheirs.status, 404);
+  assert.equal((await notTheirs.json()).code, 'NOT_FOUND');
 });
 
 test('the clock stop belongs to service-levels, and stops once', async () => {

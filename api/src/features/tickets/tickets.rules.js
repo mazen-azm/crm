@@ -144,6 +144,21 @@ export function validateCategoryChange({ categoryId, revision }) {
 // is the moment the ticket closes itself.
 export const REOPEN_WINDOW_DAYS = 14;
 
+// Whether a resolved ticket is still inside its reopen window.
+//
+// One function, two callers: somebody choosing to reopen (TICKETS-11-API) and
+// somebody replying to a resolved ticket, which reopens it (CONVERSATION-3-API).
+// Two copies of this arithmetic would be two answers to when a resolution
+// becomes final.
+//
+// A missing resolvedAt fails, which is the safe direction: a ticket whose
+// resolution moment is unknown is not reopenable.
+export function withinReopenWindow({ resolvedAt, nowSeconds }) {
+  const resolved = Date.parse(resolvedAt ?? '');
+  if (Number.isNaN(resolved)) return false;
+  return nowSeconds * 1000 - resolved <= REOPEN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
+
 // A category has one field and one way to be wrong. The ceiling matches a
 // ticket's subject: a category name is a label on a picker, and one longer
 // than a subject line is a label nobody can read anyway.
