@@ -607,6 +607,20 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       return true;
     },
 
+    // A ticket in the shape a caller may see, by id, with no transaction and
+    // no ownership check.
+    //
+    // No check because the only caller reads it AFTER readForActor has already
+    // decided the actor may touch this ticket, inside the same transaction —
+    // and a second check there would be the same question asked twice, with a
+    // second chance to answer it differently. The name says what it does; a
+    // caller that has not already established the right has no business
+    // calling it, and there is exactly one.
+    publicById(id) {
+      const row = findTicketById(db, { id });
+      return row ? publicShape(row) : null;
+    },
+
     // T-2's transition, and only that one: a `new` ticket becomes `open` when
     // the desk first answers it.
     //

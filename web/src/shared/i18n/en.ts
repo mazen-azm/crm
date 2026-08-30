@@ -257,6 +257,14 @@ export const en = {
     reload: 'Reload the queue',
     failedTitle: 'That assignment did not go through',
   },
+  ticketReply: {
+    label: 'Reply to the customer',
+    placeholder: 'What you want them to read.',
+    send: 'Send the reply',
+    sending: 'Sending…',
+    required: 'A reply needs something in it.',
+    failed: 'That reply was not sent',
+  },
   ticketStatus: {
     label: 'Move to',
     choose: 'Choose a status',

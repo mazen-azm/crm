@@ -71,7 +71,7 @@ test('a reply is stored with its author, its body and its kind', async () => {
 
   const res = await reply(ticket.id, '  We are looking at it.  ');
   assert.equal(res.status, 201);
-  const message = await res.json();
+  const { message } = await res.json();
 
   assert.equal(message.ticketId, ticket.id);
   assert.ok(message.authorId);
@@ -88,7 +88,7 @@ test('the first public reply opens a new ticket and stops the response clock', a
   assert.equal(ticket.status, 'new');
   assert.equal(clock(ticket.id).stopped_at, null);
 
-  const message = await (await reply(ticket.id, 'We are looking at it.')).json();
+  const { message } = await (await reply(ticket.id, 'We are looking at it.')).json();
 
   assert.equal(ticketRow(ticket.id).status, 'open');
   // At the REPLY's own timestamp. S-1 measures the promise from the ticket's
@@ -100,7 +100,7 @@ test('the first public reply opens a new ticket and stops the response clock', a
 test('a second reply changes neither, because neither is still there to change', async () => {
   const { raise, reply, ticketRow, clock, audit } = await start();
   const ticket = await raise();
-  const first = await (await reply(ticket.id, 'We are looking at it.')).json();
+  const { message: first } = await (await reply(ticket.id, 'We are looking at it.')).json();
   const before = audit().length;
 
   await reply(ticket.id, 'Still looking.');
@@ -152,7 +152,7 @@ test('the trail records the reply without its body', async () => {
   const { raise, reply, audit } = await start();
   const ticket = await raise();
 
-  const message = await (await reply(ticket.id, 'Something a customer said in confidence.')).json();
+  const { message } = await (await reply(ticket.id, 'Something a customer said in confidence.')).json();
 
   const row = audit().find((r) => r.verb === 'ticket.reply');
   assert.equal(JSON.parse(row.diff).after.messageId, message.id);
@@ -212,7 +212,7 @@ test('a customer replies on their own ticket, and not on anybody else’s', asyn
     body: { body: 'It is still happening.' },
   });
   assert.equal(own.status, 201);
-  assert.equal((await own.json()).kind, 'public');
+  assert.equal((await own.json()).message.kind, 'public');
 
   // Somebody else's is still the same 404 a missing ticket gets.
   const notTheirs = await theirs(`/api/v1/tickets/${other.id}/replies`, {
@@ -257,7 +257,7 @@ test('the clock stops at the reply’s timestamp, not at whenever the stop ran',
   const { raise, reply, clock } = await start({ now: ticking() });
   const ticket = await raise();
 
-  const message = await (await reply(ticket.id, 'We are looking at it.')).json();
+  const { message } = await (await reply(ticket.id, 'We are looking at it.')).json();
 
   // With a clock that moves, these are two different numbers unless the stop
   // was given the message's own `at`. S-1 measures the promise from the

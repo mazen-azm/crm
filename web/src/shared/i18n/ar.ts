@@ -211,6 +211,14 @@ export const ar = defineLocale({
     reload: 'أعد تحميل الطابور',
     failedTitle: 'لم يتم الإسناد',
   },
+  ticketReply: {
+    label: 'رُد على العميل',
+    placeholder: 'ما تريد أن يقرأه.',
+    send: 'أرسِل الرد',
+    sending: 'جارٍ الإرسال…',
+    required: 'الرد يحتاج إلى نص.',
+    failed: 'لم يُرسَل الرد',
+  },
   ticketStatus: {
     label: 'انقل إلى',
     choose: 'اختر الحالة',
