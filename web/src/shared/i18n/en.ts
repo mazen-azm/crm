@@ -222,6 +222,7 @@ export const en = {
     any: 'Any',
     unassigned: 'Unassigned',
     apply: 'Apply',
+    mine: 'Mine',
     clear: 'Clear the filters',
     resultCountOne: 'ticket',
     resultCountTwo: 'tickets',

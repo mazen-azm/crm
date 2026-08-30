@@ -26,8 +26,15 @@ const ticket = (id: string, extra: Record<string, unknown> = {}) => ({
 
 const CATEGORIES = { items: [{ id: 'cat-1', name: 'Billing' }], total: 1, limit: 100, offset: 0 };
 const ASSIGNEES = {
-  items: [{ id: 'staff-1', name: 'Sofia Martinez', role: 'agent' }],
-  total: 1,
+  items: [
+    { id: 'staff-1', name: 'Sofia Martinez', role: 'agent' },
+    // The signed-in agent is on the staff list too, which is how the filter
+    // summary turns their id back into a name. useAssignees reads every page,
+    // so somebody on the second page is named as readily as somebody on the
+    // first.
+    { id: 'agent-1', name: 'Omar Reilly', role: 'agent' },
+  ],
+  total: 2,
   limit: 100,
   offset: 0,
 };
@@ -43,6 +50,13 @@ const desk = (queue: () => Response) => {
     // reading whichever request happened to be last.
     if (url.pathname.startsWith('/api/v1/ticket-categories')) return Promise.resolve(json(CATEGORIES)());
     if (url.pathname.startsWith('/api/v1/assignees')) return Promise.resolve(json(ASSIGNEES)());
+    // Who is signed in, for the same reason: the screen asks so it can offer
+    // "Mine" without anybody typing their own id. It is the third request
+    // that is not the queue, and the comment above was written when there
+    // were two.
+    if (url.pathname === '/api/v1/me') {
+      return Promise.resolve(json({ id: 'agent-1', role: 'agent', name: 'Omar Reilly' })());
+    }
     calls.push(url);
     return Promise.resolve(queue());
   });
@@ -185,4 +199,62 @@ test('every status the machine knows can be filtered for', async () => {
   ]) {
     expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
   }
+});
+
+test('one click narrows the queue to mine, without anybody typing an id', async () => {
+  const { stub, calls } = desk(json({ items: [ticket('t-1')], total: 1, limit: 25, offset: 0 }));
+  vi.stubGlobal('fetch', stub);
+  renderWithProviders(<TicketQueuePage />);
+
+  await userEvent.click(await screen.findByRole('button', { name: en.ticketQueue.mine }));
+
+  // The same filter the picker sets, so what comes back is the queue — not a
+  // second route and not a second screen.
+  await waitFor(() => expect(lastQuery(calls).get('assigneeId')).toBe('agent-1'));
+});
+
+test('the filter is in the address, so the view can be sent and gone back to', async () => {
+  const { stub, calls } = desk(json({ items: [ticket('t-1')], total: 1, limit: 25, offset: 0 }));
+  vi.stubGlobal('fetch', stub);
+  // This render IS the reload: the filter lives in the URL and not in memory.
+  renderWithProviders(<TicketQueuePage />, { route: '/tickets?assigneeId=agent-1' });
+
+  await waitFor(() => expect(calls.length).toBeGreaterThan(0));
+  expect(lastQuery(calls).get('assigneeId')).toBe('agent-1');
+});
+
+test('the active-filter summary names the person, not their id', async () => {
+  const { stub } = desk(json({ items: [], total: 0, limit: 25, offset: 0 }));
+  vi.stubGlobal('fetch', stub);
+  renderWithProviders(<TicketQueuePage />, { route: '/tickets?assigneeId=agent-1' });
+
+  // The summary is a sentence somebody reads. It printed the raw id, which was
+  // invisible while the only way to set this filter was to pick a name from a
+  // list — and unmissable once one click sets it to your own.
+  expect(await screen.findByText(/Omar Reilly/)).toBeInTheDocument();
+  expect(screen.queryByText(/agent-1/)).not.toBeInTheDocument();
+});
+
+test('nothing is offered before we know who is asking', async () => {
+  let release: (value: Response) => void = () => {};
+  const pending = new Promise<Response>((resolve) => { release = resolve; });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(String(input), 'http://desk.test');
+      if (url.pathname === '/api/v1/me') return pending;
+      if (url.pathname.startsWith('/api/v1/ticket-categories')) return Promise.resolve(json(CATEGORIES)());
+      if (url.pathname.startsWith('/api/v1/assignees')) return Promise.resolve(json(ASSIGNEES)());
+      return Promise.resolve(json({ items: [], total: 0, limit: 25, offset: 0 })());
+    }),
+  );
+  renderWithProviders(<TicketQueuePage />);
+
+  await screen.findByRole('button', { name: en.ticketQueue.apply });
+  // A button that filtered by `undefined` would show the whole queue and look
+  // like it had worked.
+  expect(screen.queryByRole('button', { name: en.ticketQueue.mine })).not.toBeInTheDocument();
+
+  release(json({ id: 'agent-1', role: 'agent', name: 'Omar Reilly' })());
+  expect(await screen.findByRole('button', { name: en.ticketQueue.mine })).toBeInTheDocument();
 });

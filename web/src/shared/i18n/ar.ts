@@ -179,6 +179,7 @@ export const ar = defineLocale({
     any: 'الكل',
     unassigned: 'بدون مسؤول',
     apply: 'طبّق',
+    mine: 'تذاكري',
     clear: 'امسح الفلاتر',
     resultCountOne: 'تذكرة',
     resultCountTwo: 'تذكرتان',
