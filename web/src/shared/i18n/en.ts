@@ -76,6 +76,32 @@ export const en = {
     another: 'Set another',
     failed: 'That password was not set',
   },
+  portalRaise: {
+    title: 'Tell us what happened',
+    subtitle: 'No account needed. We will use your email address to find you.',
+    email: 'Your email address',
+    name: 'Your name (optional)',
+    subject: 'What is it about',
+    body: 'What happened',
+    bodyPlaceholder: 'What you were doing, and what went wrong.',
+    submit: 'Send it',
+    submitting: 'Sending…',
+    sentTitle: 'We have it',
+    // The reference IS the confirmation. A sentence saying it worked, with
+    // nothing to quote, leaves somebody with nothing to say when they
+    // telephone about it.
+    reference: 'Your reference',
+    sentBody: 'Keep this. Quote it if you get in touch about the same thing.',
+    another: 'Send another',
+    failed: 'That did not send',
+    // The intake's own sentence for a 429, not the shared one. The shared one
+    // says "Too many attempts", and this is told to somebody who may have made
+    // exactly one: the intake counts every arrival from a network address, so
+    // a first-time visitor can meet the ceiling because of somebody else
+    // behind the same connection. Telling them they tried too often would be
+    // untrue, and there is nothing they could do about it.
+    tooMany: 'We are getting a lot of requests from your connection right now. Try again in a minute.',
+  },
   home: {
     heading: 'Support Desk',
     signOut: 'Sign out',

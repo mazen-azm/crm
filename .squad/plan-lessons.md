@@ -1047,3 +1047,29 @@ were both proved to fail.
 The same shape is worth watching for elsewhere: the four plans that titled
 themselves by their position within a feature rather than by their filename are
 a guess about a number nothing told them either.
+
+## L-55 — A native input type is a validator, and it is not yours
+
+**Rule:** on a form whose rules the API owns, do not reach for `type="email"`,
+`type="url"`, `pattern`, `min`, `max` or `required`. The browser refuses to
+submit a form whose constrained input does not parse, so the API's own rule
+never runs — and the sentence somebody reads is the browser's: in the browser's
+language, unstyled, outside the resource files, and saying whatever that
+browser says. SC-2 puts every rule in the API. `type="password"` is different
+and stays: it changes how a value is displayed, not whether it may be sent.
+
+**Where it came from:** the public intake form used `type="email"`. A test
+asserting that a 422 marks the email field failed, and the reason was not the
+marking — no request had been made at all. The browser had swallowed the
+submit, so the API's email rule, its 422, and the shared sentence were all
+unreachable from that screen. Every one of them had its own passing test
+somewhere else, and the screen a stranger sees had none of them.
+
+The tell was that the failure looked like a state-timing bug. Adding `waitFor`
+made it slower and no greener, which is usually the sign that the thing being
+waited for never happens.
+
+Sign-in has the same `type="email"` on its address field. It is not wrong there
+in the same way — an unparseable address cannot be a real account either — but
+it means that screen's refusal comes from two places, and only one of them is
+translated. Named here rather than changed, because it is not this story's.
