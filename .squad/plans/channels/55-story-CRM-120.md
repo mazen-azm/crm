@@ -251,16 +251,56 @@ Match the assertion style at `identity.throttle.test.js` **lines 37, 53, 91**: u
 
 ## Done Criteria
 
-- [ ] `api/src/features/identity/identity.throttle.js` exports `createKeyedThrottle` (the old `createSignInThrottle` name is gone); both **LIMITATION** blocks remain and are unchanged in intent.
-- [ ] `api/src/features/identity/identity.service.js` and `api/src/features/identity/identity.throttle.test.js` compile and pass with the renamed factory.
-- [ ] `api/src/features/identity/index.js` re-exports `createKeyedThrottle`.
-- [ ] `api/src/compose.js` constructs one intake throttle per `composeApp` and hands it to `channelsRouter`, with the two **LIMITATION** blocks restated in a comment above the constructor.
-- [ ] `api/src/features/channels/channels.routes.js` calls `intakeThrottle.checkAllowed({ address: req.ip ?? null })` before the service and `intakeThrottle.recordFailure({ address: req.ip ?? null })` in a `finally`, with a comment explaining why every request counts (not only failures) and why `recordSuccess` is deliberately not called.
-- [ ] `api/src/features/channels/channels.service.js` is unchanged.
-- [ ] `api/src/features/channels/intake.throttle.test.js` exists and covers: 429 after ceiling; successes count; failures count; window elapses without a sweep; per-`composeApp` isolation.
-- [ ] `api/src/features/channels/intake.test.js` still passes without modification.
-- [ ] Only **one** counter implementation exists in the repo (`identity.throttle.js`); no `new Map()` limiter added in `channels/`.
-- [ ] `429 RATE_LIMITED` continues to be produced by the shared `HttpError` path from `api/src/platform/http/errors.js`; nothing new added to the catalogue.
-- [ ] No `web/` files changed by this story.
+- [x] `api/src/features/identity/identity.throttle.js` exports `createKeyedThrottle` (the old `createSignInThrottle` name is gone); both **LIMITATION** blocks remain and are unchanged in intent.
+- [x] `api/src/features/identity/identity.service.js` and `api/src/features/identity/identity.throttle.test.js` compile and pass with the renamed factory.
+- [x] `api/src/features/identity/index.js` re-exports `createKeyedThrottle`.
+- [x] `api/src/compose.js` constructs one intake throttle per `composeApp` and hands it to `channelsRouter`, with the two **LIMITATION** blocks restated in a comment above the constructor.
+- [x] `api/src/features/channels/channels.routes.js` calls `intakeThrottle.checkAllowed({ address: req.ip ?? null })` before the service and `intakeThrottle.recordFailure({ address: req.ip ?? null })` in a `finally`, with a comment explaining why every request counts (not only failures) and why `recordSuccess` is deliberately not called.
+- [x] `api/src/features/channels/channels.service.js` is unchanged.
+- [x] `api/src/features/channels/intake.throttle.test.js` exists and covers: 429 after ceiling; successes count; failures count; window elapses without a sweep; per-`composeApp` isolation.
+- [x] `api/src/features/channels/intake.test.js` still passes without modification.
+- [x] Only **one** counter implementation exists in the repo (`identity.throttle.js`); no `new Map()` limiter added in `channels/`.
+- [x] `429 RATE_LIMITED` continues to be produced by the shared `HttpError` path from `api/src/platform/http/errors.js`; nothing new added to the catalogue.
+- [x] No `web/` files changed by this story.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+
+
+---
+
+## Review note
+
+The plan was right about the shape and right about the reasoning — count every
+arrival, not just the failures; check before the service; restate both
+LIMITATION blocks. Three changes.
+
+1. **The primitive moved to `api/src/platform/http/throttle.js`.** The plan kept
+   it in `identity/` and re-exported it through that feature's index so channels
+   could reach it. That is legal, and it leaves a counter the intake depends on
+   owned by a feature that has nothing to do with the intake. Platform is where
+   machinery both features may read already lives — errors, pagination,
+   permission — and `verify-architecture` states the rule that makes it the
+   right place: platform may not import a feature, and every feature may import
+   platform.
+
+2. **The rename went all the way.** The plan renamed the factory to
+   `createKeyedThrottle` and deliberately kept `emailCeiling`, `recordFailure`
+   and `recordSuccess` — then added a note telling the executor not to "clean
+   up" a `recordFailure` call that fires after a 201. A primitive that has to
+   be annotated at its call site to explain that its method name is untrue is
+   not generic; it is the old one wearing a new label. `email` is `subject`,
+   `recordFailure` is `count`, `recordSuccess` is `forget`. Thirty-five call
+   sites, nearly all in the primitive's own test, and all mechanical.
+
+3. **One test was proving less than it claimed.** "Hammering a closed door does
+   not extend the ban" said in its comment that the window is anchored to the
+   first arrival rather than the latest — and could not have caught the
+   opposite, because a refused request never reaches the counter, so nothing
+   refreshes either way. Making the window refresh on every arrival left it
+   green. There is now a second test that arrives at t=0 and t=30 and asserts
+   the door opens at t=61, and the first test's comment says only what it
+   proves.
+
+That last one is the reason the mutations get run. Two of the five in this
+story were behaviourally inert — a mutation that changes nothing tells you
+nothing, and reads exactly like a guard that works.

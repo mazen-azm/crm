@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { verifyPassword, hashPassword, DUMMY_PASSWORD_HASH } from '../../shared/password.js';
 import { createAuditWriter } from '../audit/index.js';
-import { createSignInThrottle } from './identity.throttle.js';
+import { createKeyedThrottle } from '../../platform/http/throttle.js';
 import {
   countLiveAdmins,
   countLiveUsers,
@@ -53,7 +53,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
 
   // One throttle per service instance, so every composeApp — and so every
   // test — starts with empty counters and cannot inherit another test's.
-  const throttle = createSignInThrottle({ now });
+  const throttle = createKeyedThrottle({ now });
 
   // Every mutation writes its audit row inside the same transaction. An audit
   // trail with gaps in it is worse than none, because it is believed.
@@ -82,7 +82,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       // 422, then 429, then 401. The shape check comes first so garbage cannot
       // be used to fill the counters; the throttle comes before the credential
       // check so a 429 is the same answer whether the account exists or not.
-      throttle.checkAllowed({ email: key, address });
+      throttle.check({ subject: key, address });
 
       const row = findLiveUserByEmail(db, key);
 
@@ -96,13 +96,13 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       // soft-deleted account. A response that told them apart would be a
       // directory of the staff.
       if (!row || !correct) {
-        throttle.recordFailure({ email: key, address });
+        throttle.count({ subject: key, address });
         throw new HttpError(401, 'UNAUTHENTICATED');
       }
 
       // The account counter only. Clearing the address counter here would let
       // one landed guess buy a fresh sweep budget for the host that made it.
-      throttle.recordSuccess({ email: key });
+      throttle.forget({ subject: key });
 
       return {
         token: signToken(
