@@ -195,10 +195,10 @@ Use `vitest` + Testing Library, `render` from `web/src/testing/render.tsx`. Foll
 
 ## Done Criteria
 
-- [ ] `/customers/:id` renders a customer's internal notes and a form to write one, using only shared primitives from `web/src/shared/ui/`.
-- [ ] Submitting a valid note appends the new note to the visible list; the network log shows **one POST and no additional GET** (verified by test 1.3).
-- [ ] Whitespace-only input is refused before the request, with the field-level error copy mapped from the API's canonical code via `t.errors` (verified by test 1.2).
-- [ ] Every note row shows the author (falling back to the `systemAuthor` translation when `author_id === null`) and a timestamp rendered through `useFormatters` (BR-2, BR-3).
-- [ ] All new copy exists in both `en.ts` and `ar.ts`; `parity.test.ts` and `no-hardcoded-strings.test.ts` are green (BR-6).
-- [ ] `cd web && npm test` and `cd web && npm run build` both pass; `cd api && npm test` still passes with no `api/` file modified.
-- [ ] No new files reference `/api/v1` (`request()` prefixes it) and no fetch stub reuses a `Response` across calls (L-30).
+- [x] `/customers/:id` renders a customer's internal notes and a form to write one, using only shared primitives from `web/src/shared/ui/`.
+- [x] Submitting a valid note appends the new note to the visible list; the network log shows **one POST and no additional GET** (verified by test 1.3).
+- [x] Whitespace-only input is refused before the request, with the field-level error copy mapped from the API's canonical code via `t.errors` (verified by test 1.2).
+- [x] Every note row shows the author (falling back to the `systemAuthor` translation when `author_id === null`) and a timestamp rendered through `useFormatters` (BR-2, BR-3).
+- [x] All new copy exists in both `en.ts` and `ar.ts`; `parity.test.ts` and `no-hardcoded-strings.test.ts` are green (BR-6).
+- [x] `cd web && npm test` and `cd web && npm run build` both pass; `cd api && npm test` still passes with no `api/` file modified.
+- [x] No new files reference `/api/v1` (`request()` prefixes it) and no fetch stub reuses a `Response` across calls (L-30).
