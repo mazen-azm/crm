@@ -37,3 +37,41 @@ export function validateNote({ body }) {
 // Stored trimmed. A note that is " ok " and a note that is "ok" are the same
 // note, and the difference only ever shows up as a puzzling diff later.
 export const normaliseNote = (body) => String(body).trim();
+
+// A shape test, not a validation of deliverability — nothing here can know
+// whether an address accepts mail, and a regex that pretends to is a regex
+// that rejects somebody's real address. One @, something either side, and a
+// dot in the domain. Kept local for the reason escapeLike is: a dependency for
+// four lines is a dependency to keep up to date.
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+
+// A customer needs a name. Everything else is optional, because somebody who
+// telephones may have neither an address nor a number worth keeping, and a
+// desk still needs them on file.
+//
+// Absent and blank are the same thing here: '' is not an email address and not
+// a phone number, and normaliseCustomer collapses both to null so the partial
+// unique index on email keeps meaning "one live customer per address".
+export function validateCustomer({ name, email, phone }) {
+  const fields = [];
+  if (typeof name !== 'string' || name.trim() === '') fields.push('name');
+  // Trimmed before the emptiness test, not after: '' was accepted and '   '
+  // was refused as malformed, which are the same thing typed differently.
+  // normaliseCustomer collapses both to null, so the validator has to agree
+  // with it or a form that pads a blank field gets a 422 nobody can act on.
+  const address = typeof email === 'string' ? email.trim() : email;
+  if (address !== undefined && address !== null && address !== '' && !EMAIL_SHAPE.test(address)) {
+    fields.push('email');
+  }
+  if (phone !== undefined && phone !== null && typeof phone !== 'string') fields.push('phone');
+  return fields;
+}
+
+export const normaliseCustomer = ({ name, email, phone }) => {
+  const orNull = (value) => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed === '' ? null : trimmed;
+  };
+  return { name: name.trim(), email: orNull(email), phone: orNull(phone) };
+};

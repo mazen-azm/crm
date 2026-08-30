@@ -92,8 +92,8 @@ Add exports next to `insertCustomerNote` and `findLiveCustomerById`:
 ```js
 export function insertCustomer(db, { id, name, email, phone, createdAt }) {
   db.prepare(`
-    INSERT INTO customers (id, name, email, phone, user_id, created_at, updated_at)
-    VALUES (?, ?, ?, ?, NULL, ?, ?)
+    INSERT INTO customers (id, name, email, phone, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
   `).run(id, name, email, phone, createdAt, createdAt);
   return db.prepare(`SELECT ${PROJECTION} FROM customers WHERE id = ?`).get(id);
 }
@@ -107,7 +107,17 @@ export function findLiveCustomerByEmail(db, { email }) {
 ```
 
 Notes:
-- `user_id` is inserted as literal `NULL` (I-1). Do not accept it as a parameter.
+- *(corrected)* **There is no `user_id` column.** `0001__customers.sql` has
+  `id, name, email, phone, address, created_at, updated_at, deleted_at` and
+  nothing else, so the draft's INSERT would have thrown `no such column`. I-1
+  still holds and is still what this story honours — it says a customer is not
+  a user, and the way this route honours it is by writing one row in
+  `customers` and none in `users`. The column arrives with whichever identity
+  story gives a customer a sign-in; naming it now would be planning against a
+  schema that does not exist.
+- `address` exists and is deliberately not accepted here: no criterion asks for
+  it, and `PROJECTION` does not return it, so a value written would be
+  invisible. The seed sets addresses directly.
 - `email` uses `COLLATE NOCASE` to match the column collation set in `0001__customers.sql`.
 - `PROJECTION` already exists at the top of the file — reuse it.
 
@@ -249,14 +259,14 @@ No schema changes. `0001__customers.sql` already carries every column and the pa
 
 ## Done Criteria
 
-- [ ] `POST /customers` exists in `api/src/features/customers/customers.routes.js`, guarded by `requireSubject()`, returning `201` and `publicShape(row)`.
-- [ ] A successful call writes exactly one `customers` row with `user_id = NULL` and **no** `users` row (I-1).
-- [ ] A successful call writes one `audit_events` row inside the same transaction (BR-2).
-- [ ] A duplicate email against a live customer returns `422 { fields: ['email'] }` (I-4); never a 500.
-- [ ] An email that only matches a soft-deleted customer is accepted.
-- [ ] A customer added with no email is accepted; blank `email`/`phone` normalise to `NULL`.
-- [ ] `openapi.json` documents the new operation, including the 422 example.
-- [ ] All tests listed in **Test Plan** exist and pass; the whole `cd api && npm test` suite is green.
-- [ ] No commits, code, or docs mention AI assistance (grep clean).
+- [x] `POST /customers` exists in `api/src/features/customers/customers.routes.js`, guarded by `requireSubject()`, returning `201` and `publicShape(row)`.
+- [x] A successful call writes exactly one `customers` row with `user_id = NULL` and **no** `users` row (I-1).
+- [x] A successful call writes one `audit_events` row inside the same transaction (BR-2).
+- [x] A duplicate email against a live customer returns `422 { fields: ['email'] }` (I-4); never a 500.
+- [x] An email that only matches a soft-deleted customer is accepted.
+- [x] A customer added with no email is accepted; blank `email`/`phone` normalise to `NULL`.
+- [x] `openapi.json` documents the new operation, including the 422 example.
+- [x] All tests listed in **Test Plan** exist and pass; the whole `cd api && npm test` suite is green.
+- [x] No commits, code, or docs mention AI assistance (grep clean).
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 02.**

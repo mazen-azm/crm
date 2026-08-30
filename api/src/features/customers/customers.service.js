@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto';
 
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { createAuditWriter, transact } from '../audit/index.js';
-import { normaliseNote, phoneDigits, validateNote } from './customers.rules.js';
+import { normaliseCustomer, normaliseNote, phoneDigits, validateCustomer, validateNote } from './customers.rules.js';
 import {
   countCustomerNotes,
   countLiveCustomers,
   countSearchLiveCustomers,
+  findLiveCustomerByEmail,
   findLiveCustomerById,
+  insertCustomer,
   insertCustomerNote,
   listCustomerNotes,
   listLiveCustomers,
@@ -76,6 +78,42 @@ export function createCustomersService({ db, now = () => Math.floor(Date.now() /
 
     // The shape check first, so a blank note never reaches the transaction and
     // a 422 names the field rather than the value.
+    // Somebody on the telephone, put on file while they are still talking.
+    create(actor, input) {
+      const invalid = validateCustomer(input ?? {});
+      if (invalid.length > 0) throw unprocessable(invalid);
+
+      const { name, email, phone } = normaliseCustomer(input);
+      const id = randomUUID();
+      const at = stamp();
+
+      return transact(db, () => {
+        // Checked here rather than left to the unique index, for the reason
+        // CRM-82 found the hard way: an index that fires produces a raw SQLite
+        // error, which escapes as a 500 and tells the caller their typo was
+        // our fault. The index stays as the second guard.
+        if (findLiveCustomerByEmail(db, { email })) {
+          throw unprocessable(['email']);
+        }
+
+        // One row, in one table. I-1 says users and customers are two things,
+        // and this route creates a customer — a test asserts the users count
+        // does not move.
+        const created = insertCustomer(db, { id, name, email, phone, at });
+
+        audit.record(actor, {
+          entity: 'customer',
+          entityId: id,
+          verb: 'customer.create',
+          before: null,
+          after: { name, email, phone },
+          at,
+        });
+
+        return publicShape(created);
+      });
+    },
+
     writeNote(actor, { customerId, body }) {
       const invalid = validateNote({ body });
       if (invalid.length > 0) throw unprocessable(invalid);

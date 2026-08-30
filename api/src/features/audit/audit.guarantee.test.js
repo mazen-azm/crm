@@ -66,6 +66,7 @@ const EXERCISED = new Set([
   'PATCH /api/v1/accounts/:id/role',
   'POST /api/v1/accounts/:id/disable',
   'POST /api/v1/accounts/:id/re-enable',
+  'POST /api/v1/customers',
   'POST /api/v1/customers/:id/notes',
   'POST /api/v1/tickets',
   'PATCH /api/v1/tickets/:id/assignee',
@@ -147,6 +148,11 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/tickets/${movable.id}/status`, {
         method: 'PATCH',
         body: { status: 'open', revision: movable.revision },
+      })],
+    ['POST /api/v1/customers', () =>
+      call('/api/v1/customers', {
+        method: 'POST',
+        body: { name: 'Audited By The Census', email: 'census@support-desk.local' },
       })],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
