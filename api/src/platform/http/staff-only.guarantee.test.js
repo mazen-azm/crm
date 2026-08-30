@@ -35,6 +35,7 @@ after(() => servers.forEach((s) => s.close()));
 const OPEN_TO_A_CUSTOMER = new Map([
   [`POST ${API_V1_PREFIX}/sign-in`, 'a customer signs in with the account CUSTOMERS-6-API granted them'],
   [`GET ${API_V1_PREFIX}/me`, 'who you are is yours to read, whoever you are'],
+  [`POST ${API_V1_PREFIX}/me/password`, 'your own password is yours to change, whoever you are — one route for every role'],
   [`POST ${API_V1_PREFIX}/intake/:channel/tickets`, 'the public intake takes no token at all — a stranger is the caller'],
   [`GET ${API_V1_PREFIX}/openapi.json`, 'the document describes the API to anybody'],
   [`GET ${API_V1_PREFIX}/health`, 'a liveness check, and it says nothing about anybody'],

@@ -10,6 +10,7 @@ import {
   disableUser,
   findAnyUserByEmail,
   findAnyUserById,
+  findPasswordHashById,
   findLiveUserByEmail,
   insertUser,
   listLiveUsers,
@@ -265,6 +266,74 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       }
 
       return { user: publicShape({ ...before, deleted_at: at, updated_at: at }) };
+    },
+
+    // Anybody changes their own password, knowing the current one. One route
+    // and one method for every role: an admin changing their OWN password
+    // comes here, not to setPassword — the whole reason setPassword refuses a
+    // caller their own account.
+    changeOwnPassword(actor, { currentPassword, newPassword }) {
+      const missing = [];
+      if (typeof currentPassword !== 'string' || currentPassword === '') missing.push('currentPassword');
+      if (missing.length > 0) throw unprocessable(missing);
+      // The same floor an admin's set is held to. One predicate, not two: a
+      // fork drifts, and the drift shows up as a password one route accepts
+      // and the other refuses.
+      if (validateNewPassword({ password: newPassword }).length > 0) {
+        throw unprocessable(['newPassword']);
+      }
+
+      // The hash on its own, from the one query that selects it.
+      // findAnyUserById does not — a general read carrying the hash would put
+      // it in every row every caller holds — so this asks for the one thing it
+      // needs. Null covers both a missing account and a disabled one, and the
+      // answer is the same 401 either way.
+      const storedHash = findPasswordHashById(db, actor.id);
+      if (!storedHash) throw new HttpError(401, 'UNAUTHENTICATED');
+
+      // 401 for a wrong current password, 422 for a new one that will not do,
+      // and the difference from sign-in is deliberate. Sign-in answers one
+      // refusal for a wrong password, an unknown address and a disabled
+      // account, so the response cannot be used to learn which addresses
+      // exist. That reasoning does not reach here: this caller is already
+      // authenticated and already knows the account exists, because they are
+      // in it. Telling them which half they got wrong leaks nothing and saves
+      // them guessing.
+      if (!verifyPassword(currentPassword, storedHash)) {
+        throw new HttpError(401, 'UNAUTHENTICATED');
+      }
+
+      // Compared against the STORED HASH rather than by hashing the new one
+      // and comparing strings: every hash has its own salt, so the same
+      // password hashed twice gives two different strings and the comparison
+      // would never fire.
+      //
+      // A change that changes nothing is a change somebody believes they made
+      // — and will act on, by not changing it again.
+      if (verifyPassword(newPassword, storedHash)) throw unprocessable(['newPassword']);
+
+      const at = stamp();
+      db.exec('BEGIN');
+      try {
+        updateUserPassword(db, { id: actor.id, passwordHash: hashPassword(newPassword), at });
+        record(actor, {
+          entity: 'user', entityId: actor.id, verb: 'user.change-own-password', at,
+          before: null, after: { passwordSetAt: at },
+        });
+        db.exec('COMMIT');
+      } catch (failure) {
+        db.exec('ROLLBACK');
+        throw failure;
+      }
+
+      // Not throttled, and that is a decision. Sign-in throttles guesses
+      // because the guesser has nothing yet; whoever reaches here already
+      // holds a session, so guessing the current password buys them a
+      // password they could have changed anyway once IDENTITY-8-API ends
+      // other sessions. Until that story, tokens issued before this stay
+      // valid until they expire — a stated gap, and the reason this method
+      // does not pretend to be a revocation.
+      return { id: actor.id, updatedAt: at };
     },
 
     // An admin sets somebody else's password, so a locked-out person gets back
