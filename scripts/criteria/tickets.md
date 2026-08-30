@@ -219,3 +219,142 @@ A customer may act only on their own ticket, on every path.
   route added later that nobody thinks to protect.
 - Given a staff member, when they act on any ticket, then they are not restricted
   by ownership: one organisation, one queue (SC-1).
+
+## TICKETS-9-API
+
+An admin adds, renames and retires a category without touching the seed.
+
+Written 2026-08-30. The seed fills the reference data (SC-3) and that is where
+categories come from today; this is the story that lets them change afterwards
+without a migration or a re-seed.
+
+*Acceptance criteria*
+- Given an admin, when they add a category, then it exists and the ticket form
+  offers it. A non-admin is refused 403 and the service never runs (SC-2).
+- Given a name a live category already has, then the add is refused naming the
+  field rather than creating a second category people cannot tell apart.
+  Case-insensitively: two categories differing only in case are one category
+  typed twice.
+- Given a rename, then every ticket already carrying that category shows the
+  new name — because a ticket references the category rather than copying its
+  name, and that is what makes a rename possible at all.
+- Given a retire, then the category is soft-deleted (BR-1): it leaves the list
+  the ticket form offers, and the tickets that already have it keep it and
+  still read back. A category that vanished from its tickets would rewrite
+  history to tidy a list.
+- Given a retired category, then a new ticket cannot be raised into it — which
+  TICKETS-1-API already enforces by checking the category is live, and this
+  story does not weaken.
+- Given a retired category's name, then it may be used again for a new one: the
+  uniqueness rule is about live categories, the same way a customer's address
+  is.
+- Given any of these, then an audit row records it with before and after
+  (BR-2).
+
+*Out of scope*
+- The screen — TICKETS-9-WEB.
+- Merging two categories, or moving tickets between them. Nothing asks for it,
+  and it is a different verb from renaming.
+
+## TICKETS-9-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given an admin, when they add, rename or retire a category, then the list on
+  the screen shows the result without a reload.
+- Given a name already taken, then the field is marked and the sentence is the
+  shared one for the code.
+- Given a retire, then it asks first. It is the one action here that changes
+  what other people see and cannot be undone from this screen.
+- Given a non-admin, then the screen says so rather than drawing controls that
+  will be refused — and that is courtesy, not enforcement (SC-2).
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
+## TICKETS-10-API
+
+An agent changes a ticket's category.
+
+*Acceptance criteria*
+- Given a ticket and a live category, when an agent changes it, then the ticket
+  carries the new one and an audit row records both sides (BR-2).
+- Given a revision that is not the ticket's, then the change is refused 409
+  (BR-5) — the same guard assignment and status changes already carry, for the
+  same reason.
+- Given a retired category, then the change is refused: what may not be chosen
+  for a new ticket may not be chosen for an old one.
+- Given `null`, then it is accepted and means no category — the column allows
+  it and a ticket may legitimately have none.
+- Given a category id that does not exist, then the answer names the field
+  rather than letting the foreign key fire, which would be a 500 telling the
+  caller their mistake was ours.
+
+*Out of scope*
+- The screen — TICKETS-10-WEB.
+- Changing several tickets at once.
+
+## TICKETS-10-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given the ticket in the queue, when its category is changed, then the row
+  shows the new one without reloading the queue.
+- Given a stale revision, then the screen says the ticket changed while it was
+  being read, and offers to reload — the same shape assignment and status
+  already use.
+- Given the picker, then it offers live categories and "no category", and
+  nothing else.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
+## TICKETS-11-API
+
+A customer reopens a resolved ticket inside the window.
+
+*Acceptance criteria*
+- Given a resolved ticket and a reopen inside fourteen days of its resolution,
+  then it moves to `reopened` and the move is audited (BR-2).
+- Given the same ticket after the window has passed, then the reopen is refused
+  and the ticket stays resolved. The window runs from when it was resolved, not
+  from when it was last touched by anything.
+- Given a `closed` ticket, then the reopen is refused. Closed is terminal —
+  TICKETS-4-API's argument, unchanged.
+- Given a ticket that is not resolved at all, then the reopen is refused as an
+  illegal transition, naming what would have been legal (T-7).
+- Given a customer, then they may reopen their own ticket and no other, and the
+  refusal is the same 404 a missing ticket gets.
+- Given the reopen, then the resolution note the ticket carries is left alone.
+  It records what was done when it was resolved, and that remains true.
+
+*Out of scope*
+- Reopening by replying — CONVERSATION-3-API calls this.
+- The fourteen-day auto-close — TICKETS-14-API, a later block.
+
+## TICKETS-11-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given a resolved ticket of theirs inside the window, then a customer is
+  offered the reopen; outside it, they are not offered an action that will be
+  refused.
+- Given a refusal, then the sentence is the shared one for the code.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
+## TICKETS-12-WEB
+
+An agent's own tickets are one click away.
+
+*Acceptance criteria*
+- Given a signed-in agent, then the queue can be narrowed to the tickets
+  assigned to them in one action, without typing their own id.
+- Given that view, then it is the queue with a filter and not a second screen:
+  the same rows, the same paging, the same words.
+- Given the filter, then it is in the address — a view somebody can send to a
+  colleague, and one the browser's back button returns to. The queue already
+  keeps its filters there.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
