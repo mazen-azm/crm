@@ -204,10 +204,16 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
     history(actor, { id, limit, offset }) {
       // An empty history and a missing ticket are different answers, and only
       // one of them is an error. Same 404 the writes throw.
-      if (!findTicketById(db, { id })) throw new HttpError(404, 'NOT_FOUND');
-      // Reading somebody else's trail is acting on their ticket. Same rule,
-      // same refusal — see assign for why it fails closed.
-      if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+      const ticket = findTicketById(db, { id });
+      if (!ticket) throw new HttpError(404, 'NOT_FOUND');
+      // Reading somebody else's trail is acting on their ticket. The link
+      // exists now (CUSTOMERS-6-API), so this is the comparison the earlier
+      // comment promised rather than the blanket refusal that stood in for it:
+      // a customer reads their own ticket's history, and anybody else's ticket
+      // answers exactly what a missing one does.
+      if (actor?.role === 'customer' && ticket.customer_id !== actor.customerId) {
+        throw new HttpError(404, 'NOT_FOUND');
+      }
 
       return {
         items: listAuditEvents(db, { entity: 'ticket', entityId: id, limit, offset }).map((row) => {
@@ -283,12 +289,11 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         // a customer in either direction — so there is nothing to compare and
         // the safe answer is to refuse every customer-role subject here.
         //
-        // WHEN THE LINK LANDS (the identity story that gives a customer a
-        // sign-in), this becomes one comparison in this one place:
-        //
-        //     if (actor?.role === 'customer' && before.customer_id !== actor.customerId)
-        //
-        // and nothing else about the shape changes. Whoever adds the link will
+        // THE LINK HAS LANDED. CUSTOMERS-6-API added customers.user_id and the
+        // subject resolver now carries actor.customerId, so the comparison
+        // this comment promised exists — in `history`, which is the path a
+        // customer has a reason to walk. Here it stayed a refusal, on the
+        // argument in the note below it. Whoever added the link also
         // meet this comment rather than having to think of the rule.
         //
         // 404 rather than 403, and deliberately the same 404 as the line
@@ -300,6 +305,13 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         // not-found refusal. ticket-ownership.guarantee.test.js fails until it
         // does — it reads the routes off the router rather than a list.
         if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+        // Note this stayed a blanket refusal while `history` above became a
+        // comparison, and the difference is deliberate. Reading your own trail
+        // is something a customer does; handing your ticket to a named agent
+        // is the desk operating its own queue, and no story asks for a
+        // customer to do it. It is a rule now rather than the placeholder it
+        // was — the same 404 either way, so nothing about the answer's shape
+        // reveals which of the two it is.
 
         const { changes } = assignTicket(db, { id, assigneeId, revision, at });
         if (changes === 0) {
@@ -336,8 +348,11 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         const before = findTicketById(db, { id });
         if (!before) throw new HttpError(404, 'NOT_FOUND');
 
-        // Ownership, as in assign — see the comment there for why it fails
-        // closed and what changes when the customer link lands.
+        // Ownership, as in assign — and a blanket refusal for the same
+        // reason: moving a ticket through the state machine is the desk's
+        // work. A customer's own actions on their ticket are replies, and
+        // replies reopen it by rule T-5 rather than by a status change
+        // somebody chose.
         if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
 
         // Both refusals below carry the legal moves from where the ticket

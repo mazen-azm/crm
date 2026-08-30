@@ -1,23 +1,36 @@
 import express from 'express';
 
-import { requireSubject } from '../../platform/http/permission.js';
+import { requireStaff, requireSubject } from '../../platform/http/permission.js';
 import { readPagination } from '../../platform/http/pagination.js';
 import { createTicketsService } from './tickets.service.js';
 
 // req and res stop here.
+// Two guards, and the split is a decision.
+//
+// The desk's own routes — the queue, raising a ticket, the categories — are
+// requireStaff(): a customer asking for the queue is asking for everybody's
+// tickets, and SC-1 is one organisation with one queue that belongs to the
+// desk.
+//
+// The routes under /tickets/:id keep requireSubject(), so a customer REACHES
+// them and the service answers. That is deliberate: the ownership rule says a
+// refusal must be the same 404 a missing ticket gets, and a 403 at the door
+// would be a second, different answer to "is this ticket mine". The service is
+// where the one answer lives, and ticket-ownership.guarantee.test.js reads
+// these routes off the router so a new one cannot skip it.
 export function ticketsRouter({ db, now }) {
   const service = createTicketsService({ db, now });
   const router = express.Router();
 
   // Any signed-in staff member raises a ticket for a customer. One queue —
   // there is no team or organisation to route it to (SC-1).
-  router.post('/tickets', requireSubject(), (req, res) => {
+  router.post('/tickets', requireStaff(), (req, res) => {
     res.status(201).json(service.raise(req.subject, req.body ?? {}));
   });
 
   // The shared queue. Filters combine; an unknown one is refused rather than
   // ignored, and the page ceiling refuses rather than clamps (BR-4).
-  router.get('/tickets', requireSubject(), (req, res) => {
+  router.get('/tickets', requireStaff(), (req, res) => {
     const { status, priority, assigneeId, categoryId, sort } = req.query ?? {};
     res.json(
       service.list(req.subject, {
@@ -34,7 +47,7 @@ export function ticketsRouter({ db, now }) {
   // The list a form offers when raising a ticket. Named after the table
   // (ticket_categories) rather than /categories, so the knowledge base can have
   // its own later without this one having to be renamed.
-  router.get('/ticket-categories', requireSubject(), (req, res) => {
+  router.get('/ticket-categories', requireStaff(), (req, res) => {
     const { q, sort } = req.query ?? {};
     res.json(
       service.listCategories(req.subject, {

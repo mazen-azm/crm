@@ -69,7 +69,48 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
   const wouldRemoveLastAdmin = (row, becomingRole) =>
     row.role === 'admin' && becomingRole !== 'admin' && countLiveAdmins(db) === 1;
 
+
+  // One user row and its audit event, with NO transaction of its own — the
+  // caller owns that.
+  //
+  // It exists because two callers create a user now: the accounts route, which
+  // wraps it in a transaction it opens itself, and CUSTOMERS-6-API, which has
+  // to write the row and the customers.user_id link together or leave an
+  // account belonging to nobody. SQLite refuses a transaction inside a
+  // transaction, so a `createUser` that opened its own could not be called
+  // from inside the customers service's — which is exactly the trap
+  // resolveByEmail's comment warns its caller about.
+  //
+  // Validation and the address-taken check stay with the callers: one of them
+  // takes a role from a request body and the other supplies it, and a shared
+  // validator would have to accept both meanings.
+  const makeUser = (actor, { email, name, role }) => {
+    const id = randomUUID();
+    const initialPassword = generateInitialPassword();
+    const at = stamp();
+
+    insertUser(db, { id, email, passwordHash: hashPassword(initialPassword), name, role, at });
+    record(actor, {
+      entity: 'user', entityId: id, verb: 'user.create', at,
+      // No password and no hash, here or anywhere. The audit guarantee test
+      // asserts it of every diff this API writes.
+      before: null, after: { email, name, role },
+    });
+
+    return {
+      user: { id, email, name, role, createdAt: at, updatedAt: at, deletedAt: null },
+      initialPassword,
+    };
+  };
+
   return {
+    // Not a route. CUSTOMERS-6-API grants a customer a sign-in, which is one
+    // user row and one customers.user_id written together — so it calls this
+    // from inside its own transaction. Exposed on the service rather than
+    // imported, because a feature reaches another only through its index, and
+    // compose.js hands this one over the way it hands over tickets.
+    makeUser,
+
     signIn({ email, password }, { address = null } = {}) {
       // The shape of the request and the truth of the credential are separate
       // questions, asked in that order. A malformed body is 422 naming the
@@ -128,17 +169,10 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       // would quietly discard whatever that person's history says.
       if (existing) throw new HttpError(409, 'CONFLICT');
 
-      const id = randomUUID();
-      const initialPassword = generateInitialPassword();
-      const at = stamp();
-
       db.exec('BEGIN');
+      let made;
       try {
-        insertUser(db, { id, email: address, passwordHash: hashPassword(initialPassword), name, role, at });
-        record(actor, {
-          entity: 'user', entityId: id, verb: 'user.create', at,
-          before: null, after: { email: address, name, role },
-        });
+        made = makeUser(actor, { email: address, name, role });
         db.exec('COMMIT');
       } catch (failure) {
         db.exec('ROLLBACK');
@@ -146,8 +180,8 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       }
 
       return {
-        user: { id, email: address, name, role, createdAt: at, updatedAt: at, deletedAt: null },
-        initialPassword,
+        user: made.user,
+        initialPassword: made.initialPassword,
       };
     },
 

@@ -993,3 +993,31 @@ one dependency graph, agreeing until somebody edits one, which is the defect
 that made the three-repository split fail. And the sort validates its own
 output: ignoring the graph makes it exit 2 naming the offending pair, which is
 how the check was proved rather than assumed.
+
+## L-53 — A new role changes what every old guard means
+
+**Rule:** when a story adds a role, a permission, a tenant or any other axis a
+guard could have leaned on, the story's scope includes **every route already
+written**. Guards are written against the vocabulary of the day, and a word
+that meant one thing when they were written can quietly mean another
+afterwards. Read the whole route table, decide for each one, and leave behind a
+census that reads the set off the router rather than a list.
+
+**Where it came from:** `CUSTOMERS-6-API` gave a customer a sign-in. Until that
+story, no customer could hold a token, so `requireSubject()` — "somebody is
+signed in" — and "staff" were the same sentence, and seventeen routes had been
+written with the first meaning the second. The plan changed the three guards
+that mention `customer` by name and stopped. Shipped that way, the first
+customer ever granted an account could have read every customer on file, the
+whole queue, and the staff list — through routes nobody had touched in months
+and nobody would have thought to look at.
+
+Nothing was wrong with those routes. The sentence under them changed.
+
+The fix is `requireStaff()` and `staff-only.guarantee.test.js`, which walks
+every route the router serves and requires each to refuse a customer or be
+named with a reason — and then checks the named ones really are open, because a
+list of exceptions nobody verifies is a comforting fiction. It is the third
+census in this repository, after the audit one and the ownership one, and all
+three exist for the same reason: a rule enforced route by route lapses the
+first time somebody adds a route.

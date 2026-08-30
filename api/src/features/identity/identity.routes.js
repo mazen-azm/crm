@@ -1,13 +1,15 @@
 import express from 'express';
 
-import { requireSubject, requirePermission } from '../../platform/http/permission.js';
+import { requireSubject, requirePermission, requireStaff } from '../../platform/http/permission.js';
 import { readPagination } from '../../platform/http/pagination.js';
-import { createIdentityService } from './identity.service.js';
 
 // req and res stop here. The service takes values and returns values, so it
 // can be tested without a server and reused from anywhere.
-export function identityRouter({ db, secret, now }) {
-  const service = createIdentityService({ db, secret, now });
+// The service is handed in rather than built here, for the reason
+// customersRouter's is: CUSTOMERS-6-API needs the same instance to create a
+// customer's user row inside its own transaction, and two instances would be
+// two answers to what the identity service is.
+export function identityRouter({ service }) {
   const router = express.Router();
 
   // req.ip is the socket peer: app.js sets no `trust proxy`, by decision, so
@@ -27,7 +29,7 @@ export function identityRouter({ db, secret, now }) {
   // Named for the question the caller is asking rather than for the users
   // table, so it will not be confused with /accounts — which is admin-only and
   // answers a different question with a wider row.
-  router.get('/assignees', requireSubject(), (req, res) => {
+  router.get('/assignees', requireStaff(), (req, res) => {
     res.json(service.listAssignees(req.subject, readPagination(req)));
   });
 

@@ -462,6 +462,34 @@
           }
         }
       }
+    },
+    "/api/v1/customers/{id}/sign-in": {
+      "post": {
+        "summary": "Give a customer a way in. Creates a `users` row with role `customer` and points `customers.user_id` at it — the link rule I-1 describes, written. One transaction: an account with no link belongs to nobody, and a link with no account points at nothing. The role carries no permission an agent has; a customer reads their own ticket's history and every other route refuses them. Any signed-in staff member may, because the agent is the one on the phone.",
+        "responses": {
+          "201": {
+            "description": "{ customer, user, initialPassword }. The password travels once, here, and nothing reads it back — the same contract creating a staff account has. The agent reads it out."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "A customer asking. Staff only."
+          },
+          "404": {
+            "description": "No live customer with that id. A removed customer is kept for the trail, not for writing to (BR-1)."
+          },
+          "409": {
+            "description": "That customer already has a sign-in. Checked here rather than left to the partial unique index on user_id, because an index that fires produces a raw SQLite error and a 500 — which tells the caller their reasonable question was our fault."
+          },
+          "422": {
+            "description": "The customer has no email address, and `fields` names it. The address is what they would sign in with (I-4); inventing one for them would be inventing an identity."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
     }
   }
 }
