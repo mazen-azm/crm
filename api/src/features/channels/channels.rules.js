@@ -7,12 +7,15 @@
 // This list is the ones that work.
 export const IMPLEMENTED_CHANNELS = Object.freeze(['web']);
 
-// The channel is a path segment, so an unrecognised one is a path that does
-// not exist: 404, the same answer any other unknown URL gets. It is not a 422,
-// which names a field in a body the caller sent — there is no such field.
-//
-// CHANNELS-2-API splits this answer in two: a name it knows and has decided
-// against becomes 501, and only a name nothing has ever heard of stays 404.
-// Until then every unknown name is a 404, which is the honest answer while
-// there is no list of the decided-against.
+// Named, and deliberately not built. The three the product brief puts under
+// "Specified only" (docs/product-brief.md:137) — and naming them is the
+// decision, not an oversight: a system that answers 404 for `email` says there
+// is no such thing, which is untrue and hides that somebody considered it.
+export const SPECIFIED_CHANNELS = Object.freeze(['email', 'whatsapp', 'sms']);
+
+// Every name this system has an opinion about. Built or decided against; a
+// name outside it is one nothing has ever heard of.
+export const KNOWN_CHANNELS = Object.freeze([...IMPLEMENTED_CHANNELS, ...SPECIFIED_CHANNELS]);
+
 export const isImplemented = (channel) => IMPLEMENTED_CHANNELS.includes(channel);
+export const isKnown = (channel) => KNOWN_CHANNELS.includes(channel);

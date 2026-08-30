@@ -1,5 +1,5 @@
-import { HttpError, unprocessable } from '../../platform/http/errors.js';
-import { isImplemented } from './channels.rules.js';
+import { HttpError, NotImplementedError, unprocessable } from '../../platform/http/errors.js';
+import { isImplemented, isKnown } from './channels.rules.js';
 
 // The seam. A request from outside reaches the same ticket the desk raises by
 // hand — the same validation, the same clocks, the same audit row — because it
@@ -17,7 +17,16 @@ export function createChannelsService({ customers, tickets, validateTicketFields
     // creation and the ticket's are recorded with a null actor, which the audit
     // writer already means as "the system".
     submit({ channel, email, name, subject, body, priority, categoryId }) {
-      if (!isImplemented(channel)) throw new HttpError(404, 'NOT_FOUND');
+      if (!isImplemented(channel)) {
+        // Two different answers to two different questions, which is the whole
+        // of this rule (E-3). A channel this system knows about and has
+        // decided against is 501 and says which — "we know what you mean and
+        // it is not built". A name nothing has heard of is 404: there is no
+        // such thing. Collapsing them would either hide a decision or claim
+        // one that was never made.
+        if (isKnown(channel)) throw new NotImplementedError(channel);
+        throw new HttpError(404, 'NOT_FOUND');
+      }
 
       // The ticket's own fields are checked BEFORE the customer is resolved.
       // Resolution creates a customer when the address is new, so validating
