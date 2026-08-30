@@ -5,6 +5,7 @@ import {
   findTargetByPriority,
   findTicketPriority,
   insertClock,
+  stopClock as stopClockRow,
 } from './service-levels.repository.js';
 
 // The two clocks, spelled the way the column stores them
@@ -43,6 +44,21 @@ export function createServiceLevels({ db, now = () => Math.floor(Date.now() / 10
         insertClock(db, { id, ticketId, kind, startedAt, at });
         return { id, kind, startedAt };
       });
+    },
+
+    // Stop a clock, from inside the CALLER's transaction.
+    //
+    // It opens none of its own, deliberately: the message that stops a clock
+    // and the stop itself must commit together, and SQLite refuses a
+    // transaction inside a transaction. Same shape as identity's makeUser,
+    // which exists for the same reason.
+    //
+    // Answers whether THIS call stopped it. A second one changes nothing —
+    // `stopped_at IS NULL` in the WHERE is what makes "once" a property of the
+    // clock rather than of counting the things that would stop it.
+    stopClock({ ticketId, kind, at }) {
+      if (!CLOCK_KINDS.includes(kind)) throw new Error(`unknown clock kind "${kind}"`);
+      return stopClockRow(db, { ticketId, kind, at }) === 1;
     },
 
     // null when there is no such live ticket — the caller decides whether that

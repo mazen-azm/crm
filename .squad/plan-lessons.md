@@ -1100,3 +1100,30 @@ change somebody should make deliberately rather than find in a diff.
 
 The signal to look for, next time: a WEB story whose `needs` are all API
 stories that answer some OTHER question.
+
+## L-57 — A suite that flakes under load is not a gate, and the load is the bug
+
+**Rule:** when a test fails once and passes in isolation, do not shrug and
+re-run. Time it. A test that normally takes 200ms and took 50 seconds did not
+fail because of what it asserts — it failed because it was starved, and the
+starvation is a property of the suite that will get worse with every file
+added. Measure the failure rate, find what is being exhausted, and cap it. A
+gate that fails one run in three is not a gate; it is a thing people learn to
+re-run.
+
+**Where it came from:** the API suite reached 51 test files, nearly all of
+which open an HTTP server on an ephemeral port and drive it over the loopback.
+`node --test` runs files in parallel, so all 51 servers existed at once on a
+15-CPU machine. Three separate failures over one day — a pagination test, an
+identity throttle test, and a clock test — each passing alone, each having
+taken between 200× and 250× its normal time in the run that failed.
+
+Measured: one failure in three runs at the default concurrency, none in four
+runs capped at four files at a time. The cost is eight seconds becoming
+eighteen. Eighteen deterministic seconds is worth more than eight seconds that
+are right two times in three.
+
+The first two of those failures were reported as "could not reproduce" and left
+open, which was honest and not enough. The third made the pattern visible; what
+was missing the first two times was the timing, which was in the output all
+along — `(300945ms)` next to a test that runs in 200.
