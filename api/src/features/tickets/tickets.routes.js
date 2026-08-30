@@ -102,6 +102,16 @@ export function ticketsRouter({ db, now }) {
     );
   });
 
+  router.patch('/tickets/:id/category', requireSubject(), (req, res) => {
+    res.json(
+      service.changeCategory(req.subject, {
+        id: req.params.id,
+        categoryId: req.body?.categoryId,
+        revision: req.body?.revision,
+      }),
+    );
+  });
+
   router.get('/tickets/:id/history', requireSubject(), (req, res) => {
     res.json(service.history(req.subject, { id: req.params.id, ...readPagination(req) }));
   });

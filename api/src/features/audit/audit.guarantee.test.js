@@ -74,6 +74,7 @@ const EXERCISED = new Set([
   'POST /api/v1/tickets',
   'PATCH /api/v1/tickets/:id/assignee',
   'PATCH /api/v1/tickets/:id/status',
+  'PATCH /api/v1/tickets/:id/category',
   'POST /api/v1/tickets/:id/replies',
   'POST /api/v1/intake/:channel/tickets',
 ]);
@@ -159,6 +160,13 @@ test('each mutating route writes exactly one audit row', async () => {
     body: { body: 'The first reply, which opens it and stops the clock.' },
   });
 
+  // Its own ticket, because changing a category bumps the revision and every
+  // other step here holds one it read.
+  const categorised = await (await call('/api/v1/tickets', {
+    method: 'POST',
+    body: { customerId: customer.id, subject: 'To be refiled', body: 'Body.' },
+  })).json();
+
   const rest = [
     ['POST /api/v1/tickets', () =>
       call('/api/v1/tickets', {
@@ -179,6 +187,11 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/tickets/${replied.id}/replies`, {
         method: 'POST',
         body: { body: 'A second reply, so this route is driven.' },
+      })],
+    ['PATCH /api/v1/tickets/:id/category', () =>
+      call(`/api/v1/tickets/${categorised.id}/category`, {
+        method: 'PATCH',
+        body: { categoryId: null, revision: categorised.revision },
       })],
     ['PATCH /api/v1/tickets/:id/status', () =>
       call(`/api/v1/tickets/${movable.id}/status`, {

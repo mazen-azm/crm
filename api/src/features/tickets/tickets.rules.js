@@ -102,6 +102,24 @@ export function validateAssignment({ assigneeId, revision }) {
   return fields;
 }
 
+// The third BR-5 write's shape check.
+//
+// `null` is accepted and means no category — the column allows it and a ticket
+// may legitimately have none. Everything else must be a present string, which
+// refuses undefined, '' and non-strings alike.
+//
+// This began with a separate `categoryId === undefined` branch and a comment
+// arguing that a missing field and an explicit null are different requests.
+// They are — but `present` already refuses undefined, so the branch was dead
+// code with an explanation attached, which is worse than neither. A mutation
+// that deleted it changed no behaviour, which is how it was found.
+export function validateCategoryChange({ categoryId, revision }) {
+  const fields = [];
+  if (categoryId !== null && !present(categoryId)) fields.push('categoryId');
+  if (!Number.isInteger(revision) || revision < 1) fields.push('revision');
+  return fields;
+}
+
 // T-7 asks a refusal to name what would have worked, which means the machine
 // has to be data rather than a chain of ifs — you cannot list the legal moves
 // from a branch you did not take.

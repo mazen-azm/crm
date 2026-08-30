@@ -485,6 +485,31 @@
         }
       }
     },
+    "/api/v1/tickets/{id}/category": {
+      "patch": {
+        "summary": "Change a ticket's category. The third write that carries BR-5's revision: the revision the caller read goes in the WHERE, and a mismatch is 409 rather than an overwrite of something they did not see. `null` is a real value meaning no category — the column allows it and a ticket may legitimately have none. A retired category is refused naming the field, checked here rather than left to the foreign key, which can see that a row exists and cannot see that it was taken off the list: what may not be chosen for a new ticket may not be chosen for an old one.",
+        "responses": {
+          "200": {
+            "description": "The ticket, with its new category and its bumped revision."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket — and the same answer a customer gets, because a ticket's filing is the desk's."
+          },
+          "409": {
+            "description": "REVISION_MISMATCH: somebody changed the ticket between the read and this write."
+          },
+          "422": {
+            "description": "The revision is missing or not a positive integer, or the category is absent, malformed, or one that has been retired; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
     "/api/v1/tickets/{id}/history": {
       "get": {
         "summary": "Everything that has happened to one ticket, oldest first. Each entry says who, what changed, and from what to what — an entry recording only the new value cannot answer \"who took it off me\". The order does not depend on two changes having different timestamps: the clock is whole seconds, so two moves inside one second share a time and insertion order breaks the tie. The stored JSON column is parsed here rather than handed over, because a client parsing the storage format makes the storage format the contract. Reading a trail is not an event on it, so nothing is audited.",

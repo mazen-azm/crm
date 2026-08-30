@@ -243,6 +243,19 @@ export function findLiveAssigneeId(db, { assigneeId }) {
     .get(assigneeId);
 }
 
+// The third BR-5 write, and a copy for the reason the note below gives: three
+// callers changing three different columns is still not a pattern, and a
+// helper taking a column name would be a helper that builds SQL from a string.
+export function updateTicketCategory(db, { id, categoryId, revision, at }) {
+  return db
+    .prepare(`
+      UPDATE tickets
+         SET category_id = ?, revision = revision + 1, updated_at = ?
+       WHERE id = ? AND revision = ? AND deleted_at IS NULL
+    `)
+    .run(categoryId, at, id, revision);
+}
+
 // The second BR-5 write, and a deliberate copy of assignTicket rather than a
 // shared helper: two callers is not yet a pattern, and the comment above that
 // function is the one place the reasoning lives.

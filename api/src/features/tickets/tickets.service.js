@@ -13,6 +13,7 @@ import {
   validateAssignment,
   validateCategoryQuery,
   validateRaisedTicket,
+  validateCategoryChange,
   validateStatusChange,
 } from './tickets.rules.js';
 import {
@@ -28,6 +29,7 @@ import {
   listCategories as listCategoryRows,
   listCustomerTickets,
   listTickets,
+  updateTicketCategory,
   updateTicketStatus,
 } from './tickets.repository.js';
 
@@ -377,6 +379,50 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
 
     // The second BR-5 write. It reads like assign because it is the same
     // shape; what is different is that a refusal here has to explain itself.
+    // The third BR-5 write. Same shape as assign and status: the revision in
+    // the WHERE, `revision = revision + 1` in the SET, and `changes === 0` as
+    // the refusal — a caller whose revision is not the ticket's did not see
+    // what they are about to overwrite.
+    changeCategory(actor, { id, categoryId, revision }) {
+      const invalid = validateCategoryChange({ categoryId, revision });
+      if (invalid.length > 0) throw unprocessable(invalid);
+
+      const at = stamp();
+
+      return transact(db, () => {
+        const before = findTicketById(db, { id });
+        if (!before) throw new HttpError(404, 'NOT_FOUND');
+        // Ownership, as in assign — the same blanket refusal for the same
+        // reason: a ticket's category is the desk's filing, not the customer's.
+        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+
+        // null is a ticket with no category, which the column allows and a
+        // ticket may legitimately have. Anything else must be a category that
+        // is still on the list — checked here rather than left to the foreign
+        // key, which can see that a row exists and cannot see that it was
+        // retired. `raise` refuses a retired category for exactly this reason
+        // and this does not weaken it: what may not be chosen for a new ticket
+        // may not be chosen for an old one.
+        if (categoryId !== null && !findLiveCategoryId(db, { categoryId })) {
+          throw unprocessable(['categoryId']);
+        }
+
+        const { changes } = updateTicketCategory(db, { id, categoryId, revision, at });
+        if (changes === 0) throw new ConflictError('REVISION_MISMATCH');
+
+        audit.record(actor, {
+          entity: 'ticket',
+          entityId: id,
+          verb: 'ticket.category',
+          before: { categoryId: before.category_id },
+          after: { categoryId },
+          at,
+        });
+
+        return publicShape(findTicketById(db, { id }));
+      });
+    },
+
     // The ticket, for a feature that is about to write against it from inside
     // its own transaction. It opens none of its own, for that reason.
     //
