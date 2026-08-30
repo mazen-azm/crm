@@ -963,3 +963,33 @@ translated text, the isolation belongs in the string.
 Companion to the standing rule that a green suite has no pixels and no writing
 direction: this whole class of defect is invisible to vitest and takes one
 minute in a browser.
+
+## L-52 — A queue with no order is a queue in the wrong order
+
+**Rule:** anything that picks the next unit of work — a planner, a batch, a
+migration runner — states where its order comes from. If the answer is a glob,
+a directory listing or an `ls`, it has no order: it has whatever the filesystem
+sorts by, which is a fact about filenames and not about the work. Derive the
+order from the dependency data that already exists, and have the deriving step
+check its own output against that data before acting on it.
+
+**Where it came from:** `plan-next.sh` globbed
+`.squad/stories/*/CRM-*/intake.md` and planned the first four unplanned
+stories. Alphabetically by feature, `channels` precedes `customers`. The moment
+a sprint's twelve intakes landed together, the next unattended firing would
+have planned CHANNELS-1-API — whose only job is to call a service method
+CUSTOMERS-5-API has not written — and then CHANNELS-2-API and CHANNELS-3-API,
+which both wait on CHANNELS-1-API. Four plans, each describing code that does
+not exist, written at 02:15 with nobody watching, and each reading as
+considered.
+
+This is L-50 with a schedule behind it. L-50 says a plan must read the code it
+describes; this says the machinery must not hand a planner a story whose code
+cannot be read yet.
+
+The fix derives the order from `backlog.txt`'s own `needs` column rather than
+from a list somebody maintains — a hand-written order file is two statements of
+one dependency graph, agreeing until somebody edits one, which is the defect
+that made the three-repository split fail. And the sort validates its own
+output: ignoring the graph makes it exit 2 naming the offending pair, which is
+how the check was proved rather than assumed.
