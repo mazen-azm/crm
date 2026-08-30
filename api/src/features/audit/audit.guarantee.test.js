@@ -74,6 +74,7 @@ const EXERCISED = new Set([
   'POST /api/v1/tickets',
   'PATCH /api/v1/tickets/:id/assignee',
   'PATCH /api/v1/tickets/:id/status',
+  'POST /api/v1/tickets/:id/replies',
   'POST /api/v1/intake/:channel/tickets',
 ]);
 
@@ -146,6 +147,18 @@ test('each mutating route writes exactly one audit row', async () => {
     body: { customerId: customer.id, subject: 'To be moved', body: 'Body.' },
   })).json();
 
+  // A ticket that has already been replied to once, so the route below writes
+  // one row rather than the two a first reply writes. Driven for real rather
+  // than only listed.
+  const replied = await (await call('/api/v1/tickets', {
+    method: 'POST',
+    body: { customerId: customer.id, subject: 'To be replied to', body: 'Body.' },
+  })).json();
+  await call(`/api/v1/tickets/${replied.id}/replies`, {
+    method: 'POST',
+    body: { body: 'The first reply, which opens it and stops the clock.' },
+  });
+
   const rest = [
     ['POST /api/v1/tickets', () =>
       call('/api/v1/tickets', {
@@ -156,6 +169,16 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/tickets/${assignable.id}/assignee`, {
         method: 'PATCH',
         body: { assigneeId: null, revision: assignable.revision },
+      })],
+    // A SECOND reply, so it writes one audit row. The first reply on a `new`
+    // ticket writes two — the reply and the status move T-2 requires — and
+    // that pair is pinned in the conversation feature's own tests, where the
+    // count is the thing being tested rather than the frame around it. The
+    // first one is posted outside the counted steps, above.
+    ['POST /api/v1/tickets/:id/replies', () =>
+      call(`/api/v1/tickets/${replied.id}/replies`, {
+        method: 'POST',
+        body: { body: 'A second reply, so this route is driven.' },
       })],
     ['PATCH /api/v1/tickets/:id/status', () =>
       call(`/api/v1/tickets/${movable.id}/status`, {

@@ -507,6 +507,31 @@
         }
       }
     },
+    "/api/v1/tickets/{id}/replies": {
+      "post": {
+        "summary": "An agent replies, in public. The first public reply on a `new` ticket moves it to `open` (T-2) and stops the first-response clock at the reply's own timestamp — once, in the sense that a second reply finds the clock already stopped and the status already moved and changes neither. Nothing counts replies. An internal note stops no clock and moves no status; it has its own story. The reply, its audit row, the clock stop and the status move commit in one transaction, so a ticket cannot end up answered without saying so.",
+        "responses": {
+          "201": {
+            "description": "The message: { id, ticketId, authorId, kind, body, createdAt }. kind is always `public` here — the caller does not choose it."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "A customer asking. Replying on your own ticket is CONVERSATION-3-API, and it is a different rule with a different effect."
+          },
+          "404": {
+            "description": "No such ticket — the same answer every route under a ticket gives."
+          },
+          "422": {
+            "description": "The body is missing, blank, or longer than a ticket body may be; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
     "/api/v1/intake/{channel}/tickets": {
       "post": {
         "summary": "The public intake. A stranger with no token submits a request and it becomes a ticket — raised through the same service the desk uses, so the same validation, the same service-level clocks and the same audit row apply. This is the only unauthenticated route besides sign-in, and deliberately so: SC-2 says every rule is enforced in the API, and a second write path would be a second set of rules that agree until they do not. The customer is resolved from the email address, or created then and there if nobody has it (I-2, I-4); nobody is signed in, so both audit rows name the system as their actor. The channel is a path segment and is recorded on the ticket.",

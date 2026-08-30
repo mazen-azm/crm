@@ -10,7 +10,7 @@
     "start": "node --env-file-if-exists=.env src/server.js",
     "migrate": "node --env-file-if-exists=.env src/platform/db/migrate.js",
     "seed": "node --env-file-if-exists=.env src/seed.js",
-    "test": "node --env-file-if-exists=.env --test"
+    "test": "node --env-file-if-exists=.env --test --test-concurrency=4"
   },
   "dependencies": {
     "express": "^5.2.1"

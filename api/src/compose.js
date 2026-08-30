@@ -1,7 +1,9 @@
 import { createApp } from './app.js';
 import { channelsRouter } from './features/channels/index.js';
+import { conversationRouter, createConversationService } from './features/conversation/index.js';
 import { createCustomersService, customersRouter } from './features/customers/index.js';
 import { createIdentityService, identityRouter, identitySubjectResolver } from './features/identity/index.js';
+import { createServiceLevels } from './features/service-levels/index.js';
 import { createTicketsService, ticketsRouter, validateTicketFields } from './features/tickets/index.js';
 import { createKeyedThrottle } from './platform/http/throttle.js';
 
@@ -23,6 +25,12 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // internals — and one instance rather than three means there is one
       // answer to what the customers service is.
       const tickets = createTicketsService({ db, now });
+      // What a ticket says. It owns one table and calls two features for what
+      // they own — tickets moves a status, service-levels stops a clock — and
+      // does all of it in one transaction, which is why neither of the methods
+      // it calls opens one.
+      const serviceLevels = createServiceLevels({ db, now });
+      const conversation = createConversationService({ db, tickets, serviceLevels, now });
       // Customers holds identity because granting a customer a sign-in writes
       // a user row and the customers.user_id link in one transaction, and
       // SQLite refuses a transaction inside a transaction — so the two writes
@@ -57,6 +65,7 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // which is what keeps a request from outside on the same path as a
       // request from the desk (SC-2).
       v1.use(channelsRouter({ customers, tickets, validateTicketFields, throttle: intakeThrottle }));
+      v1.use(conversationRouter({ conversation }));
     },
   });
 }

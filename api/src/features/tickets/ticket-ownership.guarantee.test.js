@@ -16,6 +16,9 @@ import assert from 'node:assert/strict';
 import { composeApp } from '../../compose.js';
 import { createApp } from '../../app.js';
 import { ticketsRouter } from './index.js';
+import { conversationRouter, createConversationService } from '../conversation/index.js';
+import { createTicketsService } from './index.js';
+import { createServiceLevels } from '../service-levels/index.js';
 import { openDatabase } from '../../platform/db/connection.js';
 import { seed } from '../../platform/db/seed.js';
 import { collectRoutes } from '../../platform/http/route-table.js';
@@ -46,7 +49,20 @@ async function start() {
   // which is the tickets router — exactly the surface the rule governs.
   const asCustomer = createApp({
     subjectResolver: async () => ({ id: 'customer-subject', role: 'customer', name: 'A Customer' }),
-    mountFeatures: (v1) => v1.use(ticketsRouter({ db, now: () => 1_800_000_000 })),
+    mountFeatures: (v1) => {
+      const now = () => 1_800_000_000;
+      v1.use(ticketsRouter({ db, now }));
+      // Conversation serves routes under /tickets/:id too, and the rule is
+      // about the path rather than about which feature happens to serve it.
+      // Mounting only the tickets router here would make the census blind to
+      // exactly the kind of route it exists to catch.
+      const tickets = createTicketsService({ db, now });
+      v1.use(conversationRouter({
+        conversation: createConversationService({
+          db, tickets, serviceLevels: createServiceLevels({ db, now }), now,
+        }),
+      }));
+    },
   });
 
   const server = app.listen(0);
@@ -98,6 +114,11 @@ const drive = (asTheCustomer, ticket, staffId) => ({
     }),
   [`GET ${API_V1_PREFIX}/tickets/:id/history`]: () =>
     asTheCustomer(`/api/v1/tickets/${ticket.id}/history`),
+  [`POST ${API_V1_PREFIX}/tickets/:id/replies`]: () =>
+    asTheCustomer(`/api/v1/tickets/${ticket.id}/replies`, {
+      method: 'POST',
+      body: JSON.stringify({ body: 'A reply a customer may not post here.' }),
+    }),
 });
 
 test('every route under a ticket is covered by this census', async () => {

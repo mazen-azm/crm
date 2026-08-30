@@ -42,3 +42,19 @@ export function findTargetByPriority(db, { priority }) {
     `)
     .get(priority);
 }
+
+// Stop a clock, once.
+//
+// `stopped_at IS NULL` in the WHERE is the whole guarantee: a second call
+// matches no rows and changes nothing, so "once" is a property of the clock
+// rather than of anything counting the events that would stop it. The caller
+// reads `changes` to know whether this call was the one that did it.
+export function stopClock(db, { ticketId, kind, at }) {
+  return db
+    .prepare(`
+      UPDATE sla_clocks
+         SET stopped_at = ?, updated_at = ?
+       WHERE ticket_id = ? AND kind = ? AND stopped_at IS NULL
+    `)
+    .run(at, at, ticketId, kind).changes;
+}

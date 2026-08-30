@@ -377,6 +377,74 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
 
     // The second BR-5 write. It reads like assign because it is the same
     // shape; what is different is that a refusal here has to explain itself.
+    // The ticket, for a feature that is about to write against it from inside
+    // its own transaction. It opens none of its own, for that reason.
+    //
+    // It is a read with the ownership rule attached, so a caller cannot get a
+    // ticket this actor may not act on and then decide for itself what to do
+    // about that — the refusal is the same 404 a missing ticket gets, from
+    // the one place that decides it.
+    readForReply(actor, { id }) {
+      const ticket = findTicketById(db, { id });
+      if (!ticket) throw new HttpError(404, 'NOT_FOUND');
+      if (actor?.role === 'customer' && ticket.customer_id !== actor.customerId) {
+        throw new HttpError(404, 'NOT_FOUND');
+      }
+      return ticket;
+    },
+
+    // T-2's transition, and only that one: a `new` ticket becomes `open` when
+    // the desk first answers it.
+    //
+    // It opens NO transaction, because it is called from inside the one that
+    // wrote the reply — the reply, the clock stop and this move commit
+    // together or not at all. Same shape as identity's makeUser.
+    //
+    // It lives here rather than in the conversation feature because the
+    // transition table lives here: a second place that moved a ticket's status
+    // would be a second set of rules about which moves are legal, agreeing
+    // with this one right up until somebody edited one of them.
+    //
+    // No revision, and that is the difference from changeStatus. This is not
+    // somebody choosing a move against a ticket they read a moment ago — it is
+    // a consequence of a write that is already happening, inside the same
+    // transaction, holding the row. BR-5 guards against overwriting a change
+    // you did not see; there is nothing here that a caller could have missed.
+    openOnFirstReply(actor, { id, at }) {
+      const before = findTicketById(db, { id });
+      if (!before) throw new HttpError(404, 'NOT_FOUND');
+      // Not `new` means the desk has already answered, or the ticket has moved
+      // on some other way. T-2 names one transition and this makes no others.
+      if (before.status !== 'new') return false;
+      if (!allowedFrom('new').includes('open')) {
+        // The transitions table is the authority even for a move this feature
+        // is sure about. If it ever stops allowing new -> open, this should
+        // stop too rather than write a status the table forbids.
+        throw new Error('the transition table no longer allows new -> open');
+      }
+
+      const { changes } = updateTicketStatus(db, {
+        id,
+        status: 'open',
+        revision: before.revision,
+        at,
+        resolutionNote: null,
+      });
+      // Inside the caller's transaction, holding the row read a line ago —
+      // so zero changes is not a stale revision, it is a bug here.
+      if (changes === 0) throw new Error('the ticket moved under a transaction that held it');
+
+      audit.record(actor, {
+        entity: 'ticket',
+        entityId: id,
+        verb: 'ticket.status',
+        before: { status: before.status },
+        after: { status: 'open' },
+        at,
+      });
+      return true;
+    },
+
     changeStatus(actor, { id, status, revision, note }) {
       const invalid = validateStatusChange({ status, revision, note });
       if (invalid.length > 0) throw unprocessable(invalid);
