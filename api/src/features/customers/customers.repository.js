@@ -86,6 +86,13 @@ export function findLiveCustomerById(db, { id }) {
     .get(id);
 }
 
+// A retired customer is not a missing one. The list hides them; reading a
+// known id does not, because their tickets and their notes did not stop
+// existing when they left.
+export function findCustomerById(db, { id }) {
+  return db.prepare(`SELECT ${PROJECTION} FROM customers WHERE id = ?`).get(id) ?? null;
+}
+
 export function insertCustomer(db, { id, name, email, phone, at }) {
   // No user_id column: 0001__customers.sql does not have one. I-1 says a
   // customer is not a user, and the way this honours it is by writing one row

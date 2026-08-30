@@ -227,16 +227,16 @@ Out of scope: any web screen (CRM-58), any mutation, ticket message threads, cha
 
 ## Done Criteria
 
-- [ ] `GET /customers/:id` returns `{ customer, tickets: { items, total, limit, offset }, notes: [...] }` inside a single transaction.
-- [ ] Open tickets = `{new, open, pending, reopened}`, defined as a named constant in `tickets.service.js` with a comment explaining why.
-- [ ] Tickets sub-list is paginated (BR-4); customer fields and notes are not.
-- [ ] Unknown id → `404 NOT_FOUND`, not an empty customer shape.
-- [ ] Retired (soft-deleted) customer → `200` with real data.
-- [ ] No audit row is written for this endpoint (pinned by test).
-- [ ] Customers feature only touches tickets through `api/src/features/tickets/index.js`; `scripts/verify-architecture.mjs` passes.
-- [ ] OpenAPI updated; contract test passes.
-- [ ] `GET /customers` list route is unchanged.
-- [ ] All new and existing tests pass under `cd api && npm test`.
-- [ ] No AI-attribution strings introduced.
+- [x] `GET /customers/:id` returns `{ customer, tickets: { items, total, limit, offset }, notes: [...] }` inside a single transaction.
+- [x] Open tickets = `{new, open, pending, reopened}`, defined as a named constant in `tickets.service.js` with a comment explaining why.
+- [x] Tickets sub-list is paginated (BR-4); customer fields and notes are not.
+- [x] Unknown id → `404 NOT_FOUND`, not an empty customer shape.
+- [x] Retired (soft-deleted) customer → `200` with real data.
+- [x] No audit row is written for this endpoint (pinned by test).
+- [x] Customers feature only touches tickets through `api/src/features/tickets/index.js`; `scripts/verify-architecture.mjs` passes.
+- [x] OpenAPI updated; contract test passes.
+- [x] `GET /customers` list route is unchanged.
+- [x] All new and existing tests pass under `cd api && npm test`.
+- [x] No AI-attribution strings introduced.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

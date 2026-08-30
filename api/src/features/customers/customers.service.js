@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
 
 import { HttpError, unprocessable } from '../../platform/http/errors.js';
+import { MAX_LIMIT } from '../../platform/http/pagination.js';
 import { createAuditWriter, transact } from '../audit/index.js';
 import { normaliseCustomer, normaliseNote, phoneDigits, validateCustomer, validateNote } from './customers.rules.js';
 import {
   countCustomerNotes,
   countLiveCustomers,
   countSearchLiveCustomers,
+  findCustomerById,
   findLiveCustomerByEmail,
   findLiveCustomerById,
   insertCustomer,
@@ -36,7 +38,7 @@ const noteShape = (row) => ({
   createdAt: row.created_at,
 });
 
-export function createCustomersService({ db, now = () => Math.floor(Date.now() / 1000) }) {
+export function createCustomersService({ db, tickets, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
   const audit = createAuditWriter({ db });
 
@@ -146,6 +148,34 @@ export function createCustomersService({ db, now = () => Math.floor(Date.now() /
     // Nothing here filters for visibility because there is nothing yet to
     // filter against — and a flag invented for an absent consumer is the kind
     // of machinery that later gets mistaken for a requirement.
+    // Everything one screen needs about one customer, in one answer.
+    //
+    // One request rather than three, and the three reads share a transaction:
+    // a screen that assembles this from separate calls shows three different
+    // moments as if they were one. A read, so it writes no audit row.
+    //
+    // The tickets come from the tickets feature through the service injected
+    // at composition — the customers feature never learns the tickets table.
+    read(actor, { id, limit, offset }) {
+      return transact(db, () => {
+        const row = findCustomerById(db, { id });
+        if (!row) throw new HttpError(404, 'NOT_FOUND');
+
+        // Notes come back whole, capped at the same ceiling every list obeys
+        // and carrying their total — so a customer with more notes than that
+        // is visible as such rather than silently truncated. BR-4 is about
+        // lists that grow without bound; per-customer notes are bounded by
+        // human use, and this screen wants them together.
+        const notes = listCustomerNotes(db, { customerId: id, limit: MAX_LIMIT, offset: 0 });
+
+        return {
+          customer: publicShape(row),
+          tickets: tickets.openForCustomer(actor, { customerId: id, limit, offset }),
+          notes: { items: notes.map(noteShape), total: countCustomerNotes(db, { customerId: id }) },
+        };
+      });
+    },
+
     listNotes(actor, { customerId, limit, offset }) {
       liveCustomerOr404(customerId);
       return {
