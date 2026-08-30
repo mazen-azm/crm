@@ -51,7 +51,7 @@ Story folder: .squad/stories/platform/PLT-5-API-error-contract/
 
 Rules this story owns:
 - E-1 — One shape, every failure, no stack trace.
-- E-2 — Every failure returns its documented code: 400 401 403 404 409 422 429 500.
+- E-2 — Every failure returns its documented code: 400 401 403 404 409 422 429 500 501.
 
 Cannot ship before: PLT-3-API","","Platform","3","Block 0","api","platform","client"
 "Story","PLT-6-API system — /api/v1, a maximum page size, health, and structured logging","*system* — /api/v1, a maximum page size, health, and structured logging
@@ -265,7 +265,7 @@ Cannot ship before: IDN-1-WEB","","Identity","3","Block 2","web","identity","any
 Story folder: .squad/stories/identity/IDN-4-API-sign-in-throttle/
 
 Rules this story owns:
-- E-2 — Every failure returns its documented code: 400 401 403 404 409 422 429 500.
+- E-2 — Every failure returns its documented code: 400 401 403 404 409 422 429 500 501.
 
 Cannot ship before: IDN-1-API","","Identity","3","Block 1","api","identity","system"
 "Story","IDN-5-API agent — I read the list of people a ticket can be assigned to","*agent* — I read the list of people a ticket can be assigned to
@@ -732,7 +732,7 @@ Story folder: .squad/stories/conversation/CNV-3-API-customer-reply-reopens/
 Rules this story owns:
 - T-5 — A reply to a resolved ticket reopens it, within a 14-day window.
 
-Cannot ship before: CNV-1-API, TCK-11-API","","Conversation","3","Block 6","api","conversation","customer"
+Cannot ship before: CNV-1-API, TCK-11-API, WEB:POR-3-WEB","","Conversation","3","Block 6","api","conversation","customer"
 "Story","CNV-3-WEB customer — I reply on my own ticket; replying to a resolved one reopens it","*customer* — I reply on my own ticket; replying to a resolved one reopens it
 
 Story folder: .squad/stories/conversation/CNV-3-WEB-customer-reply-reopens/
@@ -740,7 +740,7 @@ Story folder: .squad/stories/conversation/CNV-3-WEB-customer-reply-reopens/
 Rules this story owns:
 - T-5 — A reply to a resolved ticket reopens it, within a 14-day window.
 
-Cannot ship before: CNV-1-API, TCK-11-API","","Conversation","2","Block 6","web","conversation","customer"
+Cannot ship before: CNV-1-API, TCK-11-API, WEB:POR-3-WEB","","Conversation","2","Block 6","web","conversation","customer"
 "Story","CNV-4-API agent — a long thread pages rather than arriving whole","*agent* — a long thread pages rather than arriving whole
 
 Story folder: .squad/stories/conversation/CNV-4-API-thread-pages/
@@ -859,7 +859,7 @@ Cannot ship before: CHN-1-API","","Channels","2","Block 5","api","channels","dev
 Story folder: .squad/stories/channels/CHN-3-API-intake-throttle/
 
 Rules this story owns:
-- E-2 — Every failure returns its documented code: 400 401 403 404 409 422 429 500.
+- E-2 — Every failure returns its documented code: 400 401 403 404 409 422 429 500 501.
 
 Cannot ship before: CHN-1-API","","Channels","3","Block 5","api","channels","system"
 "Story","POR-1-WEB customer — I raise a ticket without an account","*customer* — I raise a ticket without an account

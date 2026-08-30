@@ -1197,3 +1197,33 @@ story that writes it.** A literal in the service with a comment deferring to a
 story is a claim about the backlog, and a claim about the backlog is checkable
 — this one was false when it was written.
 
+---
+
+## L-60 — A dependency the graph cannot express is a dependency nothing enforces
+
+**Rule:** when the sort puts a story first and a reader would not, the answer is
+usually that the file cannot say what the reader knows. Extend the notation
+rather than reordering by hand — a manual reorder is right once, and the
+schedule runs unattended every five hours.
+
+**Where it came from:** `plan-order` put `CONVERSATION-3-WEB (CRM-105)` — a
+customer replying on their own ticket — ahead of `PORTAL-3-WEB (CRM-123)`,
+which builds the screen that reply box goes on. The sort was right about what
+it had been told: the backlog's `needs` column is written once per capability
+and shared by both of its layers, so saying "the WEB half waits on that screen"
+would also have claimed the API half did, which is false. The commonest thing
+there is to say about a two-layer story was the one thing the column could not
+say.
+
+So an entry may now name a layer — `WEB:POR-3-WEB` — and is kept by that layer
+only. Two lines of grammar, in the two places that parse it.
+
+And that is the second half of the lesson. `scripts/lib/backlog.mjs` is what
+plan-order sorts by; `scripts/verify-backlog.mjs` has always parsed the same
+file independently. Teaching one and not the other would have been silent —
+the checker would have called every scoped entry a dangling reference, or
+worse, passed while disagreeing. They now compare their own needs graphs to
+each other, and a mutation removing the syntax from either side fails the
+check by name. Two parsers of one grammar are fine; two parsers that never
+meet are not (the same argument as [[verify-the-plan-not-just-the-code]]).
+

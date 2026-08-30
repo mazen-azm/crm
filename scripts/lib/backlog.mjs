@@ -37,7 +37,25 @@ export function readBacklog(scriptsDir) {
           const own = m[1] === 'WEB' && /(^|,)API:/.test(s[3])
             ? [`${cur.upper}-${s[1]}-API`]
             : []
-          rawNeeds.set(id, [...needs, ...own])
+          // A needs entry may name one layer: `WEB:POR-3-WEB` is a dependency
+          // of the WEB half and not of the API half. Without it the column
+          // cannot say the commonest thing there is to say about a two-layer
+          // capability — that its screen's control belongs on a screen another
+          // story builds — because one list is shared by both halves, and
+          // writing it unscoped would claim the API half waits on a screen.
+          //
+          // CONVERSATION-3-WEB is where this was found: its reply box goes on
+          // PORTAL-3-WEB's ticket screen, the sort put it first because nothing
+          // said otherwise, and the plan would have been written against a
+          // screen that did not exist (L-50).
+          const scoped = needs
+            .map((need) => {
+              const layer = need.match(/^(API|WEB|MOB|ALL):(.+)$/)
+              if (!layer) return need
+              return layer[1] === m[1] ? layer[2] : null
+            })
+            .filter(Boolean)
+          rawNeeds.set(id, [...scoped, ...own])
         }
       }
     }
