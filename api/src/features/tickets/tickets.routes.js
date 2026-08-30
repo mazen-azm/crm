@@ -118,6 +118,22 @@ export function ticketsRouter({ db, now }) {
     );
   });
 
+  // One ticket, for whoever may read it.
+  //
+  // Added because a screen for one ticket had no route to ask for one: the
+  // desk reads a list and a customer reads a list, and the portal's ticket
+  // screen resolves an id rather than being handed an object it was navigated
+  // with. Finding it inside a page of /me/tickets works until it is on page
+  // two.
+  //
+  // requireSubject rather than requireStaff, and the ownership rule comes from
+  // readForActor — the same call /tickets/:id/messages and the reply route
+  // already make, so somebody else's ticket is the same 404 a missing one
+  // gets, decided in one place.
+  router.get('/tickets/:id', requireSubject(), (req, res) => {
+    res.json(service.read(req.subject, { id: req.params.id }));
+  });
+
   router.patch('/tickets/:id/category', requireSubject(), (req, res) => {
     res.json(
       service.changeCategory(req.subject, {

@@ -16,12 +16,14 @@ const json = (body: unknown, status = 200) => () =>
 
 const ticket = (over = {}) => ({
   id: 't-1',
+  customerId: 'c-1',
   subject: 'The invoice is wrong',
   status: 'new',
   priority: 'normal',
   assigneeId: null,
   categoryId: null,
   revision: 1,
+  reopenWindowOpen: false,
   allowedTransitions: ['open', 'pending', 'resolved'],
   resolutionNote: null,
   channel: 'desk',

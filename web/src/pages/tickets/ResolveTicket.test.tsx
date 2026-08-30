@@ -14,12 +14,14 @@ const json = (body: unknown, status = 200) => () =>
 
 const TICKET: Ticket = {
   id: 't-1',
+  customerId: 'c-1',
   subject: 'Subject t-1',
   status: 'new',
   priority: 'normal',
   assigneeId: null,
   categoryId: null,
   revision: 1,
+  reopenWindowOpen: false,
   allowedTransitions: ['open', 'pending', 'resolved'],
   resolutionNote: null,
   createdAt: '2026-08-01T00:00:00.000Z',

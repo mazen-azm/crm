@@ -61,7 +61,7 @@ const categoryShape = (row) => ({
 
 const OPEN_ON_THE_DESK = Object.freeze(['new', 'open', 'pending', 'reopened']);
 
-const publicShape = (row) => ({
+const publicShape = (row, nowSeconds) => ({
   id: row.id,
   customerId: row.customer_id,
   categoryId: row.category_id,
@@ -88,6 +88,21 @@ const publicShape = (row) => ({
   // rule in two places, or offers every move and lets the 409 narrow them,
   // which makes the refusal the interface rather than the backstop.
   allowedTransitions: allowedFrom(row.status),
+  // Whether a reply would still reopen this (T-5), answered by the same rule
+  // the refusal reads rather than by a client counting days.
+  //
+  // A fact about the TICKET, not about the reader: a customer's reply reopens
+  // a resolved ticket and an agent's does not, so a field named for the act
+  // would be false for half of the people it is sent to. The portal knows who
+  // its reader is and says what it means for them.
+  //
+  // Without it the warning the portal owes a customer — that replying will
+  // reopen this — is either absent or computed from a fourteen-day rule the
+  // screen has copied, which is the product rule in two places. That is the
+  // argument allowedTransitions makes above for its own existence.
+  reopenWindowOpen:
+    row.status === 'resolved'
+    && withinReopenWindow({ resolvedAt: row.resolved_at, nowSeconds }),
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -169,7 +184,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
 
         // Read back inside the transaction: the revision was defaulted by the
         // column, so the row is the only place it exists.
-        return publicShape(findTicketById(db, { id }));
+        return publicShape(findTicketById(db, { id }), now());
       });
     },
 
@@ -196,7 +211,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       if (scope.customerId !== undefined) filters.customerId = scope.customerId;
 
       return {
-        items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map(publicShape),
+        items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map((row) => publicShape(row, now())),
         // The matches, not the page.
         total: countTickets(db, { filters }),
         limit,
@@ -251,7 +266,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           statuses: OPEN_ON_THE_DESK,
           limit,
           offset,
-        }).map(publicShape),
+        }).map((row) => publicShape(row, now())),
         total: countCustomerTickets(db, { customerId, statuses: OPEN_ON_THE_DESK }),
         limit,
         offset,
@@ -482,7 +497,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           at,
         });
 
-        return publicShape(findTicketById(db, { id }));
+        return publicShape(findTicketById(db, { id }), now());
       });
     },
 
@@ -528,7 +543,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           at,
         });
 
-        return publicShape(findTicketById(db, { id }));
+        return publicShape(findTicketById(db, { id }), now());
       });
     },
 
@@ -544,6 +559,16 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
     // It was `readForReply` while replying was the only caller. Reading a
     // ticket's messages is the second, and a name that says what one caller
     // wanted is a name that misleads the next one.
+    // One ticket, in the shape every other route answers with.
+    //
+    // readForActor decides who may see it, so this adds no rule of its own —
+    // and deliberately returns the same shape the queue's rows carry, because
+    // a screen that read a ticket differently depending on which route it came
+    // from would be two descriptions of one thing.
+    read(actor, { id }) {
+      return publicShape(this.readForActor(actor, { id }), now());
+    },
+
     readForActor(actor, { id }) {
       const ticket = findTicketById(db, { id });
       if (!ticket) throw new HttpError(404, 'NOT_FOUND');
@@ -618,7 +643,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
     // calling it, and there is exactly one.
     publicById(id) {
       const row = findTicketById(db, { id });
-      return row ? publicShape(row) : null;
+      return row ? publicShape(row, now()) : null;
     },
 
     // T-2's transition, and only that one: a `new` ticket becomes `open` when
@@ -768,7 +793,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           at,
         });
 
-        return publicShape(findTicketById(db, { id }));
+        return publicShape(findTicketById(db, { id }), now());
       });
     },
   };

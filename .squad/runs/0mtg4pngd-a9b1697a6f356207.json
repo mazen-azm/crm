@@ -1,0 +1,56 @@
+{
+  "runId": "0mtg4pngd-a9b1697a6f356207",
+  "provider": "anthropic",
+  "model": "claude-opus-4-7",
+  "feature": "portal",
+  "storyId": "CRM-123",
+  "startedAt": "2026-08-30T18:14:31.933Z",
+  "completedAt": "2026-08-30T18:19:00.181Z",
+  "success": true,
+  "partial": false,
+  "planFile": ".squad/plans/portal/75-story-crm-123.md",
+  "stats": {
+    "turns": 34,
+    "inputTokens": 41,
+    "outputTokens": 18753,
+    "cacheCreationTokens": 41598,
+    "cacheReadTokens": 387111,
+    "cacheHitRatio": 1,
+    "durationMs": 191915
+  },
+  "cacheEnabled": true,
+  "durationMs": 268245,
+  "scout": {
+    "enabled": true,
+    "selectedCount": 22,
+    "tokensUsed": 7087,
+    "durationMs": 76268
+  },
+  "validation": {
+    "enabled": true,
+    "issuesCount": 13,
+    "issuesByKind": {
+      "missing_path": 7,
+      "symbol_not_found": 6
+    },
+    "durationMs": 54
+  },
+  "plannerRuntime": {
+    "kind": "agent-sdk",
+    "provider": "anthropic"
+  },
+  "authMode": "subscription",
+  "providerOptionsSnapshot": {
+    "anthropic": {
+      "draft": {
+        "thinking": "adaptive",
+        "effort": "medium"
+      },
+      "scout": {
+        "thinking": "adaptive",
+        "effort": "minimal"
+      }
+    }
+  },
+  "version": 1
+}

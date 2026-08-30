@@ -599,7 +599,7 @@
     },
     "/api/v1/tickets/{id}/replies": {
       "post": {
-        "summary": "A public reply, from whoever may write one on this ticket. ONE route, because posting a public message is one act — what the reply DOES depends on who wrote it. An agent's is the desk answering: the first public reply on a `new` ticket moves it to `open` (T-2) and stops the first-response clock at the reply's own timestamp, once — a second reply finds the clock already stopped and the status already moved, and nothing counts replies. A customer's is the customer answering: it stops no clock, because the promise the clock measures is about the desk, and it reopens a resolved ticket inside the fourteen-day window (T-5). Outside the window, and on a closed ticket, the reply is refused and no message is written — one transaction, so a customer is never left with a stored message and a ticket that did not move. The kind is the desk's to choose and not the customer's: staff may send `kind`, `public` or `internal`, and a customer's message is forced public whatever they send \u2014 the one place the desk talks to itself is not somewhere a customer can write. An internal note stops no clock and moves no status: the promise the clock measures is about answering the customer, and a note is not that. A `kind` outside the vocabulary is refused rather than quietly treated as public, because a caller who sent one meant something by it.",
+        "summary": "A public reply, from whoever may write one on this ticket. ONE route, because posting a public message is one act — what the reply DOES depends on who wrote it. An agent's is the desk answering: the first public reply on a `new` ticket moves it to `open` (T-2) and stops the first-response clock at the reply's own timestamp, once — a second reply finds the clock already stopped and the status already moved, and nothing counts replies. A customer's is the customer answering: it stops no clock, because the promise the clock measures is about the desk, and it reopens a resolved ticket inside the fourteen-day window (T-5). Outside the window, and on a closed ticket, the reply is refused and no message is written — one transaction, so a customer is never left with a stored message and a ticket that did not move. The kind is the desk's to choose and not the customer's: staff may send `kind`, `public` or `internal`, and a customer's message is forced public whatever they send — the one place the desk talks to itself is not somewhere a customer can write. An internal note stops no clock and moves no status: the promise the clock measures is about answering the customer, and a note is not that. A `kind` outside the vocabulary is refused rather than quietly treated as public, because a caller who sent one meant something by it.",
         "responses": {
           "201": {
             "description": "{ message, ticket }. The message it made, and the ticket as it now stands — this route changes both, and a caller told only about one of them has to guess at the other. The desk's row needs the status, because a row still saying New after the reply that opened it is the screen disagreeing with the ticket, and the alternative is the screen recomputing T-2 for itself. The revision comes with it: this write bumped it, and every other control on that row is holding the old one."
@@ -618,6 +618,25 @@
           },
           "409": {
             "description": "REOPEN_WINDOW_CLOSED when a customer replies to a ticket resolved more than fourteen days ago; ILLEGAL_TRANSITION with an empty `allowed` when they reply to a closed one, which is terminal. Both refuse the message as well as the move."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}": {
+      "get": {
+        "summary": "One ticket, for whoever may read it. Added because a screen for a single ticket had no route to ask for one: the desk reads a list and a customer reads a list, and the portal's ticket screen resolves an id rather than being handed an object it was navigated with — finding it inside a page of /me/tickets works until it is on page two. Any signed-in subject may call it; who may see WHICH ticket is the ownership rule, from the same place /tickets/{id}/messages and the reply route read it, so somebody else's ticket is the same 404 a missing one gets. The shape is the one every other ticket route answers with, because a screen that read a ticket differently depending on the route it arrived by would be two descriptions of one thing.",
+        "responses": {
+          "200": {
+            "description": "The ticket. Carries `reopenWindowOpen`: whether a reply would still reopen it (T-5), answered by the same rule the refusal reads rather than by a client counting fourteen days for itself. It is a fact about the ticket and not about the reader — a customer's reply reopens a resolved ticket and an agent's does not — so the portal reads it and says what it means for a customer. `allowedTransitions` cannot answer this: it is derived from the status alone, so it lists `reopened` on a ticket resolved a month ago."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket, and the same answer for a customer asking about somebody else's."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
           }
         }
       }

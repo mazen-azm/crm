@@ -10,6 +10,7 @@ import { AddCustomerPage } from '../pages/customers/AddCustomerPage';
 import { ChangeOwnPasswordPage } from '../pages/account/ChangeOwnPasswordPage';
 import { SetUserPasswordPage } from '../pages/accounts/SetUserPasswordPage';
 import { PublicRaiseTicketPage } from '../pages/portal/PublicRaiseTicketPage';
+import { PortalTicketPage } from '../pages/portal/PortalTicketPage';
 import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 
@@ -116,6 +117,21 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <SetUserPasswordPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* A customer's own ticket. Behind RequireAuth and inside the shell,
+          like every other signed-in screen: the shell's navigation offers the
+          screens the reader may open, and a customer's set is smaller rather
+          than absent. The screen resolves the id — it is not handed a ticket
+          by whatever linked to it, so the link can be shared and reloaded. */}
+      <Route
+        path="/portal/tickets/:id"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <PortalTicketPage />
             </DeskShell>
           </RequireAuth>
         }

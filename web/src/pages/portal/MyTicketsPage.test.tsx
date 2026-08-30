@@ -172,3 +172,16 @@ test('every string comes from the resource file, in both languages', async () =>
   expect(document.documentElement.getAttribute('dir')).toBe('rtl');
   expect(ar.myTickets.title).not.toBe(en.myTickets.title);
 });
+
+test('a row is the way into the ticket, and the link is shareable', async () => {
+  stub();
+  at('/');
+
+  const row = await screen.findByRole('link', { name: 'The invoice is wrong' });
+  // An href rather than a click handler: a screen reachable only by clicking
+  // through the one before it cannot be linked to, cannot be reloaded, and
+  // cannot be sent to somebody. The detail screen resolves the id from the
+  // address for the same reason.
+  expect(row).toHaveAttribute('href', '/portal/tickets/t-1');
+});
+
