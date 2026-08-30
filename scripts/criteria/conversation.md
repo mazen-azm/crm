@@ -61,6 +61,25 @@ response clock — once.
 - Paging the thread — CONVERSATION-4-API.
 - Sending the reply anywhere. Nothing in this product sends email.
 
+## CONVERSATION-1-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given a ticket, when an agent posts a reply, then it appears in the thread
+  without reloading everything already on the screen — the POST answers with
+  the message it made.
+- Given a blank or whitespace-only body, then it is refused before the request.
+  The API refuses it too, so the round trip would return the answer the screen
+  already had.
+- Given the first public reply on a `new` ticket, then the status the screen
+  shows follows it. A row still saying `new` after the reply that opened it is
+  the screen disagreeing with the ticket.
+- Given a failed post, then the draft survives. Losing what somebody typed
+  because the server failed is a second failure on top of the first.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
 ## CONVERSATION-2-API
 
 An internal note never reaches a customer, in any response.
@@ -128,3 +147,47 @@ A long thread pages rather than arriving whole.
   the same rule CONVERSATION-2-API states, applied to the count.
 - Given a page window the rules refuse, then it is refused rather than clamped,
   and the field is named.
+
+## CONVERSATION-2-WEB
+
+The desk sees both kinds, and can tell them apart before typing.
+
+*Acceptance criteria*
+- Given the thread, then a public reply and an internal note are visibly
+  different, and the difference is not only a word somebody has to read.
+- Given the box an agent types into, then which kind they are writing is clear
+  **before** they type — somebody about to write something they would not say
+  to a customer needs to know which box they are in first.
+- Given the screen, then it filters nothing: it shows what the API sent, and
+  the API is what keeps notes from customers (SC-2). A test asserting this
+  screen hides notes would be testing the wrong layer.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
+## CONVERSATION-3-WEB
+
+A customer replies on their own ticket.
+
+*Acceptance criteria*
+- Given a resolved ticket inside the window, then the screen says that replying
+  will reopen it, before it is replied to. A status change nobody expected
+  reads as a fault.
+- Given a reply, then it appears in the thread and the ticket's status follows
+  if it changed.
+- Given a refusal, then the sentence is the shared one for the code, unless the
+  shared one is untrue here — read it before reusing it.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
+## CONVERSATION-4-WEB
+
+A long thread pages on the screen too.
+
+*Acceptance criteria*
+- Given a thread longer than a page, then the screen pages it with the API's
+  window and adds none of its own (BR-4).
+- Given the page a reader lands on, then it is a decision with a reason
+  attached, not whichever one the API returns first — in a thread ordered
+  oldest first, the newest message is usually the one somebody came for.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
