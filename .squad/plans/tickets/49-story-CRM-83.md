@@ -122,19 +122,19 @@ import { findTicketById } from './tickets.repository.js';
 Add a `history` method on the object returned by `createTicketsService`:
 
 ```js
-history(subject, { id, page, pageSize }) {
+// (corrected) limit/offset, not page/pageSize: readPagination returns
+// { limit, offset } and every other list in this API answers
+// { items, total, limit, offset }. A second paging vocabulary on one endpoint
+// would make the queue and the history disagree about what a page is.
+history(subject, { id, limit, offset }) {
   // 404 vs empty history are different answers. Reuse the same not-found
   // error the assign/changeStatus paths throw; do not invent a new code.
   const ticket = findTicketById(db, { id });
-  if (!ticket) throw ticketNotFound(id); // <-- use the existing helper/name
+  // (corrected) There is no ticketNotFound helper. assign and changeStatus
+  // both throw `new HttpError(404, 'NOT_FOUND')` directly, and this reuses it.
+  if (!ticket) throw new HttpError(404, 'NOT_FOUND');
 
-  const offset = (page - 1) * pageSize;
-  const rows = listAuditEvents(db, {
-    entity: 'ticket',
-    entityId: id,
-    limit: pageSize,
-    offset,
-  });
+  const rows = listAuditEvents(db, { entity: 'ticket', entityId: id, limit, offset });
   const total = countAuditEvents(db, { entity: 'ticket', entityId: id });
 
   return {
@@ -145,9 +145,9 @@ history(subject, { id, page, pageSize }) {
       const { before, after } = JSON.parse(r.diff);
       return { id: r.id, actorId: r.actorId, verb: r.verb, at: r.at, before, after };
     }),
-    page,
-    pageSize,
     total,
+    limit,
+    offset,
   };
 }
 ```
@@ -252,14 +252,14 @@ new unit with its own criteria, not a story that already exists.)*
 
 ## Done Criteria
 
-- [ ] `GET /tickets/:id/history` returns audited changes oldest first, deterministic on same-`at` rows.
-- [ ] Each entry contains `actorId` (nullable), `verb`, `at`, `before`, `after` (parsed objects).
-- [ ] Response is paginated and refuses over-sized `pageSize` under BR-4 (matches queue behaviour).
-- [ ] Unknown ticket id returns `404`; existing ticket with no history returns `200` with empty items.
-- [ ] The read writes no `audit_events` row (asserted by test).
-- [ ] Audit table is read only via `api/src/features/audit/index.js` — no cross-feature SQL against `audit_events`.
-- [ ] `audit_events_entity_at_idx` is used (asserted by `EXPLAIN QUERY PLAN` test); no new index migration added.
-- [ ] `cd api && npm test` green; `verify-architecture`, `verify-docs`, `verify-plan` green.
-- [ ] No commit, comment, or ignore-file line mentions AI assistance.
+- [x] `GET /tickets/:id/history` returns audited changes oldest first, deterministic on same-`at` rows.
+- [x] Each entry contains `actorId` (nullable), `verb`, `at`, `before`, `after` (parsed objects).
+- [x] Response is paginated and refuses over-sized `pageSize` under BR-4 (matches queue behaviour).
+- [x] Unknown ticket id returns `404`; existing ticket with no history returns `200` with empty items.
+- [x] The read writes no `audit_events` row (asserted by test).
+- [x] Audit table is read only via `api/src/features/audit/index.js` — no cross-feature SQL against `audit_events`.
+- [x] `audit_events_entity_at_idx` is used (asserted by `EXPLAIN QUERY PLAN` test); no new index migration added.
+- [x] `cd api && npm test` green; `verify-architecture`, `verify-docs`, `verify-plan` green.
+- [x] No commit, comment, or ignore-file line mentions AI assistance.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

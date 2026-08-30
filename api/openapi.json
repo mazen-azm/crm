@@ -393,6 +393,28 @@
           }
         }
       }
+    },
+    "/api/v1/tickets/{id}/history": {
+      "get": {
+        "summary": "Everything that has happened to one ticket, oldest first. Each entry says who, what changed, and from what to what — an entry recording only the new value cannot answer \"who took it off me\". The order does not depend on two changes having different timestamps: the clock is whole seconds, so two moves inside one second share a time and insertion order breaks the tie. The stored JSON column is parsed here rather than handed over, because a client parsing the storage format makes the storage format the contract. Reading a trail is not an event on it, so nothing is audited.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each item is { id, actorId, verb, at, before, after }; actorId is null where the system acted, never invented. A ticket with no history yet is an empty page, not an error."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket. A missing ticket and an empty history are different answers, and only one is an error."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, never clamped (BR-4)."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
     }
   }
 }

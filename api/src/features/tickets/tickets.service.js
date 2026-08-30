@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { ConflictError, HttpError, unprocessable } from '../../platform/http/errors.js';
-import { createAuditWriter, transact } from '../audit/index.js';
+import { countAuditEvents, createAuditWriter, listAuditEvents, transact } from '../audit/index.js';
 import { createServiceLevels } from '../service-levels/index.js';
 import {
   DEFAULT_CATEGORY_SORT,
@@ -155,6 +155,32 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map(publicShape),
         // The matches, not the page.
         total: countTickets(db, { filters }),
+        limit,
+        offset,
+      };
+    },
+
+    // Everything that has happened to one ticket, oldest first.
+    //
+    // A read, so no audit row — reading a trail is not an event on it. The
+    // rows come from the audit feature through its index, not by querying
+    // audit_events from here: one table belongs to one feature, and
+    // verify-architecture would be right to object.
+    history(actor, { id, limit, offset }) {
+      // An empty history and a missing ticket are different answers, and only
+      // one of them is an error. Same 404 the writes throw.
+      if (!findTicketById(db, { id })) throw new HttpError(404, 'NOT_FOUND');
+
+      return {
+        items: listAuditEvents(db, { entity: 'ticket', entityId: id, limit, offset }).map((row) => {
+          // `diff` is one JSON column holding { before, after } — SQLite has no
+          // JSONB, so the shape is serialised in application code. Parsed here
+          // because a client parsing our storage format makes our storage
+          // format the contract.
+          const { before, after } = JSON.parse(row.diff);
+          return { id: row.id, actorId: row.actor_id, verb: row.verb, at: row.at, before, after };
+        }),
+        total: countAuditEvents(db, { entity: 'ticket', entityId: id }),
         limit,
         offset,
       };
