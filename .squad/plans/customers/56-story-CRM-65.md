@@ -237,16 +237,16 @@ Confirm or add the event name (e.g. `'customer.sign_in_granted'`) in whichever f
 
 ## Done Criteria
 
-- [ ] Migration `00NN__customers_user_id.sql` present, applied on fresh DB and existing DB; number chosen against the on-disk state at the moment of writing.
-- [ ] `customers.user_id` is nullable, references `users(id)`, and is unique when non-null.
-- [ ] `POST /api/v1/customers/:id/sign-in` returns `201 { user, initialPassword }` for a valid staff caller; refuses `422` (no email, field named), `409` (already granted), `409`/existing code (soft-deleted), `403` (non-staff).
-- [ ] Role `customer` exists in `identity.rules.js`; every `adminOnly`/staff predicate refuses it.
-- [ ] `tickets.service.js` lines 210, 302, 341 no longer contain a blanket customer refusal; the ownership comparison is the single check, with fail-closed 404 for non-owners.
-- [ ] Identity subject resolver attaches `customerId` for role-`customer` users.
-- [ ] Audit row `customer.sign_in_granted` recorded; contains neither the initial password nor its hash.
-- [ ] Customers feature files do not import from `features/identity/*` internals; `verify-architecture.mjs` passes.
-- [ ] All new and updated tests pass under `cd api && npm test`.
-- [ ] No commit, comment, doc, or ignore entry mentions AI assistance.
+- [x] Migration `00NN__customers_user_id.sql` present, applied on fresh DB and existing DB; number chosen against the on-disk state at the moment of writing.
+- [x] `customers.user_id` is nullable, references `users(id)`, and is unique when non-null.
+- [x] `POST /api/v1/customers/:id/sign-in` returns `201 { user, initialPassword }` for a valid staff caller; refuses `422` (no email, field named), `409` (already granted), `409`/existing code (soft-deleted), `403` (non-staff).
+- [x] Role `customer` exists in `identity.rules.js`; every `adminOnly`/staff predicate refuses it.
+- [x] `tickets.service.js` lines 210, 302, 341 no longer contain a blanket customer refusal; the ownership comparison is the single check, with fail-closed 404 for non-owners.
+- [x] Identity subject resolver attaches `customerId` for role-`customer` users.
+- [x] Audit row `customer.sign_in_granted` recorded; contains neither the initial password nor its hash.
+- [x] Customers feature files do not import from `features/identity/*` internals; `verify-architecture.mjs` passes.
+- [x] All new and updated tests pass under `cd api && npm test`.
+- [x] No commit, comment, doc, or ignore entry mentions AI assistance.
 
 ---
 
@@ -256,3 +256,61 @@ Confirm or add the event name (e.g. `'customer.sign_in_granted'`) in whichever f
 - No new feature slug: `customers/` already exists in `.squad/plans/00-index.md`; no index change needed.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+
+
+---
+
+## Review note
+
+This plan was generated with the planner's `read_file` broken — it says so in
+its own first line — and worked from grep instead. Its citations mostly held:
+migration numbering, the three guard line numbers (210, 302, 341), the shape of
+`POST /accounts`. Two of its instructions would not have run, and one thing it
+did not mention was the largest piece of work in the story.
+
+**The hole the plan did not see.** Adding the `customer` role changes what
+`requireSubject()` means. Until this story no customer could hold a token, so
+"is signed in" and "is staff" were the same sentence — and **seventeen routes**
+were written with the first one meaning the second: the customer list, any
+customer's screen and notes, the queue, raising a ticket, the categories, the
+staff list. The plan's task 8 covered the three ticket paths and nothing else.
+Shipped as written, the first granted customer could read every customer on
+file.
+
+`requireStaff()` now guards everything that is not deliberately customer-facing,
+and `staff-only.guarantee.test.js` reads the set off the router, so a route
+added later either refuses a customer or fails. It also asserts the reverse —
+that every route named as open really is open — because a list of exceptions
+nobody checks is a comforting fiction.
+
+**Two instructions that would have thrown.** Task 6 said to wrap the user
+creation and the link in a transaction; `createAccount` opens one of its own,
+and SQLite refuses a transaction inside a transaction. Identity now exposes
+`makeUser`, which writes the row and its audit event and opens nothing, so the
+caller owns the transaction — and `createAccount` is that caller too. Task 6
+also wrote `HttpError(422, 'VALIDATION_FAILED', { field: 'email' })`; the third
+argument is `cause`, and the constructor for a 422 with field names is
+`unprocessable(['email'])`.
+
+**Two invented error codes.** `CUSTOMER_DELETED` and
+`SIGN_IN_ALREADY_GRANTED`. A removed customer already answers 404 through
+`liveCustomerOr404`, and a second grant is a plain 409 CONFLICT. New codes would
+have meant new entries in the web mirror and a sentence in both languages, for
+two cases the existing vocabulary already says.
+
+**One thing the plan asked for that was quietly wrong in the code.**
+`findLiveCustomerById` selected `id, name` — enough for the existence checks it
+was written for. The grant reads `customer.email` and `customer.user_id` off it,
+and both came back undefined: a customer WITH an address was refused for not
+having one. It now selects the projection, which is what its name always
+claimed.
+
+**And a decision the criteria left open.** A customer reaches
+`/tickets/:id/history` and is refused `assignee` and `status` — all three with
+the same 404, so nothing about the answer says which rule stopped it. Reading
+your own trail is something a customer does; handing a ticket to a named agent
+or moving it through the state machine is the desk operating its own queue, and
+no story asks for a customer to do either. The three routes stay on
+`requireSubject()` rather than `requireStaff()` on purpose: a 403 at the door
+would be a second, different answer to "is this ticket mine", and the ownership
+census exists to keep there being one.

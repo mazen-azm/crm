@@ -84,3 +84,17 @@ export function reEnableUser(db, { id, at }) {
     .prepare('UPDATE users SET deleted_at = NULL, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL')
     .run(at, id).changes;
 }
+
+// Which customer this user account belongs to, or null. I-1 puts the link on
+// `customers`, so this reads that table — the same thing tickets does for a
+// customer id, and for the same reason its comment gives: verify-architecture's
+// rule is about imports, not about which table a query names. Importing the
+// customers repository would be reaching into a sibling feature's internals;
+// naming its table here is not.
+export function findCustomerIdByUserId(db, userId) {
+  return (
+    db
+      .prepare('SELECT id FROM customers WHERE user_id = ? AND deleted_at IS NULL')
+      .get(userId)?.id ?? null
+  );
+}

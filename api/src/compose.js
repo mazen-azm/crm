@@ -1,7 +1,7 @@
 import { createApp } from './app.js';
 import { channelsRouter } from './features/channels/index.js';
 import { createCustomersService, customersRouter } from './features/customers/index.js';
-import { identityRouter, identitySubjectResolver } from './features/identity/index.js';
+import { createIdentityService, identityRouter, identitySubjectResolver } from './features/identity/index.js';
 import { createTicketsService, ticketsRouter, validateTicketFields } from './features/tickets/index.js';
 import { createKeyedThrottle } from './platform/http/throttle.js';
 
@@ -23,9 +23,15 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // internals — and one instance rather than three means there is one
       // answer to what the customers service is.
       const tickets = createTicketsService({ db, now });
-      const customers = createCustomersService({ db, now, tickets });
+      // Customers holds identity because granting a customer a sign-in writes
+      // a user row and the customers.user_id link in one transaction, and
+      // SQLite refuses a transaction inside a transaction — so the two writes
+      // have to happen under one, which means one service calling the other's
+      // method rather than its route.
+      const identityService = createIdentityService(identity);
+      const customers = createCustomersService({ db, now, tickets, identity: identityService });
 
-      v1.use(identityRouter(identity));
+      v1.use(identityRouter({ service: identityService }));
       v1.use(customersRouter({ customers }));
       v1.use(ticketsRouter({ db, now }));
       // One throttle per composed app, the way sign-in's is built inside its

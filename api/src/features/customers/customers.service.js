@@ -20,6 +20,7 @@ import {
   findLiveCustomerById,
   insertCustomer,
   insertCustomerNote,
+  setCustomerUserId,
   listCustomerNotes,
   listLiveCustomers,
   searchLiveCustomers,
@@ -33,6 +34,10 @@ const publicShape = (row) => ({
   name: row.name,
   email: row.email,
   phone: row.phone,
+  // Whether they can sign in, not which account it is. A screen needs to know
+  // that a grant has happened so it can say so instead of offering an action
+  // that will be refused; the user's id is identity's to hand out.
+  hasSignIn: row.user_id !== null && row.user_id !== undefined,
   createdAt: row.created_at ?? null,
   updatedAt: row.updated_at ?? null,
 });
@@ -45,7 +50,7 @@ const noteShape = (row) => ({
   createdAt: row.created_at,
 });
 
-export function createCustomersService({ db, tickets, now = () => Math.floor(Date.now() / 1000) }) {
+export function createCustomersService({ db, tickets, identity, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
   const audit = createAuditWriter({ db });
 
@@ -120,6 +125,59 @@ export function createCustomersService({ db, tickets, now = () => Math.floor(Dat
         });
 
         return publicShape(created);
+      });
+    },
+
+    // An agent gives a customer a way in. I-1's link, written.
+    //
+    // One transaction covering both writes, which is why identity's makeUser
+    // takes no transaction of its own: a user row without the link is an
+    // account belonging to nobody, and the link without the row is a foreign
+    // key pointing at nothing. Either alone is worse than neither.
+    grantSignIn(actor, { customerId }) {
+      const customer = liveCustomerOr404(customerId);
+
+      // I-4: the address IS the credential. A customer with none has nothing
+      // to sign in with, and inventing one for them would be inventing an
+      // identity.
+      if (!customer.email) throw unprocessable(['email']);
+
+      // Not a second account for one person. The partial unique index on
+      // user_id would refuse it too, and CRM-82's lesson is that an index
+      // firing gives a raw SQLite error and a 500 — which tells the caller
+      // their reasonable question was our fault.
+      if (customer.user_id) throw new HttpError(409, 'CONFLICT');
+
+      return transact(db, () => {
+        const at = stamp();
+        // The role is supplied here and never taken from a request: the
+        // accounts routes cannot mint a `customer`, because a customer user
+        // with no customer behind it is an account that owns nothing and would
+        // be refused from its own tickets.
+        const made = identity.makeUser(actor, {
+          email: customer.email,
+          name: customer.name,
+          role: 'customer',
+        });
+
+        setCustomerUserId(db, { customerId, userId: made.user.id, at });
+
+        audit.record(actor, {
+          entity: 'customer',
+          entityId: customerId,
+          verb: 'customer.grant_sign_in',
+          before: { userId: null },
+          // The id of the account, and nothing about how to get into it. The
+          // audit guarantee test asserts no diff in this API carries a
+          // password or a hash.
+          after: { userId: made.user.id },
+          at,
+        });
+
+        // The password travels once, in this answer, and is never stored in a
+        // form anything can read back — the same contract creating a staff
+        // account has. The agent is on the phone and reads it out.
+        return { customer: publicShape(findCustomerById(db, { id: customerId })), ...made };
       });
     },
 

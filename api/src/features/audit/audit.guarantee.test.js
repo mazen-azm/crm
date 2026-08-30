@@ -68,6 +68,7 @@ const EXERCISED = new Set([
   'POST /api/v1/accounts/:id/re-enable',
   'POST /api/v1/customers',
   'POST /api/v1/customers/:id/notes',
+  'POST /api/v1/customers/:id/sign-in',
   'POST /api/v1/tickets',
   'PATCH /api/v1/tickets/:id/assignee',
   'PATCH /api/v1/tickets/:id/status',
@@ -116,6 +117,15 @@ test('each mutating route writes exactly one audit row', async () => {
   // census with a claim rather than a test — which is the failure the census
   // exists to prevent, arriving through its own front door.
   const customer = (await (await call('/api/v1/customers?limit=1')).json()).items[0];
+  // Made here rather than found: the grant needs a customer WITH an email
+  // address, because the address is what they would sign in with, and what the
+  // seed happens to contain is not this test's contract. Raised outside the
+  // counted steps below, like the tickets above it — creating it writes an
+  // audit row of its own.
+  const withEmail = await (await call('/api/v1/customers', {
+    method: 'POST',
+    body: { name: 'Granted A Sign In', email: 'granted@support-desk.local' },
+  })).json();
 
   // Raised outside the counted steps below: each of those asserts exactly one
   // new audit row, and raising a ticket writes one of its own. Driven for real
@@ -170,6 +180,11 @@ test('each mutating route writes exactly one audit row', async () => {
           body: 'So this route is driven.',
         },
       })],
+    // A customer WITH an email address: the address is what they would sign in
+    // with, so one without it is refused naming the field. The first seeded
+    // customer is the walk-in counter and has none.
+    ['POST /api/v1/customers/:id/sign-in', () =>
+      call(`/api/v1/customers/${withEmail.id}/sign-in`, { method: 'POST' }), 2],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
         method: 'POST',
@@ -183,11 +198,21 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/accounts/${created.id}/re-enable`, { method: 'POST' })],
   ];
 
-  for (const [name, run] of rest) {
+  // Most routes write one row. Granting a customer a sign-in writes two — the
+  // user account and the link on the customer — and that is not a defect to
+  // paper over: they are two things that happened, in one transaction, and a
+  // trail that recorded only one of them would answer "who created this user"
+  // with silence. The count is stated per route so the exception is a number
+  // somebody chose rather than an assertion quietly relaxed for everybody.
+  for (const [name, run, expected = 1] of rest) {
     const before = auditCount();
     const res = await run();
     assert.ok(res.ok, `${name} should succeed, got ${res.status}`);
-    assert.equal(auditCount(), before + 1, `${name} must write exactly one audit row`);
+    assert.equal(
+      auditCount(),
+      before + expected,
+      `${name} must write exactly ${expected} audit row(s)`,
+    );
   }
 });
 

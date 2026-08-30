@@ -88,7 +88,15 @@ test('a deleted customer is not found, by any leg', async () => {
 test('the row carries no address and nothing deleted', async () => {
   const { search } = await start();
   const [row] = (await (await search('?q=Leila')).json()).items;
-  assert.deepEqual(Object.keys(row).sort(), ['createdAt', 'email', 'id', 'name', 'phone', 'updatedAt']);
+  // hasSignIn, not user_id: whether they can sign in is the customer's fact and
+  // a screen needs it; which account it is belongs to identity. deleted_at is
+  // absent because a deleted customer is never returned, and `address` because
+  // the column exists and nothing reads or writes it.
+  assert.deepEqual(
+    Object.keys(row).sort(),
+    ['createdAt', 'email', 'hasSignIn', 'id', 'name', 'phone', 'updatedAt'],
+  );
+  assert.equal(row.hasSignIn, false);
 });
 
 test('total counts the matches, not the page', async () => {

@@ -6,7 +6,7 @@ import { ESCAPE_CHAR, escapeLike } from './customers.rules.js';
 // index and the table has none for this — 0001__customers.sql carries only the
 // partial unique index on `email`. At this scale a scan is the honest answer,
 // and adding an index the query cannot use would be theatre.
-const PROJECTION = 'id, name, email, phone, created_at, updated_at';
+const PROJECTION = 'id, name, email, phone, user_id, created_at, updated_at';
 
 // Written once and shared by the page and the count. Two copies of one
 // predicate drift: a fourth leg gets added to the search, the count is missed,
@@ -80,9 +80,14 @@ export function countLiveCustomers(db) {
 // ── notes ────────────────────────────────────────────────────────────────────
 const NOTE_PROJECTION = 'id, customer_id, author_id, body, created_at';
 
+// The whole row, not `id, name`. It was the narrow pair while every caller only
+// needed to know the customer existed; granting a sign-in needs the address to
+// grant against and the link to refuse a second grant, and a function called
+// "find the customer" quietly answering with two of its columns is how a check
+// against `customer.email` reads as "they have no email" when they do.
 export function findLiveCustomerById(db, { id }) {
   return db
-    .prepare('SELECT id, name FROM customers WHERE id = ? AND deleted_at IS NULL')
+    .prepare(`SELECT ${PROJECTION} FROM customers WHERE id = ? AND deleted_at IS NULL`)
     .get(id);
 }
 
@@ -94,10 +99,11 @@ export function findCustomerById(db, { id }) {
 }
 
 export function insertCustomer(db, { id, name, email, phone, at }) {
-  // No user_id column: 0001__customers.sql does not have one. I-1 says a
-  // customer is not a user, and the way this honours it is by writing one row
-  // here and none in `users` — a test asserts that. The column arrives with
-  // whichever story gives a customer a sign-in.
+  // No user_id written here. I-1 says a customer is not a user, and the way
+  // this honours it is by writing one row here and none in `users` — a test
+  // asserts that. The column exists now (0010__customers_user_id.sql) and it
+  // stays null until CUSTOMERS-6-API grants a sign-in, which is a separate act
+  // with its own route.
   //
   // No address either: nothing asks for it and PROJECTION does not return it,
   // so a value written here would be invisible to every reader.
@@ -147,4 +153,12 @@ export function countCustomerNotes(db, { customerId }) {
   return db
     .prepare('SELECT count(*) AS n FROM customer_notes WHERE customer_id = ?')
     .get(customerId).n;
+}
+
+// The link I-1 describes, set once. Scoped to live rows for the reason every
+// write here is: a removed customer is kept for the trail, not for writing to.
+export function setCustomerUserId(db, { customerId, userId, at }) {
+  return db
+    .prepare('UPDATE customers SET user_id = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(userId, at, customerId);
 }

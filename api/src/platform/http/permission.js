@@ -63,3 +63,26 @@ export function requirePermission(policy) {
     }
   };
 }
+
+// Staff, meaning "not a customer".
+//
+// This exists because adding the `customer` role changed what
+// requireSubject() means. Until CUSTOMERS-6-API no customer could hold a
+// token, so "is signed in" and "is staff" were the same sentence, and
+// seventeen routes were written with the first one meaning the second. The
+// moment a customer can sign in, every one of them — the customer list, any
+// customer's screen and notes, the queue, raising a ticket, the staff list —
+// is reachable by any customer with an account.
+//
+// Nothing about those routes changed. What changed is that a word they relied
+// on stopped meaning what it did, which is why this is a guard rather than a
+// note: routes-not-yet-written need it too, and staff-only.guarantee.test.js
+// reads the set off the router so a new one cannot quietly inherit the old
+// meaning.
+//
+// It is a role check and not a permission model. SC-1 is one organisation and
+// one queue: an agent and an admin see the same desk, and the only place they
+// differ is the accounts routes, which already have adminOnly.
+export function requireStaff() {
+  return requirePermission((subject) => subject.role !== 'customer');
+}
