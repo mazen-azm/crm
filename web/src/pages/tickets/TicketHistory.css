@@ -1,0 +1,21 @@
+/* An ordered list, because the order is the point — but not a numbered one.
+   The default markers count the entries, and an entry's position in a trail
+   is not a fact about it: the numbers restart at every ticket and change the
+   moment a page is loaded. Logical properties throughout, so the list reads
+   from the right in Arabic without a second rule. */
+.ticket-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ticket-history__entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--color-border-subtle);
+}
