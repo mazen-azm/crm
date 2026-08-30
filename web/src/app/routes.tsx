@@ -8,6 +8,7 @@ import { CustomersPage } from '../pages/customers/CustomersPage';
 import { CustomerScreenPage } from '../pages/customers/CustomerScreenPage';
 import { AddCustomerPage } from '../pages/customers/AddCustomerPage';
 import { ChangeOwnPasswordPage } from '../pages/account/ChangeOwnPasswordPage';
+import { SetUserPasswordPage } from '../pages/accounts/SetUserPasswordPage';
 import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 
@@ -96,6 +97,20 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <ChangeOwnPasswordPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Admin-only in the API. The route is not gated here beyond RequireAuth:
+          the screen says so for a non-admin who arrives, and the refusal that
+          matters is the API's (SC-2). A router-level role gate would be a
+          second place deciding one rule. */}
+      <Route
+        path="/accounts/set-password"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <SetUserPasswordPage />
             </DeskShell>
           </RequireAuth>
         }
