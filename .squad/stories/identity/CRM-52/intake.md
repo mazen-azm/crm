@@ -136,8 +136,11 @@ Place files in `attachments/` next to this `intake.md`, then list them here so t
 - **Read first, before anything else:** `.squad/plan-lessons.md` — one rule per
   defect an earlier plan review found. A plan that repeats a listed defect is
   rejected in review.
-- **Ids:** cite other stories only from `scripts/backlog.txt` (or the generated
-  `BACKLOG.md`), as FULL-NAME ids with the Jira key: `PLATFORM-13-ALL (CRM-28)`.
+- **Ids:** cite other stories as FULL-NAME ids with the Jira key —
+  `PLATFORM-13-ALL (CRM-28)`. The id comes from `scripts/backlog.txt` (or the
+  generated `BACKLOG.md`); **the key comes from `scripts/story-keys.txt`, which
+  lists every story's key and is generated from the tracker.** Do not work a key
+  out by counting — three plans did, and each named the wrong story.
   Documents under `docs/` may lag; the backlog is the authority.
 - **Structure:** `docs/taxonomy.md` (names), `docs/architecture.md` (where code
   goes), `docs/git.md` (branches and commits) — cite them, do not restate them.

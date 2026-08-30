@@ -237,6 +237,19 @@ export const en = {
     noteBySystem: 'the system',
     errorTitle: 'That customer did not load',
     retired: 'This customer has been removed. Their history is kept.',
+    signInHeading: 'Sign-in',
+    signInNone: 'This customer cannot sign in yet.',
+    signInGrant: 'Give them a sign-in',
+    signInGranting: 'Setting it up…',
+    signInAlready: 'This customer already has a sign-in.',
+    signInFailed: 'That sign-in was not created',
+    // The one screen in this product that shows a password. It is shown once,
+    // in full, because the agent is on the phone and has to read it out — and
+    // it is never fetchable again, which the sentence has to say plainly
+    // enough that nobody closes the tab expecting to come back to it.
+    signInReady: 'Read this out now. It is not shown again.',
+    signInEmail: 'They sign in with',
+    signInPassword: 'First password',
   },
   states: {
     loading: 'Loading',

@@ -9,6 +9,11 @@ export type Customer = {
   name: string;
   email: string | null;
   phone: string | null;
+  // Whether they can sign in — not which account it is. The API answers with
+  // this rather than a user id on purpose: a screen needs to know that a grant
+  // has happened so it can say so instead of offering an action that will be
+  // refused, and whose account it is belongs to identity.
+  hasSignIn: boolean;
   createdAt: string;
   updatedAt: string;
 };
