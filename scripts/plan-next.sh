@@ -137,6 +137,19 @@ for intake in ${(f)QUEUE}; do
     for f in .squad/plans/*/*"$(echo "$key" | tr 'A-Z' 'a-z')"*.md(N); do
       mv "$f" "${f:h}/${${f:t}//$(echo "$key" | tr 'A-Z' 'a-z')/$key}"
     done
+    # The heading number, corrected to the filename's.
+    #
+    # squad-kit numbers a plan by its position within its own feature and the
+    # filename by its position in the whole project, so "# Story 07" sits at
+    # the top of 58-story-CRM-51.md. verify-plan has caught that on five plans
+    # in a row (L-21), and a check that keeps catching the same thing is a
+    # working check and a broken process (L-54): the number is knowable here,
+    # from the file that was just written, so it is written rather than
+    # guessed.
+    for f in .squad/plans/*/*"story-${key}.md"(N); do
+      nn="${${f:t}%%-*}"
+      /usr/bin/sed -i '' -E "1,10s/^# Story [0-9]+ —/# Story ${nn} —/" "$f"
+    done
     echo "[$(date '+%F %T')] $key planned"
   else
     # Say which. "quota or error" sent somebody looking at a usage limit for
