@@ -103,3 +103,89 @@ An agent reads the list of people a ticket can be assigned to.
   list obeys (BR-4).
 - Given a person on the list, when the row is read, then it carries the id,
   the name and the role, and nothing about the password.
+
+## IDENTITY-6-API
+
+An admin sets somebody's password, so a locked-out person gets back in.
+
+Written 2026-08-30. There is no reset by email — `docs/product-brief.md` puts
+"SSO, password reset by email" under Specified only, which is why a locked-out
+person needs an admin rather than a link.
+
+*Acceptance criteria*
+- Given an admin, when they set another user's password, then that user can
+  sign in with it and not with the old one.
+- Given a non-admin, when they attempt it on anybody, then the answer is 403
+  and the service never runs (SC-2).
+- Given an admin setting their own password this way, then it is refused: the
+  route is for somebody who is locked out, and changing your own is
+  IDENTITY-7-API, which asks for the current one. An admin who can skip that
+  check on themselves is a stolen session that never has to know a password.
+- Given the new password, then it is stored as a hash with its own salt, and
+  the answer never carries it back — the admin types it, so nothing needs to
+  read it out.
+- Given a set password, then an audit row records who set it and for whom, and
+  the row carries no password and no hash, before or after (BR-2).
+- Given a disabled or soft-deleted account, then setting a password on it is
+  refused — bringing somebody back is re-enabling them (IDENTITY-2-API), and
+  doing it by the back door leaves the account's state saying one thing and
+  its access saying another.
+
+*Out of scope*
+- Ending the sessions the old password opened — IDENTITY-8-API.
+- Any rule about what a password may contain. There is one length floor and no
+  composition rules; a rule that forces a symbol is a rule that produces the
+  same password with a symbol on the end.
+
+## IDENTITY-6-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given an admin on the people screen, when they set somebody's password, then
+  the screen shows which account it was set for.
+- Given the form, when the API refuses naming a field, then that field is
+  marked and the sentence is the shared one for the code.
+- Given a submission in flight, then the control cannot be pressed twice.
+- Given a non-admin, then the control is not on their screen — and that is a
+  courtesy, not the enforcement, which is the API's (SC-2).
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
+## IDENTITY-7-API
+
+Anybody changes their own password, knowing the current one.
+
+*Acceptance criteria*
+- Given a signed-in user, when they send the current password and a new one,
+  then the password changes and the new one signs them in.
+- Given a wrong current password, then the answer is 401; given an
+  unacceptable new one, then it is 422 naming the field. Sign-in deliberately
+  gives one refusal for three causes, and that reasoning does not carry here:
+  the caller is already authenticated and already knows the account exists, so
+  telling them which half they got wrong leaks nothing and saves them guessing.
+- Given the new password equal to the current one, then it is refused naming
+  the field. A change that changes nothing is a change somebody believes they
+  made.
+- Given the change, then an audit row records it, carrying neither password
+  (BR-2).
+- Given any role, then the route is the same one — an admin changing their own
+  password uses this, not IDENTITY-6-API.
+
+*Out of scope*
+- Ending other sessions — IDENTITY-8-API. Until it ships, a changed password
+  leaves existing tokens valid until they expire, and that is a stated gap
+  rather than an oversight.
+
+## IDENTITY-7-WEB
+
+The same, on a screen.
+
+*Acceptance criteria*
+- Given a signed-in person, when they change their password, then the screen
+  confirms it and does not sign them out.
+- Given a wrong current password, then the current-password field is marked
+  and the sentence is the shared one for 401.
+- Given a submission in flight, then the control cannot be pressed twice.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
