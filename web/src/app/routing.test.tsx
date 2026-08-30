@@ -8,6 +8,7 @@ import { renderWithProviders, screen, userEvent } from '../testing/render';
 import { AppRoutes } from './routes';
 import { THEME_KEY } from './theme-context';
 import { AUTH_TOKEN_KEY } from './auth-context';
+import { en } from '../shared/i18n/en';
 
 describe('the router', () => {
   test('sends an unauthenticated visitor to sign-in', async () => {
@@ -33,6 +34,17 @@ describe('the router', () => {
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
     expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBeNull();
+  });
+
+  test('/customers/new is the add form, not a customer whose id is "new"', async () => {
+    // Two routes could match it. The router ranks the literal segment above
+    // the dynamic one, and this is what says so — if that ever stops being
+    // true the screen fetches /customers/new and shows a 404 for a customer
+    // nobody asked for, which is a bug with no error message in it.
+    renderWithProviders(<AppRoutes />, { route: '/customers/new', signedIn: true });
+    expect(
+      await screen.findByRole('heading', { name: en.customers.addTitle }),
+    ).toBeInTheDocument();
   });
 
   test('an unknown path lands on the guarded root, not a blank screen', async () => {

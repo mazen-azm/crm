@@ -248,15 +248,45 @@ Test file layout, imports, and render helper: copy from `web/src/pages/tickets/R
 
 ## Done Criteria
 
-- [ ] A field the API named in a 422 is marked, and its message is `t.errors[code]` from the shared map — never composed from `fields`.
-- [ ] The submit control is disabled while the request is in flight; a second click issues no second request (verified by test case 4).
-- [ ] On success, the screen renders the created customer (id, name, email/none-fallback, phone, address, created-at), not a message saying it worked.
-- [ ] Every visible string on `AddCustomerPage` comes from a resource file in **both** `en.ts` and `ar.ts` (BR-6); `parity.test.ts` and `no-hardcoded-strings.test.ts` pass.
-- [ ] Blank email is submitted as an **absent** property, not `''` or `null` (verified by test case 2).
-- [ ] `POST` goes to `/customers`, not `/api/v1/customers` (verified by inspecting the stub call in tests).
-- [ ] Route `/customers/new` is registered inside the authenticated shell in `web/src/app/routes.tsx`.
-- [ ] No `api/` files were modified in this story (confirmed by `git diff --stat api/` being empty).
-- [ ] `cd web && npm test` and `cd web && npm run build` both pass.
-- [ ] No file, commit message, or comment mentions AI assistance.
+- [x] A field the API named in a 422 is marked, and its message is `t.errors[code]` from the shared map — never composed from `fields`.
+- [x] The submit control is disabled while the request is in flight; a second click issues no second request.
+- [x] On success, the screen renders the created customer (id, name, email, phone, created-at), not a message saying it worked. **`address` dropped — see the review note below.**
+- [x] Every visible string on `AddCustomerPage` comes from a resource file in **both** `en.ts` and `ar.ts` (BR-6); `parity.test.ts` and `no-hardcoded-strings.test.ts` pass.
+- [x] Blank email is submitted as an **absent** property, not `''` or `null`. Blank phone too, for the same reason.
+- [x] `POST` goes to `/customers`, not `/api/v1/customers` (asserted on the recorded path in the test).
+- [x] Route `/customers/new` is registered inside the authenticated shell in `web/src/app/routes.tsx`, and `routing.test.tsx` pins that `:id` does not swallow it.
+- [x] No `api/` files were modified in this story (`git diff --stat api/` is empty).
+- [x] `cd web && npm test` (165 tests, 27 files) and `cd web && npm run build` both pass.
+- [x] No file, commit message, or comment mentions AI assistance.
+
+---
+
+## Review note — what this plan got wrong
+
+Recorded here rather than silently fixed, because a plan is read later by
+somebody with no way to tell which of its instructions were followed.
+
+1. **`address` is not a field on a customer.** The plan gave the form four
+   inputs and listed `address` in the success view and in a Done Criteria box.
+   The column exists (`api/src/platform/db/migrations/0001__customers.sql:6`)
+   and nothing writes or reads it: `insertCustomer` names six columns and not
+   that one, `PROJECTION` does not select it, and the repository carries a
+   comment saying why. Built as planned the form would have posted a property
+   the API discards and rendered `undefined` beside a label, with the whole
+   suite green. The screen has three fields. (L-49.)
+
+2. **`createdEmailNone` was invented.** `t.customers.noEmail` and
+   `t.customers.noPhone` have said exactly that since CUSTOMERS-1-WEB. Reused.
+
+3. **Blank phone, not only blank email.** The API's own rule is that a customer
+   needs a name and nothing else. Making one optional field absent-when-blank
+   and sending the other as `''` would be two answers to one question.
+
+4. **Nothing reached the screen.** The plan wired the route and stopped there —
+   the same defect CRM-58 fixed for the customer screen. `CustomersPage` now
+   links to it beside the search, and its empty state offers it as the second
+   of two honest endings to a search that matched nothing. The comment there
+   saying "creating a customer is a different story and does not exist yet" was
+   true when written and is now removed.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
