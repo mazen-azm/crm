@@ -17,6 +17,7 @@ import { useTranslation } from '../../shared/i18n';
 import { priorityLabel, statusLabel } from './ticket-labels';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useAssignees } from './useAssignees';
+import { useMe } from '../../shared/session/use-me';
 import { TicketHistory } from './TicketHistory';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
@@ -251,6 +252,7 @@ export function TicketQueuePage() {
   const queue = useTicketQueue();
   const categories = useTicketCategories();
   const assignees = useAssignees();
+  const { me } = useMe();
 
   // Tickets this screen has changed since the page was fetched, so a row shows
   // the assignment that just happened and carries the revision that came back
@@ -279,7 +281,13 @@ export function TicketQueuePage() {
       : null,
     draft.assigneeId
       ? `${t.ticketQueue.filterAssignee}: ${
-          draft.assigneeId === UNASSIGNED ? t.ticketQueue.unassigned : draft.assigneeId
+          draft.assigneeId === UNASSIGNED
+            ? t.ticketQueue.unassigned
+            : // A name, not the id. This read `draft.assigneeId` and printed a
+              // UUID into a sentence somebody is meant to read — invisible
+              // while the only way to set the filter was to pick a name from a
+              // list, and unmissable now that one click sets it to your own.
+              (assignees.nameFor(draft.assigneeId) ?? draft.assigneeId)
         }`
       : null,
   ].filter(Boolean) as string[];
@@ -355,6 +363,26 @@ export function TicketQueuePage() {
         </Field>
 
         <Button type="submit">{t.ticketQueue.apply}</Button>
+        {/* One click, and nobody types their own id. It applies the same
+            filter the picker sets, so what comes back is the queue — same
+            rows, same paging, same words — and the URL carries it, which
+            makes it a view somebody can send to a colleague and one the back
+            button returns to.
+
+            Hidden until we know who is asking: a button that filtered by
+            `undefined` would quietly show the whole queue and look like it
+            had worked. */}
+        {me?.id ? (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setDraft({ ...draft, assigneeId: me.id });
+              queue.apply({ ...draft, assigneeId: me.id });
+            }}
+          >
+            {t.ticketQueue.mine}
+          </Button>
+        ) : null}
       </Stack>
 
       {busy ? <Skeleton lines={5} height="64px" label={t.states.loading} /> : null}
