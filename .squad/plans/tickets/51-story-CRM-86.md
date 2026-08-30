@@ -55,6 +55,36 @@ A route-census test enumerates every route the ticket router serves under `/tick
 
 ---
 
+## The guard, decided — there is nothing to compare against yet
+
+The plan below compares `before.customer_id` with `actor.customerId`. **The
+subject has no such field, and cannot have one.**
+
+- `identity.subject-resolver.js:23` returns `{ id, role, name }` and nothing
+  else.
+- Sign-in reads `users` only (`identity.repository.js:11`).
+- `customers` has no `user_id` column and `users` has no `customer_id`, so
+  there is no link between the two tables at all — I-1 describes one that a
+  later identity story creates.
+
+So **no customer can hold a token today**, and if one could, nothing would say
+which customer they are.
+
+**Decision: the guard fails closed.** A subject whose role is `customer` is
+refused on every `/tickets/:id` write, with the same 404 a missing ticket gets.
+That is correct now — a customer with no link owns nothing — and it is the safe
+direction while the link does not exist: the alternative, letting an
+unidentifiable customer through, is the hole the rule exists to close.
+
+When the link lands, the check becomes a real comparison in one place. The line
+says so, next to the code, so whoever adds the link finds the instruction
+rather than having to think of it.
+
+**The census is the durable half and is built in full.** It derives the routes
+from the router rather than listing them, so a route added later is caught
+whether or not anybody remembers this story. That is the third acceptance
+criterion, and it is the part that keeps working after the schema changes.
+
 ## Implementation tasks
 
 ### 1 — Add the ownership guard inside the transaction that already reads the ticket
@@ -190,13 +220,13 @@ Match the test style of `audit.guarantee.test.js` (imports, `test('…', async (
 
 ## Done Criteria
 
-- [ ] A customer subject reading, mutating, or otherwise acting on a ticket that is not theirs receives `404 NOT_FOUND` with a body byte-identical to the body returned for a ticket id that does not exist.
-- [ ] Every route the ticket router serves under `/tickets/:id` (currently `PATCH /tickets/:id/assignee` and `PATCH /tickets/:id/status`) is exercised as a non-owner customer in `ticket-ownership.guarantee.test.js` and refuses `404 NOT_FOUND`.
-- [ ] The census test derives the set of routes from `collectRoutes(app, '')` (per `api/src/platform/http/route-table.js:15`) and fails loudly when a route is added, removed, or renamed without a matching guard.
-- [ ] `admin` and `agent` subjects act on any ticket regardless of ownership; both roles are pinned by a driven test case (SC-1).
-- [ ] The ownership check lives inside the transaction that already reads the row (in `tickets.service.js` after `before` is loaded), not in `tickets.routes.js` and not in shared middleware.
-- [ ] No web, Android, or route-file changes are shipped for this story.
-- [ ] `cd api && npm test` passes; `cd web && npm run build` still passes on the unchanged web tree.
-- [ ] Nothing in the diff, commit messages, or file contents mentions AI assistance (`git diff | grep -iE 'copilot|chatgpt|claude|assistant|ai[- ]generated'` is empty).
+- [x] A customer subject reading, mutating, or otherwise acting on a ticket that is not theirs receives `404 NOT_FOUND` with a body byte-identical to the body returned for a ticket id that does not exist.
+- [x] Every route the ticket router serves under `/tickets/:id` (currently `PATCH /tickets/:id/assignee` and `PATCH /tickets/:id/status`) is exercised as a non-owner customer in `ticket-ownership.guarantee.test.js` and refuses `404 NOT_FOUND`.
+- [x] The census test derives the set of routes from `collectRoutes(app, '')` (per `api/src/platform/http/route-table.js:15`) and fails loudly when a route is added, removed, or renamed without a matching guard.
+- [x] `admin` and `agent` subjects act on any ticket regardless of ownership; both roles are pinned by a driven test case (SC-1).
+- [x] The ownership check lives inside the transaction that already reads the row (in `tickets.service.js` after `before` is loaded), not in `tickets.routes.js` and not in shared middleware.
+- [x] No web, Android, or route-file changes are shipped for this story.
+- [x] `cd api && npm test` passes; `cd web && npm run build` still passes on the unchanged web tree.
+- [x] Nothing in the diff, commit messages, or file contents mentions AI assistance (`git diff | grep -iE 'copilot|chatgpt|claude|assistant|ai[- ]generated'` is empty).
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**

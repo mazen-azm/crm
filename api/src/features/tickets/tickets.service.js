@@ -170,6 +170,9 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       // An empty history and a missing ticket are different answers, and only
       // one of them is an error. Same 404 the writes throw.
       if (!findTicketById(db, { id })) throw new HttpError(404, 'NOT_FOUND');
+      // Reading somebody else's trail is acting on their ticket. Same rule,
+      // same refusal — see assign for why it fails closed.
+      if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
 
       return {
         items: listAuditEvents(db, { entity: 'ticket', entityId: id, limit, offset }).map((row) => {
@@ -237,6 +240,32 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         const before = findTicketById(db, { id });
         if (!before) throw new HttpError(404, 'NOT_FOUND');
 
+        // SC-2, and it fails closed on purpose.
+        //
+        // A customer may act only on their own ticket. Today no customer can
+        // hold a token at all — sign-in reads `users`, the subject resolver
+        // returns { id, role, name }, and there is no column linking a user to
+        // a customer in either direction — so there is nothing to compare and
+        // the safe answer is to refuse every customer-role subject here.
+        //
+        // WHEN THE LINK LANDS (the identity story that gives a customer a
+        // sign-in), this becomes one comparison in this one place:
+        //
+        //     if (actor?.role === 'customer' && before.customer_id !== actor.customerId)
+        //
+        // and nothing else about the shape changes. Whoever adds the link will
+        // meet this comment rather than having to think of the rule.
+        //
+        // 404 rather than 403, and deliberately the same 404 as the line
+        // above: a refusal that told "not yours" apart from "not there" would
+        // confirm to a stranger that somebody else's ticket exists.
+        //
+        // A new service method taking an actor and an id under /tickets/:id
+        // runs this same check inside its transaction, right after the
+        // not-found refusal. ticket-ownership.guarantee.test.js fails until it
+        // does — it reads the routes off the router rather than a list.
+        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+
         const { changes } = assignTicket(db, { id, assigneeId, revision, at });
         if (changes === 0) {
           // The row was read a moment ago, in this transaction, on the only
@@ -271,6 +300,10 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       return transact(db, () => {
         const before = findTicketById(db, { id });
         if (!before) throw new HttpError(404, 'NOT_FOUND');
+
+        // Ownership, as in assign — see the comment there for why it fails
+        // closed and what changes when the customer link lands.
+        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
 
         // Both refusals below carry the legal moves from where the ticket
         // IS, not from where the caller wanted it — the caller already knows
