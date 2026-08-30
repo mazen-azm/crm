@@ -129,7 +129,17 @@ export function createConversationService({ db, tickets, serviceLevels, now = ()
           tickets.openOnFirstReply(actor, { id: ticketId, at });
         }
 
-        return message;
+        // The message AND the ticket, because this route changes both and a
+        // caller that only heard about one of them has to guess at the other.
+        //
+        // The desk's screen needs the status: a row still saying `new` after
+        // the reply that opened it is the screen disagreeing with the ticket,
+        // and the alternative is the screen recomputing T-2 for itself — a
+        // second place that decides when a ticket opens.
+        //
+        // It also carries the revision, which this write bumped: every other
+        // control on that row holds one, and they are all stale now.
+        return { message, ticket: tickets.publicById(ticketId) };
       });
     },
   };

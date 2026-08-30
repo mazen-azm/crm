@@ -19,6 +19,7 @@ import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useAssignees } from './useAssignees';
 import { useMe } from '../../shared/session/use-me';
 import { TicketHistory } from './TicketHistory';
+import { ReplyBox } from './ReplyBox';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
 import { useTicketCategories } from './useTicketCategories';
@@ -48,13 +49,17 @@ function Row({
   t,
   formatDate,
   assignees,
-  onAssigned,
+  onTicketChanged,
 }: {
   ticket: Ticket;
   t: T;
   formatDate: (v: string) => string;
   assignees: ReturnType<typeof useAssignees>;
-  onAssigned: (ticket: Ticket) => void;
+  // Whatever the row just changed about the ticket, in the shape the API
+  // answered with. It was `onAssigned` while assigning was the only thing a
+  // row could do; a status move, a category change and now a reply all end
+  // here, and a name that says what one caller wanted misleads the next.
+  onTicketChanged: (ticket: Ticket) => void;
 }) {
   const assign = useAssignTicket();
   const move = useChangeStatus();
@@ -69,7 +74,7 @@ function Row({
     // it. A screen that keeps the revision it loaded with refuses the agent's
     // own second assignment, and the bug looks like a race that is not there.
     const updated = await assign.assign(ticket, next).catch(() => null);
-    if (updated) onAssigned(updated);
+    if (updated) onTicketChanged(updated);
   };
 
   const stale = assign.status === 'error' && assign.error?.code === 'REVISION_MISMATCH';
@@ -97,7 +102,7 @@ function Row({
     if (updated) {
       setNote('');
       setTarget('');
-      onAssigned(updated);
+      onTicketChanged(updated);
     }
   };
 
@@ -241,6 +246,21 @@ function Row({
             default and fetched on opening — a row that read its own history
             unasked would make one page of the queue twenty-five requests. */}
         <TicketHistory ticketId={ticket.id} assignees={assignees} />
+
+        {/* And the reply, under it. The queue row is where a ticket is
+            inspected today; a detail screen opened for this would be a second
+            place a ticket is read. */}
+        <ReplyBox
+          ticketId={ticket.id}
+          onReplied={({ ticket: updated }) => {
+            // The row follows the ticket. The first public reply on a `new`
+            // ticket opens it, server-side — a row still saying New after the
+            // reply that opened it is the screen disagreeing with the ticket.
+            // The revision comes with it, because every other control on this
+            // row holds one and they are all stale now.
+            onTicketChanged(updated);
+          }}
+        />
       </Stack>
     </Card>
   );
@@ -426,7 +446,7 @@ export function TicketQueuePage() {
                 t={t}
                 formatDate={formatDate}
                 assignees={assignees}
-                onAssigned={(next) => setUpdated((current) => ({ ...current, [next.id]: next }))}
+                onTicketChanged={(next) => setUpdated((current) => ({ ...current, [next.id]: next }))}
               />
             );
           })}

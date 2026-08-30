@@ -85,7 +85,7 @@ test('a customer replies on their own ticket, and it is public', async () => {
 
   const res = await reply(theirs)(ticket.id, '  It is still happening.  ');
   assert.equal(res.status, 201);
-  const message = await res.json();
+  const { message } = await res.json();
 
   assert.equal(message.kind, 'public');
   assert.equal(message.body, 'It is still happening.');
