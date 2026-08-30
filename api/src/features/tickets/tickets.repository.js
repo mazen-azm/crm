@@ -145,6 +145,41 @@ export function assignTicket(db, { id, assigneeId, revision, at }) {
 // Read from this feature, as the customer lookup above is: identity/index.js
 // publishes a router and a subject resolver, so its assignee list is not
 // reachable without widening another feature's surface for one caller.
+// One customer's tickets, at whichever statuses the caller asks for. The set
+// is a parameter because "open on the desk" is a product decision and belongs
+// in the service, not here.
+//
+// Deliberately no filter on the CUSTOMER's deleted_at: a retired customer's
+// tickets did not stop existing, and the screen that reads one by id is not
+// the list that hides them.
+function customerTicketsFilter({ customerId, statuses }) {
+  const marks = statuses.map(() => '?').join(', ');
+  return {
+    where: `customer_id = ? AND status IN (${marks}) AND deleted_at IS NULL`,
+    params: [customerId, ...statuses],
+  };
+}
+
+export function listCustomerTickets(db, { customerId, statuses, limit, offset }) {
+  const { where, params } = customerTicketsFilter({ customerId, statuses });
+  // Same order as the queue — newest first, rowid breaking the tie — so a
+  // ticket does not move between the two screens that show it.
+  return db
+    .prepare(`
+      SELECT ${PROJECTION}
+      FROM tickets
+      WHERE ${where}
+      ORDER BY created_at DESC, rowid ASC
+      LIMIT ? OFFSET ?
+    `)
+    .all(...params, limit, offset);
+}
+
+export function countCustomerTickets(db, { customerId, statuses }) {
+  const { where, params } = customerTicketsFilter({ customerId, statuses });
+  return db.prepare(`SELECT count(*) AS n FROM tickets WHERE ${where}`).get(...params).n;
+}
+
 // ── the categories a form offers ─────────────────────────────────────────────
 
 const CATEGORY_PROJECTION = 'id, name, created_at, updated_at';

@@ -4,7 +4,10 @@ import { unprocessable } from './errors.js';
 // line 8): refuse, do not clamp. A caller that asked for 500 has a bug worth
 // surfacing, and two clients that silently disagree about "one page" hide it.
 const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 100;
+// Exported so a feature that reads a bounded list without a caller-supplied
+// window can use the same ceiling rather than inventing one. A second number
+// would be a second answer to "how big can a page be".
+export const MAX_LIMIT = 100;
 
 // Reads the page window off a request, or refuses it. Every rejection names
 // the offending parameter and nothing else — a 422 carries field names, never

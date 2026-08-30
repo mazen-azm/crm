@@ -23,11 +23,19 @@ import {
   findLiveAssigneeId,
   findLiveCustomerId,
   findTicketById,
+  countCustomerTickets,
   insertTicket,
   listCategories as listCategoryRows,
+  listCustomerTickets,
   listTickets,
   updateTicketStatus,
 } from './tickets.repository.js';
+
+// Every status the desk still owes something on. Not the same as the status
+// literally called `open`: a `pending` ticket is waiting on the customer and a
+// `reopened` one is back on the pile, and both are work. `resolved` and
+// `closed` are the two the desk has finished with.
+const OPEN_ON_THE_DESK = Object.freeze(['new', 'open', 'pending', 'reopened']);
 
 const publicShape = (row) => ({
   id: row.id,
@@ -155,6 +163,25 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map(publicShape),
         // The matches, not the page.
         total: countTickets(db, { filters }),
+        limit,
+        offset,
+      };
+    },
+
+    // One customer's open tickets, for the screen that shows a customer whole.
+    //
+    // "Open on the desk" is every status the desk still owes something on —
+    // NOT the status literally called `open`. Naming it as a constant is the
+    // difference between a reader understanding the query and guessing at it.
+    openForCustomer(actor, { customerId, limit, offset }) {
+      return {
+        items: listCustomerTickets(db, {
+          customerId,
+          statuses: OPEN_ON_THE_DESK,
+          limit,
+          offset,
+        }).map(publicShape),
+        total: countCustomerTickets(db, { customerId, statuses: OPEN_ON_THE_DESK }),
         limit,
         offset,
       };

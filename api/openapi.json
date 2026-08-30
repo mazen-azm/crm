@@ -244,6 +244,28 @@
         }
       }
     },
+    "/api/v1/customers/{id}": {
+      "get": {
+        "summary": "One customer, whole: their details, the tickets the desk still owes them something on, and their notes — in one answer, read inside one transaction. A screen that assembled this from three requests would be showing three different moments as if they were one. \"Open\" here means every status the desk has not finished with (new, open, pending, reopened), which is not the same as the status called open. A retired customer still reads back: the list hides them, reading a known id does not, and their tickets did not stop existing. Nothing is audited — a read is not a mutation.",
+        "responses": {
+          "200": {
+            "description": "{ customer, tickets: { items, total, limit, offset }, notes: { items, total } }. The tickets are paginated with the ceiling every list obeys; the notes come back whole up to that same ceiling and carry their total, so more than a page of them is visible rather than silently dropped."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such customer. A customer with nothing on file is a 200 with empty lists — that is a different answer."
+          },
+          "422": {
+            "description": "A limit above the ceiling, or a malformed window. Refused, never clamped (BR-4)."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
+    },
     "/api/v1/customers/{id}/notes": {
       "get": {
         "summary": "The internal notes about a customer, oldest first. Any signed-in staff member may read them.",

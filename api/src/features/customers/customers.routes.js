@@ -5,8 +5,8 @@ import { readPagination } from '../../platform/http/pagination.js';
 import { createCustomersService } from './customers.service.js';
 
 // req and res stop here. The service takes values and returns values.
-export function customersRouter({ db, now }) {
-  const service = createCustomersService({ db, now });
+export function customersRouter({ db, now, tickets }) {
+  const service = createCustomersService({ db, tickets, now });
   const router = express.Router();
 
   // Any signed-in staff member, not adminOnly: an agent who cannot find a
@@ -23,6 +23,12 @@ export function customersRouter({ db, now }) {
   // Notes are paginated like every other list here. BR-4 is global — no
   // unbounded list — and it does not stop applying because this story's
   // criteria happen to talk about order instead.
+  // One customer, whole: their details, the tickets the desk still owes them
+  // something on, and the notes. One request, one transaction, one moment.
+  router.get('/customers/:id', requireSubject(), (req, res) => {
+    res.json(service.read(req.subject, { id: req.params.id, ...readPagination(req) }));
+  });
+
   // Adding a customer is a write and answers 201 with the customer it made,
   // the way raising a ticket does — a message saying it worked cannot be read
   // back, and the caller needs the id.
