@@ -14,6 +14,7 @@ import {
   TextArea,
 } from '../../shared/ui';
 import { useTranslation } from '../../shared/i18n';
+import { priorityLabel, statusLabel } from './ticket-labels';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useAssignees } from './useAssignees';
 import { useAssignTicket } from './useAssignTicket';
@@ -40,28 +41,6 @@ const SEPARATOR = ' · ';
 // question, the other performs a write.
 const UNASSIGN = '__unassigned__';
 
-const statusLabel = (t: T, status: string) =>
-  ({
-    new: t.ticketQueue.statusNew,
-    open: t.ticketQueue.statusOpen,
-    pending: t.ticketQueue.statusPending,
-    resolved: t.ticketQueue.statusResolved,
-    closed: t.ticketQueue.statusClosed,
-    reopened: t.ticketQueue.statusReopened,
-  })[status] ?? status;
-
-const priorityLabel = (t: T, priority: string) =>
-  ({
-    low: t.ticketQueue.priorityLow,
-    normal: t.ticketQueue.priorityNormal,
-    high: t.ticketQueue.priorityHigh,
-    urgent: t.ticketQueue.priorityUrgent,
-  })[priority] ?? priority;
-
-// The row assigns. There is no route that reads one ticket and no story that
-// asks for a detail screen, and there does not need to be: the row already
-// holds the ticket and its revision, which is everything the write needs. An
-// agent assigns from the list they are looking at.
 function Row({
   ticket,
   t,

@@ -861,3 +861,25 @@ The message now prints the full `rm -f` with all three paths, built from
 `config.dbPath` rather than typed, and says why all three. This is the same
 lesson as the password line above it, which was fixed for the same reason: a
 sentence in a terminal is read as an answer.
+
+## L-48 — A truncated listing reads exactly like a complete one
+
+**Rule:** never conclude "there are none" or "this is the whole set" from a
+command whose output you capped. `head`, `-limit`, a default page size and a
+screenful of terminal all end the same way: with a plausible list and no sign
+that it stopped early. If a claim in a plan, an intake or a commit message
+depends on a set being complete, **count it** (`| wc -l`), or ask for the one
+thing directly (`test -f`, `grep -c`), rather than reading the top of a list.
+
+**Where it came from:** a plan proposed a page stylesheet, and the review told
+it "no page in this app has its own stylesheet". The evidence was
+`find web/src -name '*.css' | head`, which printed ten files and stopped —
+`web/src/pages/customers/CustomersPage.css` was the eleventh. The conclusion
+was right for that screen and the reason given for it was false, which is worse
+than no reason: a plan is read later by somebody with no way to tell which of
+its facts were checked.
+
+The same shape has appeared twice more in this repository, both times caught:
+`verify-plan.mjs` reporting nothing because its recogniser could not match
+(L-42), and a guard walking one root of three and passing (L-45). A tool that
+looks at less than you think does not say so.

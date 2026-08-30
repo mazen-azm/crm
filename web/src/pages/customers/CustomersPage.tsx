@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { Link } from 'react-router-dom';
+
 import { useTranslation } from '../../shared/i18n';
 import { useFormatters } from '../../shared/i18n';
 import {
@@ -20,7 +22,12 @@ import './CustomersPage.css';
 function Row({ customer, t }: { customer: Customer; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
     <li className="customer-list__row">
-      <Text>{customer.name}</Text>
+      {/* The name is the way in. Without it the customer screen exists and
+          nothing reaches it — a route nobody can navigate to is a route that
+          is only visible to whoever wrote it. */}
+      <Link to={`/customers/${customer.id}`}>
+        <Text>{customer.name}</Text>
+      </Link>
       <div className="customer-list__contact">
         {/* Both are left-to-right runs sitting in a paragraph that may be
             right-to-left. Without isolation the phone number's groups reorder
