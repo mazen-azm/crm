@@ -62,7 +62,11 @@ test('the customer, their tickets and their notes come from ONE request', async 
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL) => {
-      calls.push(new URL(String(input), 'http://desk.test').pathname);
+      const path = new URL(String(input), 'http://desk.test').pathname;
+      calls.push(path);
+      if (path.startsWith('/api/v1/assignees')) {
+        return Promise.resolve(json({ items: [], total: 0, limit: 100, offset: 0 })());
+      }
       return Promise.resolve(json(SCREEN)());
     }),
   );
@@ -71,9 +75,16 @@ test('the customer, their tickets and their notes come from ONE request', async 
   await waitFor(() => expect(screen.getByText('Leila Mansour')).toBeInTheDocument());
   await waitFor(() => expect(screen.getByText('Rang about the invoice.')).toBeInTheDocument());
 
-  // The count is the criterion. A screen that happens to make one request today
-  // and four next month passes an assertion about content and fails this one.
-  expect(calls).toEqual(['/api/v1/customers/c-1']);
+  // The criterion names three things — the customer, their tickets, their
+  // notes — and asks for one request, so that is what this counts. It
+  // deliberately does NOT count every call the screen makes: a reference list
+  // such as the staff names is not one of the three, and the queue loads its
+  // own the same way. An assertion on the total was the first version, and it
+  // broke the moment note authors needed names — for a reason that had nothing
+  // to do with the rule it was guarding.
+  expect(calls.filter((p) => p === '/api/v1/customers/c-1')).toEqual(['/api/v1/customers/c-1']);
+  expect(calls.some((p) => p.includes('/notes'))).toBe(false);
+  expect(calls.some((p) => p.startsWith('/api/v1/tickets'))).toBe(false);
 });
 
 test('a ticket shows words, not the API\'s raw values', async () => {
