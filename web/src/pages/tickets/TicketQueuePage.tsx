@@ -21,6 +21,7 @@ import { useMe } from '../../shared/session/use-me';
 import { TicketHistory } from './TicketHistory';
 import { ReplyBox } from './ReplyBox';
 import { TicketThread } from './TicketThread';
+import { StaleTicket } from './StaleTicket';
 import type { Message } from './useReply';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
@@ -183,16 +184,7 @@ function Row({
           </Button>
         </Stack>
 
-        {stale ? (
-          // 409 is not "something went wrong". It means somebody else changed
-          // the ticket, and the only useful next action is to look again.
-          <ErrorState
-            title={t.ticketAssign.staleTitle}
-            body={t.errors.REVISION_MISMATCH}
-            onRetry={() => window.location.reload()}
-            retryLabel={t.ticketAssign.reload}
-          />
-        ) : null}
+        {stale ? <StaleTicket /> : null}
 
         {assign.status === 'error' && !stale && assign.error ? (
           <ErrorState
@@ -231,14 +223,7 @@ function Row({
           </Button>
         </Stack>
 
-        {filingStale ? (
-          <ErrorState
-            title={t.ticketCategory.staleTitle}
-            body={t.errors.REVISION_MISMATCH}
-            onRetry={() => window.location.reload()}
-            retryLabel={t.ticketAssign.reload}
-          />
-        ) : null}
+        {filingStale ? <StaleTicket /> : null}
 
         {filing.status === 'error' && !filingStale && filing.error ? (
           <ErrorState
@@ -300,14 +285,7 @@ function Row({
               </Field>
             ) : null}
 
-            {moveStale ? (
-              <ErrorState
-                title={t.ticketStatus.staleTitle}
-                body={t.errors.REVISION_MISMATCH}
-                onRetry={() => window.location.reload()}
-                retryLabel={t.ticketStatus.reload}
-              />
-            ) : null}
+            {moveStale ? <StaleTicket /> : null}
 
             {move.status === 'error' && !moveStale && move.error ? (
               <ErrorState

@@ -166,7 +166,7 @@ test('a stale revision says the ticket changed rather than blaming the server', 
   await userEvent.selectOptions(picker(), 'open');
   await userEvent.click(moveButton());
 
-  await waitFor(() => expect(screen.getByText(en.ticketStatus.staleTitle)).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText(en.ticketStale.title)).toBeInTheDocument());
   expect(screen.getByText(en.errors.REVISION_MISMATCH)).toBeInTheDocument();
 });
 
