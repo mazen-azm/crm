@@ -821,6 +821,28 @@
           }
         }
       }
+    },
+    "/api/v1/audit-events": {
+      "get": {
+        "summary": "Read the audit trail, filtered by person, thing or date. Admin only: the trail says what everybody did, which is not something one agent should be able to read about another, and BR-2's promise is to the person answerable for the desk rather than to everybody on it. Filters combine with AND. `actorId` accepts the sentinel `system`, which matches rows with NO actor — the system genuinely does things here (an auto-close, an escalation), and a filter that could not express it would hide exactly the rows nobody else can explain. `entityId` requires `entity` beside it: the id column is not unique on its own, and which thing is half of what identifies a row. `from` and `to` are ISO-8601 and inclusive at both ends — the stamps are whole seconds, so an exclusive upper bound would silently drop everything in the last second of the range. Ordered oldest first with the rowid as a tiebreak, because a second-resolution stamp is not an order.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. `total` is what MATCHES the filters, not what this page holds. Each item carries `actorId` as null for the system rather than the sentinel: the sentinel is a word for asking, the answer says plainly that nobody did it. `before` and `after` are the parsed diff."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "422": {
+            "description": "`fields` names what was wrong: a filter present but empty, an `entityId` with no `entity`, a date that is not an instant, a range whose start is after its end, or a window BR-4 does not allow."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
     }
   }
 }

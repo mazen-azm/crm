@@ -271,6 +271,14 @@ ticket inside that window — it would need a second writer running concurrently
 with the sweep, and there is no harness for that. The guard stays, and the gap
 is recorded rather than papered over.
 
+The test file is `auto-close.test.js`, not `auto-close.guarantee.test.js` as
+the plan's test section says. A guarantee test is the name this codebase gives
+a census that reads routes off the router and holds all of them to a rule;
+this file proves one story's behaviour, which is a different thing, and
+borrowing the name would blur a distinction four other files depend on.
+`verify-docs` warns about the stale citation and the warning is right; it is
+left as the record of a name that was reconsidered.
+
 Five mutations run: a second fourteen-day constant fails 1, attributing the
 close to the caller fails 1, sweeping tickets that are not resolved fails 1
 (after a test was added for it — the first attempt passed, because the rule
