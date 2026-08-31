@@ -120,6 +120,7 @@ export const en = {
     send: 'Send the reply',
     sending: 'Sending…',
     replyFailedTitle: 'That reply was not sent',
+    replyClosedTicket: 'This ticket is closed, so it cannot take a reply. Send us a new request and we will pick it up there.',
   },
   myTickets: {
     title: 'Your tickets',

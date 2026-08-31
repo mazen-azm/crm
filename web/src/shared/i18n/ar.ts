@@ -97,6 +97,7 @@ export const ar = defineLocale({
     send: 'أرسِل الرد',
     sending: 'جارٍ الإرسال…',
     replyFailedTitle: 'لم يُرسَل الرد',
+    replyClosedTicket: 'هذه التذكرة مغلقة، ولا تقبل ردًا. أرسِل طلبًا جديدًا وسنتابعه هناك.',
   },
   myTickets: {
     title: 'تذاكرك',
