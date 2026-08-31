@@ -197,6 +197,15 @@ would break them for no reason the story asks for.
 meant to be called from inside somebody else's transaction opens none of its
 own, and says so in its comment. Every one of the five above does.
 
+**`assignTicket` takes a revision (BR-5) and the sweep has not read one.**
+`tickets.repository.js:138` guards on `WHERE revision = ?` and bumps
+`revision = revision + 1`. A sweep is not somebody editing a ticket they read,
+so there is no revision in hand — but the answer is to read each ticket's
+current one inside the transaction and pass it, not to add a second writer
+without the guard. Inside the transaction it cannot have changed, so the
+compare-and-set always succeeds; and the bump still happens, which is what
+correctly refuses an agent who had that ticket open when the sweep moved it.
+
 **Assignment is audited by the tickets feature**, with the verb it already
 uses. The actor is the admin who disabled the account, not the agent losing the
 tickets, and not null — this is something a person did.
