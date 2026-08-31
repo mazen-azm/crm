@@ -56,3 +56,73 @@ An agent is told when a ticket becomes theirs.
   for, and a route nothing calls is a stated gap rather than an oversight.
 - Notifying anybody about anything else — a reply, a status move, a service
   level about to be missed. Each would be its own story, and none is written.
+
+## NOTIFICATIONS-2-API
+
+Reading them, and the count that makes a screen worth opening.
+
+Written 2026-08-31, with the sprint 8 stories.
+
+**Most of this shipped with NOTIFICATIONS-1-API**, and saying so is part of the
+story rather than a caveat on it. The list and the mark-read route were built
+there because a feature that writes rows nothing can read is not a feature —
+its criteria state the paging, the ownership and the idempotence, and the tests
+that prove them are `told-when-mine.test.js`. What is left is what a screen
+needs and could not get.
+
+*Acceptance criteria*
+- Given the list, then it can be narrowed to the unread ones. A person with
+  four hundred read notifications and two new ones cannot find the two by
+  paging, and the alternative — the screen fetching every page and filtering —
+  is the client inventing a query the server can answer.
+- Given any read of the list, then the number of unread ones comes back with
+  it. A screen showing a badge should not have to ask twice, and a count
+  derived from the page it happens to be holding is wrong on every page but
+  the first.
+- Given that count, then it is the number unread and not the number returned:
+  the two differ the moment a window is applied, and a badge that changed when
+  somebody turned the page would be reporting the page rather than the person.
+- Given the filter, then a value that is not one of the two it allows is
+  refused naming the field, the same way every other list here refuses a
+  window it does not allow (BR-4).
+- Given the ordering, then the unread view keeps it: oldest first, as the whole
+  list is. A person clearing a backlog works from the oldest.
+- Given a customer, then the route still refuses them. Nothing writes a
+  notification for a customer, so an open route would offer an empty list
+  forever; the backlog's actor column says `any` and the honest reading is
+  "any staff member", because `any` cannot mean somebody the feature never
+  writes for. When a story writes one for a customer, this opens with it.
+
+*Out of scope*
+- Marking everything read at once. Nothing asks for it, and a button that
+  clears a list somebody has not read is the opposite of what the list is for.
+- Deleting a notification. BR-1, and nothing asks.
+- A screen — `NOTIFICATIONS-2-WEB`.
+
+## NOTIFICATIONS-2-WEB
+
+Somewhere to read them.
+
+Written 2026-08-31, with the sprint 8 stories.
+
+*Acceptance criteria*
+- Given a signed-in staff member with unread notifications, then the shell says
+  how many, from wherever they are. A notification nobody can see from the
+  screen they are on is a notification that waits until somebody goes looking.
+- Given the screen, then each notification says what happened and which ticket
+  it was about, and the ticket is one click away. The row carries an id and the
+  screen resolves it — the same rule the ticket history follows for names.
+- Given a notification, then reading it is deliberate: opening the list marks
+  nothing. An agent who glances at the screen has not dismissed what is on it.
+- Given one marked read, then the screen and the count follow without a
+  reload, from the answer the write returned.
+- Given none at all, then the screen says so rather than showing an empty
+  frame, and the shell shows no count rather than a zero.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6), and every time is in the reader's locale (BR-3).
+
+*Out of scope*
+- Any `api/` change — `NOTIFICATIONS-2-API` owns the route, the filter and the
+  count.
+- Live updates. The count is what the last read said; nothing polls and nothing
+  subscribes, and no story asks for either.
