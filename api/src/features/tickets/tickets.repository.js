@@ -135,6 +135,28 @@ export function countTickets(db, { filters }) {
 //
 // `revision = revision + 1` for the same reason: a number worked out in code
 // and written back is the same race in different clothes.
+// The tickets somebody still has to work on, for handing back when their
+// account is disabled.
+//
+// `status != 'closed'` and not "open" in the narrow sense: a resolved ticket
+// can be reopened by a reply within its window, and then it is somebody's
+// again. Closed is the only state where the work is finished, and rewriting
+// who finished it in order to tidy a queue would make the record wrong.
+//
+// `revision` comes back because the caller has to pass it to assignTicket:
+// BR-5's guard is on every write, and a sweep is not an exception to it.
+// Oldest first, so the audit rows land in an order somebody can follow.
+export function findOpenTicketsAssignedTo(db, { assigneeId }) {
+  return db
+    .prepare(`
+      SELECT id, revision, status
+        FROM tickets
+       WHERE assignee_id = ? AND status != 'closed' AND deleted_at IS NULL
+       ORDER BY created_at ASC, rowid ASC
+    `)
+    .all(assigneeId);
+}
+
 export function assignTicket(db, { id, assigneeId, revision, at }) {
   return db
     .prepare(`

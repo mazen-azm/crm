@@ -51,7 +51,7 @@ const assigneeShape = (row) => ({
   role: row.role,
 });
 
-export function createIdentityService({ db, secret, now = () => Math.floor(Date.now() / 1000) }) {
+export function createIdentityService({ db, secret, tickets, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
 
   // One throttle per service instance, so every composeApp — and so every
@@ -258,6 +258,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       if (wouldRemoveLastAdmin(before, null)) throw new HttpError(409, 'CONFLICT');
 
       const at = stamp();
+      let unassigned = 0;
       db.exec('BEGIN');
       try {
         disableUser(db, { id, at });
@@ -265,13 +266,25 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
           entity: 'user', entityId: id, verb: 'user.disable', at,
           before: { deletedAt: null }, after: { deletedAt: at },
         });
+        // In the same transaction, deliberately. An account disabled with its
+        // queue still assigned to it is worse than either outcome alone: the
+        // work is invisible in every "unassigned" view and its owner cannot
+        // sign in to hand it over.
+        //
+        // Tickets does the moving, because the tickets table is its own — this
+        // only says when.
+        unassigned = tickets.unassignAllFor(actor, { assigneeId: id, at });
         db.exec('COMMIT');
       } catch (failure) {
         db.exec('ROLLBACK');
         throw failure;
       }
 
-      return { user: publicShape({ ...before, deleted_at: at, updated_at: at }) };
+      // The count beside the user, not instead of it. An admin deciding
+      // whether to disable somebody is deciding what happens to their work,
+      // and a number they have to go and count is a number they will not
+      // count. Zero is an answer, not an omission.
+      return { user: publicShape({ ...before, deleted_at: at, updated_at: at }), unassigned };
     },
 
     // Anybody changes their own password, knowing the current one. One route

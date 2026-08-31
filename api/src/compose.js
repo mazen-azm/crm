@@ -36,7 +36,10 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // SQLite refuses a transaction inside a transaction — so the two writes
       // have to happen under one, which means one service calling the other's
       // method rather than its route.
-      const identityService = createIdentityService(identity);
+      // Identity holds tickets because disabling an account hands back the
+      // tickets it still has to work on, in one transaction (IDENTITY-9-API).
+      // The same shape customers already uses for identity below.
+      const identityService = createIdentityService({ ...identity, tickets });
       const customers = createCustomersService({ db, now, tickets, identity: identityService });
 
       v1.use(identityRouter({ service: identityService }));
