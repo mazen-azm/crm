@@ -1,0 +1,14 @@
+-- When this account's password last changed, in whole seconds — the same unit
+-- and the same clock as the token's `exp` and `iat`.
+--
+-- A token carries when it was issued; this says when everything issued before
+-- it stopped being trusted. The resolver compares the two, so ending every
+-- other session costs one column and no session table: there is nothing to
+-- store per sign-in, nothing to clean up, and nothing that can disagree with
+-- itself.
+--
+-- DEFAULT 0 rather than the current time: every token in existence was issued
+-- after 1970, so an account that has never changed its password accepts the
+-- tokens it already handed out. Backfilling with `now` would sign out
+-- everybody the moment this migration ran.
+ALTER TABLE users ADD COLUMN password_changed_at INTEGER NOT NULL DEFAULT 0;

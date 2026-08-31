@@ -44,9 +44,13 @@ async function start() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: adminEmail, password: adminPassword }),
   });
-  const { token } = await res.json();
+  // A holder rather than a value: changing the admin's own password below ends
+  // every session issued before it, this one included, and the census adopts
+  // the token that answer carries. `call` reads through the holder so the
+  // steps that follow use the live one.
+  const session = { token: (await res.json()).token };
 
-  const call = (path, { method = 'GET', body, tok = token } = {}) =>
+  const call = (path, { method = 'GET', body, tok = session.token } = {}) =>
     fetch(`${url}${path}`, {
       method,
       headers: {
@@ -57,7 +61,7 @@ async function start() {
     });
 
   const auditCount = () => real.prepare('SELECT count(*) AS n FROM audit_events').get().n;
-  return { app, real, call, auditCount, adminPassword };
+  return { app, real, call, auditCount, adminPassword, session };
 }
 
 // Every mutating route this file drives. Compared against the router below.
@@ -103,7 +107,7 @@ test('every mutating route the router serves is exercised by this file', async (
 });
 
 test('each mutating route writes exactly one audit row', async () => {
-  const { call, auditCount, adminPassword } = await start();
+  const { call, auditCount, adminPassword, session } = await start();
 
   const steps = [
     ['POST /api/v1/accounts', () =>
@@ -269,16 +273,25 @@ test('each mutating route writes exactly one audit row', async () => {
     ['POST /api/v1/accounts/:id/re-enable', () =>
       call(`/api/v1/accounts/${created.id}/re-enable`, { method: 'POST' })],
     // The admin's own, through the route that asks for the current one. It
-    // runs last of the password steps because it changes the credential this
-    // whole file signed in with — anything after it would be using a token
-    // issued against a password that no longer exists. It still works, because
-    // ending other sessions is IDENTITY-8-API and has not shipped; when it
-    // does, this line is where that shows up.
-    ['POST /api/v1/me/password', () =>
-      call('/api/v1/me/password', {
+    // changes the credential this whole file signed in with, and IDENTITY-8-API
+    // has now shipped — so every token issued before this second, including the
+    // one this census is holding, stops being accepted.
+    //
+    // The comment that stood here predicted exactly that: "when it does, this
+    // line is where that shows up." It did, as a 401 on the very next step.
+    //
+    // So the census does what any client must now do: it takes the token the
+    // answer carries and keeps going. That is not a workaround — it is the
+    // contract, and a census that special-cased its way past it would be
+    // hiding the thing the story added.
+    ['POST /api/v1/me/password', async () => {
+      const res = await call('/api/v1/me/password', {
         method: 'POST',
         body: { currentPassword: adminPassword, newPassword: 'a-new-admin-password' },
-      })],
+      });
+      if (res.ok) session.token = (await res.clone().json()).token;
+      return res;
+    }],
     // Somebody else's account: an admin may not set their own password here.
     ['POST /api/v1/accounts/:id/set-password', () =>
       call(`/api/v1/accounts/${created.id}/set-password`, {

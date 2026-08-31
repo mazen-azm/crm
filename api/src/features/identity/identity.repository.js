@@ -15,9 +15,16 @@ export function findLiveUserByEmail(db, email) {
 // password_hash is deliberately absent from this projection: this row is what
 // a resolved subject is built from, and a column that never leaves the
 // repository cannot be leaked by a later edit that returns the row wholesale.
+// `password_changed_at` is selected because the resolver compares it to the
+// token's `iat` on every request. A projection that named only what its first
+// caller wanted has already cost this codebase once: a column left out of a
+// SELECT reads as `undefined`, and a comparison against `undefined` does not
+// throw — it quietly answers "fine".
 export function findLiveUserById(db, id) {
   return db
-    .prepare('SELECT id, name, role FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1')
+    .prepare(
+      'SELECT id, name, role, password_changed_at FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+    )
     .get(id);
 }
 
@@ -100,10 +107,20 @@ export function disableUser(db, { id, at }) {
 // account before it gets here, and a row-level guard means a disable landing
 // between the two cannot leave a disabled account with a fresh password. The
 // caller reads `changes` for the same reason every other writer here does.
-export function updateUserPassword(db, { id, passwordHash, at }) {
+//
+// `password_changed_at` moves with the hash, in the same statement. Both
+// routes that set a password come through here — the person changing their own
+// and the admin setting somebody else's — so ending the old sessions cannot be
+// remembered on one path and forgotten on the other. That is the whole reason
+// it is written here rather than by each caller.
+export function updateUserPassword(db, { id, passwordHash, at, changedAt }) {
   return db
-    .prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
-    .run(passwordHash, at, id).changes;
+    .prepare(`
+      UPDATE users
+         SET password_hash = ?, password_changed_at = ?, updated_at = ?
+       WHERE id = ? AND deleted_at IS NULL
+    `)
+    .run(passwordHash, changedAt, at, id).changes;
 }
 
 export function reEnableUser(db, { id, at }) {

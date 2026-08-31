@@ -22,6 +22,27 @@ export function setUnauthenticatedHandler(handler: UnauthenticatedHandler): void
   onUnauthenticated = handler;
 }
 
+// And what should happen when the API hands back a token that REPLACES the one
+// we are holding. Changing a password ends every session issued before it —
+// this one included — so the answer to that call carries its successor, and
+// something has to store it or the next request is a 401 for doing the safe
+// thing.
+//
+// The same inversion as the two above, for the same reason: storing a token
+// means touching the auth context, which lives in app/, and a hook under
+// pages/ reaching up to it is a violation verify-architecture.mjs fails by
+// name. The caller announces; the app layer decides what storing means.
+type TokenReplacedHandler = (token: string) => void;
+let onTokenReplaced: TokenReplacedHandler = () => {};
+
+export function setTokenReplacedHandler(handler: TokenReplacedHandler): void {
+  onTokenReplaced = handler;
+}
+
+export function announceReplacementToken(token: string): void {
+  onTokenReplaced(token);
+}
+
 export async function request<T>(
   path: string,
   init: RequestInit = {},

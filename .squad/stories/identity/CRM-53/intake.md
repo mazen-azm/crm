@@ -207,6 +207,21 @@ sessions. A rule written into one of them is a rule the other does not have.
 number 0013. `rowid` cannot be indexed — SQLite refused that once already.
 
 
+**Shipping this WILL break the change-password screen unless it is changed
+too.** `web/src/pages/account/useChangeOwnPassword.ts` ends with a comment
+saying the session is deliberately untouched *because* the API does not rotate
+the token on this call — and it names this story as the one that will. The
+moment old tokens stop being accepted, the person who just changed their own
+password is holding one. The criteria require that they stay signed in, so the
+screen has to take the token the answer carries and replace the one it holds,
+and that comment has to stop being true.
+
+This story is declared `API:7:3` with no WEB half. It is the same shape L-56
+names, in reverse: an API story whose completion requires a change in the layer
+it does not own. The web change is not a new feature — it is the story not
+breaking what already works — so it belongs in this diff, and it is recorded
+here rather than absorbed silently.
+
 ## Out of scope
 
 - **A list of active sessions, or ending one by name.** Nothing asks for it and
