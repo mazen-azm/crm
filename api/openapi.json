@@ -433,6 +433,71 @@
             "description": "Internal."
           }
         }
+      },
+      "post": {
+        "summary": "Add a category, without a migration and without touching the seed. SC-3 says the seed produces a working system; it does not say the system is stuck with what the seed produced. Admin only. One live category per name, case-insensitively — the column is COLLATE NOCASE and two categories differing only in case are one category typed twice, in a picker whose reports would then not add up. The name is checked before the unique index can fire, because an index that fires gives a raw SQLite error and a 500 that tells an admin their reasonable request was our fault.",
+        "responses": {
+          "201": {
+            "description": "The category: { id, name, createdAt, updatedAt }."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Not an admin. Reading the list is any staff member’s; managing it is not."
+          },
+          "422": {
+            "description": "The name is missing, blank, too long, or already a live category’s; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
+    "/api/v1/ticket-categories/{id}": {
+      "patch": {
+        "summary": "Rename a category. Every ticket already carrying it reads back with the new name, because a ticket references the category rather than copying its name — which is what makes a rename possible at all. A retired category is not renamed: its name is what the tickets carrying it say happened, and BR-1 keeps them for exactly that. Renaming a category to what it is already called is accepted, because refusing it would make \"no change\" indistinguishable from \"that name is taken\".",
+        "responses": {
+          "200": {
+            "description": "The category, renamed."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "404": {
+            "description": "No live category with that id — including one that has been retired."
+          },
+          "422": {
+            "description": "The name is missing, blank, too long, or another live category’s; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
+      },
+      "delete": {
+        "summary": "Retire a category. Soft, like every removal here (BR-1): it leaves the list the ticket form offers and stops being choosable for new tickets, and the tickets already carrying it keep it and still read back — a category that vanished from its tickets would rewrite history to tidy a picker. Its name goes back on the shelf, because the unique index is scoped to live rows.",
+        "responses": {
+          "200": {
+            "description": "{ id, retiredAt }."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "404": {
+            "description": "No live category with that id — including one already retired."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          }
+        }
       }
     },
     "/api/v1/tickets/{id}/assignee": {
@@ -471,16 +536,41 @@
             "description": "No token, or one that does not resolve to a live account."
           },
           "404": {
-            "description": "No such ticket, or one that has been removed."
+            "description": "No such ticket, or one that has been removed. A customer gets this for somebody else's ticket, and for any move on their own except reopening it: resolving, closing and pending are the desk saying something about work it is doing."
           },
           "409": {
-            "description": "One of three, told apart by the code. ILLEGAL_TRANSITION: the move is not in the table, and `allowed` lists the statuses that were legal from where the ticket is — an empty array when the ticket is closed, which is an answer and not a missing field. STATUS_UNCHANGED: the ticket already has that status, and `allowed` is present for the same reason. REVISION_MISMATCH: the move was legal but the revision was stale; `allowed` is absent, because nothing else the caller could have asked for would have worked either. Nothing is written in any of the three."
+            "description": "One of three, told apart by the code. ILLEGAL_TRANSITION: the move is not in the table, and `allowed` lists the statuses that were legal from where the ticket is — an empty array when the ticket is closed, which is an answer and not a missing field. STATUS_UNCHANGED: the ticket already has that status, and `allowed` is present for the same reason. REVISION_MISMATCH: the move was legal but the revision was stale; `allowed` is absent, because nothing else the caller could have asked for would have worked either. Nothing is written in any of the three. REOPEN_WINDOW_CLOSED is the third 409 here: a resolved ticket may be reopened for fourteen days (T-5) and this one is older. The move is legal and the moment is not, which is why it is not ILLEGAL_TRANSITION. The window is measured from when the ticket was resolved, not from when it was last touched, and it applies to whoever is asking — T-6 closes a resolved ticket after the same fourteen days, so afterwards there is nothing to reopen."
           },
           "422": {
             "description": "A status outside the six, a missing or malformed revision, or a resolve with no note — a note that is only whitespace is no note. The body names the fields, never their values. This is 422 and not 409 on purpose: resolving is a legal move, so a missing note is a malformed request and not an illegal transition."
           },
           "500": {
             "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/category": {
+      "patch": {
+        "summary": "Change a ticket's category. The third write that carries BR-5's revision: the revision the caller read goes in the WHERE, and a mismatch is 409 rather than an overwrite of something they did not see. `null` is a real value meaning no category — the column allows it and a ticket may legitimately have none. A retired category is refused naming the field, checked here rather than left to the foreign key, which can see that a row exists and cannot see that it was taken off the list: what may not be chosen for a new ticket may not be chosen for an old one.",
+        "responses": {
+          "200": {
+            "description": "The ticket, with its new category and its bumped revision."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket — and the same answer a customer gets, because a ticket's filing is the desk's."
+          },
+          "409": {
+            "description": "REVISION_MISMATCH: somebody changed the ticket between the read and this write."
+          },
+          "422": {
+            "description": "The revision is missing or not a positive integer, or the category is absent, malformed, or one that has been retired; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
           }
         }
       }
@@ -503,6 +593,72 @@
           },
           "500": {
             "description": "Internal."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/replies": {
+      "post": {
+        "summary": "A public reply, from whoever may write one on this ticket. ONE route, because posting a public message is one act — what the reply DOES depends on who wrote it. An agent's is the desk answering: the first public reply on a `new` ticket moves it to `open` (T-2) and stops the first-response clock at the reply's own timestamp, once — a second reply finds the clock already stopped and the status already moved, and nothing counts replies. A customer's is the customer answering: it stops no clock, because the promise the clock measures is about the desk, and it reopens a resolved ticket inside the fourteen-day window (T-5). Outside the window, and on a closed ticket, the reply is refused and no message is written — one transaction, so a customer is never left with a stored message and a ticket that did not move. The kind is the desk's to choose and not the customer's: staff may send `kind`, `public` or `internal`, and a customer's message is forced public whatever they send — the one place the desk talks to itself is not somewhere a customer can write. An internal note stops no clock and moves no status: the promise the clock measures is about answering the customer, and a note is not that. A `kind` outside the vocabulary is refused rather than quietly treated as public, because a caller who sent one meant something by it.",
+        "responses": {
+          "201": {
+            "description": "{ message, ticket }. The message it made, and the ticket as it now stands — this route changes both, and a caller told only about one of them has to guess at the other. The desk's row needs the status, because a row still saying New after the reply that opened it is the screen disagreeing with the ticket, and the alternative is the screen recomputing T-2 for itself. The revision comes with it: this write bumped it, and every other control on that row is holding the old one."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket, and the same answer for a customer asking about somebody else's."
+          },
+          "422": {
+            "description": "The body is missing, blank, or longer than a ticket body may be, or `kind` is a word the vocabulary does not have; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
+          },
+          "409": {
+            "description": "REOPEN_WINDOW_CLOSED when a customer replies to a ticket resolved more than fourteen days ago; ILLEGAL_TRANSITION with an empty `allowed` when they reply to a closed one, which is terminal. Both refuse the message as well as the move."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}": {
+      "get": {
+        "summary": "One ticket, for whoever may read it. Added because a screen for a single ticket had no route to ask for one: the desk reads a list and a customer reads a list, and the portal's ticket screen resolves an id rather than being handed an object it was navigated with — finding it inside a page of /me/tickets works until it is on page two. Any signed-in subject may call it; who may see WHICH ticket is the ownership rule, from the same place /tickets/{id}/messages and the reply route read it, so somebody else's ticket is the same 404 a missing one gets. The shape is the one every other ticket route answers with, because a screen that read a ticket differently depending on the route it arrived by would be two descriptions of one thing.",
+        "responses": {
+          "200": {
+            "description": "The ticket. Carries `reopenWindowOpen`: whether a reply would still reopen it (T-5), answered by the same rule the refusal reads rather than by a client counting fourteen days for itself. It is a fact about the ticket and not about the reader — a customer's reply reopens a resolved ticket and an agent's does not — so the portal reads it and says what it means for a customer. `allowedTransitions` cannot answer this: it is derived from the status alone, so it lists `reopened` on a ticket resolved a month ago."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket, and the same answer for a customer asking about somebody else's."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/{id}/messages": {
+      "get": {
+        "summary": "A ticket's thread, for whoever is reading it. A customer sees the public replies and no sign that anything else exists — not a redaction, not a gap, and not a total that counts what they cannot read: a total including the notes would tell them how many there are, which is the leak wearing a number. Staff see both kinds and each row says which it is, because an agent about to write something they would not say to a customer needs to know which they are looking at. The filter is in the query rather than applied to the rows afterwards, so the notes are never fetched for a reader who may not have them. Oldest first, paginated like every list here.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each message is { id, ticketId, authorId, kind, body, createdAt }; for a customer every kind is `public`."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "404": {
+            "description": "No such ticket — and the same answer, byte for byte, for a customer asking about somebody else's."
+          },
+          "422": {
+            "description": "A page window the rules refuse; `fields` names it."
+          },
+          "500": {
+            "description": "Unhandled, logged with the request id."
           }
         }
       }

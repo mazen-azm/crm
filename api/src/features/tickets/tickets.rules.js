@@ -102,6 +102,24 @@ export function validateAssignment({ assigneeId, revision }) {
   return fields;
 }
 
+// The third BR-5 write's shape check.
+//
+// `null` is accepted and means no category — the column allows it and a ticket
+// may legitimately have none. Everything else must be a present string, which
+// refuses undefined, '' and non-strings alike.
+//
+// This began with a separate `categoryId === undefined` branch and a comment
+// arguing that a missing field and an explicit null are different requests.
+// They are — but `present` already refuses undefined, so the branch was dead
+// code with an explanation attached, which is worse than neither. A mutation
+// that deleted it changed no behaviour, which is how it was found.
+export function validateCategoryChange({ categoryId, revision }) {
+  const fields = [];
+  if (categoryId !== null && !present(categoryId)) fields.push('categoryId');
+  if (!Number.isInteger(revision) || revision < 1) fields.push('revision');
+  return fields;
+}
+
 // T-7 asks a refusal to name what would have worked, which means the machine
 // has to be data rather than a chain of ifs — you cannot list the legal moves
 // from a branch you did not take.
@@ -117,6 +135,45 @@ export function validateAssignment({ assigneeId, revision }) {
 // The rest follow from those: pending is a pause in ordinary work, so it is
 // reachable from and returns to open; reopened is a ticket that is being
 // worked again, so it moves onward exactly as open does.
+// T-5's window, in days. Named here beside the transitions table because it is
+// the same kind of fact: a rule about when a move is legal, rather than a
+// number some code picked.
+//
+// T-6 closes a resolved ticket after the same fourteen days, which is why the
+// two are one number and not two — the moment reopening stops being possible
+// is the moment the ticket closes itself.
+export const REOPEN_WINDOW_DAYS = 14;
+
+// Whether a resolved ticket is still inside its reopen window.
+//
+// One function, two callers: somebody choosing to reopen (TICKETS-11-API) and
+// somebody replying to a resolved ticket, which reopens it (CONVERSATION-3-API).
+// Two copies of this arithmetic would be two answers to when a resolution
+// becomes final.
+//
+// A missing resolvedAt fails, which is the safe direction: a ticket whose
+// resolution moment is unknown is not reopenable.
+export function withinReopenWindow({ resolvedAt, nowSeconds }) {
+  const resolved = Date.parse(resolvedAt ?? '');
+  if (Number.isNaN(resolved)) return false;
+  return nowSeconds * 1000 - resolved <= REOPEN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
+
+// A category has one field and one way to be wrong. The ceiling matches a
+// ticket's subject: a category name is a label on a picker, and one longer
+// than a subject line is a label nobody can read anyway.
+export function validateCategoryName({ name }) {
+  if (typeof name !== 'string') return ['name'];
+  const trimmed = name.trim();
+  if (trimmed === '' || trimmed.length > MAX_SUBJECT) return ['name'];
+  return [];
+}
+
+// Stored trimmed, the way a note and a message are: "Billing " and "Billing"
+// are one category, and the difference shows up later as two rows the unique
+// index was supposed to prevent.
+export const normaliseCategoryName = (name) => String(name).trim();
+
 export const TRANSITIONS = Object.freeze({
   new: Object.freeze(['open', 'pending', 'resolved']),
   open: Object.freeze(['pending', 'resolved']),

@@ -1,7 +1,7 @@
 // The only file in this feature with SQL, which verify-architecture enforces.
 const PROJECTION = `
   id, customer_id, category_id, assignee_id, status, priority,
-  subject, body, revision, resolution_note, channel, created_at, updated_at
+  subject, body, revision, resolution_note, resolved_at, channel, created_at, updated_at
 `;
 
 export function insertTicket(db, { id, customerId, categoryId, subject, body, priority, status, channel, at }) {
@@ -243,6 +243,19 @@ export function findLiveAssigneeId(db, { assigneeId }) {
     .get(assigneeId);
 }
 
+// The third BR-5 write, and a copy for the reason the note below gives: three
+// callers changing three different columns is still not a pattern, and a
+// helper taking a column name would be a helper that builds SQL from a string.
+export function updateTicketCategory(db, { id, categoryId, revision, at }) {
+  return db
+    .prepare(`
+      UPDATE tickets
+         SET category_id = ?, revision = revision + 1, updated_at = ?
+       WHERE id = ? AND revision = ? AND deleted_at IS NULL
+    `)
+    .run(categoryId, at, id, revision);
+}
+
 // The second BR-5 write, and a deliberate copy of assignTicket rather than a
 // shared helper: two callers is not yet a pattern, and the comment above that
 // function is the one place the reasoning lives.
@@ -257,9 +270,65 @@ export function updateTicketStatus(db, { id, status, revision, at, resolutionNot
       `UPDATE tickets
           SET status = ?,
               resolution_note = CASE WHEN ? = 'resolved' THEN ? ELSE resolution_note END,
+              -- Set on the way in and cleared on the way out, in the same
+              -- statement and by the same CASE reasoning as the note above it:
+              -- the reopen window is measured from THIS moment, and a ticket
+              -- that is no longer resolved has no resolution moment to measure
+              -- from. Writing it unconditionally would leave a stale value on
+              -- a reopened ticket, which the next resolve would then be
+              -- compared against.
+              resolved_at = CASE WHEN ? = 'resolved' THEN ? ELSE NULL END,
               revision = revision + 1,
               updated_at = ?
         WHERE id = ? AND revision = ? AND deleted_at IS NULL`,
     )
-    .run(status, status, resolutionNote, at, id, revision);
+    .run(status, status, resolutionNote, status, at, at, id, revision);
+}
+
+// One live category by name.
+//
+// The column is COLLATE NOCASE (0002__tickets.sql:3) and there is already a
+// partial unique index on it scoped to live rows — 0005__users.sql added it so
+// the seed's ON CONFLICT(name) had an arbiter, with the same argument this
+// story would have made: a retired category should not block a new one taking
+// its name back. This story wrote a migration for it and then deleted it.
+//
+// So the comparison is case-insensitive without a LOWER() that would defeat
+// the index, and the index is the second guard behind the service's check.
+export function findLiveCategoryByName(db, { name }) {
+  return db
+    .prepare(`SELECT ${CATEGORY_PROJECTION} FROM ticket_categories WHERE name = ? AND deleted_at IS NULL`)
+    .get(name);
+}
+
+// Any category by id, live or retired. A retired one still reads back — the
+// tickets that carry it did not stop existing, which is the whole of BR-1.
+export function findCategoryById(db, { id }) {
+  return db
+    .prepare(`SELECT ${CATEGORY_PROJECTION}, deleted_at FROM ticket_categories WHERE id = ?`)
+    .get(id);
+}
+
+export function insertCategory(db, { id, name, at }) {
+  db.prepare(`
+    INSERT INTO ticket_categories (id, name, created_at, updated_at)
+    VALUES (?, ?, ?, ?)
+  `).run(id, name, at, at);
+  return db.prepare(`SELECT ${CATEGORY_PROJECTION} FROM ticket_categories WHERE id = ?`).get(id);
+}
+
+// Scoped to live rows: renaming a retired category would change what the
+// tickets carrying it say happened, which is the thing BR-1 keeps them for.
+export function renameCategory(db, { id, name, at }) {
+  return db
+    .prepare('UPDATE ticket_categories SET name = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(name, at, id).changes;
+}
+
+// Soft, like every removal here. The tickets that carry it keep it; the list
+// the form offers stops showing it; `findLiveCategoryId` stops accepting it.
+export function retireCategory(db, { id, at }) {
+  return db
+    .prepare('UPDATE ticket_categories SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(at, at, id).changes;
 }

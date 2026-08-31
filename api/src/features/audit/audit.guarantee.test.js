@@ -74,6 +74,11 @@ const EXERCISED = new Set([
   'POST /api/v1/tickets',
   'PATCH /api/v1/tickets/:id/assignee',
   'PATCH /api/v1/tickets/:id/status',
+  'PATCH /api/v1/tickets/:id/category',
+  'POST /api/v1/ticket-categories',
+  'PATCH /api/v1/ticket-categories/:id',
+  'DELETE /api/v1/ticket-categories/:id',
+  'POST /api/v1/tickets/:id/replies',
   'POST /api/v1/intake/:channel/tickets',
 ]);
 
@@ -146,6 +151,33 @@ test('each mutating route writes exactly one audit row', async () => {
     body: { customerId: customer.id, subject: 'To be moved', body: 'Body.' },
   })).json();
 
+  // A ticket that has already been replied to once, so the route below writes
+  // one row rather than the two a first reply writes. Driven for real rather
+  // than only listed.
+  const replied = await (await call('/api/v1/tickets', {
+    method: 'POST',
+    body: { customerId: customer.id, subject: 'To be replied to', body: 'Body.' },
+  })).json();
+  await call(`/api/v1/tickets/${replied.id}/replies`, {
+    method: 'POST',
+    body: { body: 'The first reply, which opens it and stops the clock.' },
+  });
+
+  // Its own ticket, because changing a category bumps the revision and every
+  // other step here holds one it read.
+  const categorised = await (await call('/api/v1/tickets', {
+    method: 'POST',
+    body: { customerId: customer.id, subject: 'To be refiled', body: 'Body.' },
+  })).json();
+
+  // A category of its own to rename and retire, so the two steps below do not
+  // depend on the order of anything else. Made outside the counted steps: its
+  // creation writes an audit row.
+  const spare = await (await call('/api/v1/ticket-categories', {
+    method: 'POST',
+    body: { name: 'To Be Renamed And Retired' },
+  })).json();
+
   const rest = [
     ['POST /api/v1/tickets', () =>
       call('/api/v1/tickets', {
@@ -156,6 +188,27 @@ test('each mutating route writes exactly one audit row', async () => {
       call(`/api/v1/tickets/${assignable.id}/assignee`, {
         method: 'PATCH',
         body: { assigneeId: null, revision: assignable.revision },
+      })],
+    // A SECOND reply, so it writes one audit row. The first reply on a `new`
+    // ticket writes two — the reply and the status move T-2 requires — and
+    // that pair is pinned in the conversation feature's own tests, where the
+    // count is the thing being tested rather than the frame around it. The
+    // first one is posted outside the counted steps, above.
+    ['POST /api/v1/tickets/:id/replies', () =>
+      call(`/api/v1/tickets/${replied.id}/replies`, {
+        method: 'POST',
+        body: { body: 'A second reply, so this route is driven.' },
+      })],
+    ['POST /api/v1/ticket-categories', () =>
+      call('/api/v1/ticket-categories', { method: 'POST', body: { name: 'Audited By The Census' } })],
+    ['PATCH /api/v1/ticket-categories/:id', () =>
+      call(`/api/v1/ticket-categories/${spare.id}`, { method: 'PATCH', body: { name: 'Renamed By The Census' } })],
+    ['DELETE /api/v1/ticket-categories/:id', () =>
+      call(`/api/v1/ticket-categories/${spare.id}`, { method: 'DELETE' })],
+    ['PATCH /api/v1/tickets/:id/category', () =>
+      call(`/api/v1/tickets/${categorised.id}/category`, {
+        method: 'PATCH',
+        body: { categoryId: null, revision: categorised.revision },
       })],
     ['PATCH /api/v1/tickets/:id/status', () =>
       call(`/api/v1/tickets/${movable.id}/status`, {

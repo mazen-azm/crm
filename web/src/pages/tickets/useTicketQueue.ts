@@ -18,6 +18,9 @@ export const PAGE_SIZE = 25;
 
 export type Ticket = {
   id: string;
+  // Whose it is. A CUSTOMER id, not the user id a message's author carries —
+  // the two are joined by customers.user_id and are not interchangeable.
+  customerId: string;
   subject: string;
   status: Status;
   priority: Priority;
@@ -27,6 +30,11 @@ export type Ticket = {
   // refused rather than allowed to overwrite somebody else's change — so a
   // screen that means to write has to carry it.
   revision: number;
+  // Whether a reply would still reopen this ticket (T-5). Answered by the API
+  // with the same rule its refusal reads, because a screen counting fourteen
+  // days for itself would be the product rule in two places — and
+  // allowedTransitions cannot answer it, being derived from the status alone.
+  reopenWindowOpen: boolean;
   // The moves that are legal from where this ticket is, sent with the ticket
   // and derived server-side from the same table a refusal reads. The screen
   // offers these and no others, which is what keeps the 409 a backstop rather

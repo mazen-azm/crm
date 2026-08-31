@@ -20,6 +20,13 @@ Entry point for the **tickets** feature. Stories execute in order by their `NN` 
 | 49 | `49-story-crm-83.md` | TICKETS-7-API agent — I read the whole history in order | CRM-83 | — |
 | 50 | `50-story-crm-84.md` | TICKETS-7-WEB agent — I read the whole history in order | CRM-84 | — |
 | 51 | `51-story-crm-86.md` | TICKETS-8-API system — a customer may act only on their own ticket, on every path | CRM-86 | — |
+| 65 | `65-story-crm-89.md` | TICKETS-10-API agent — I change a ticket's category | CRM-89 | — |
+| 66 | `66-story-crm-91.md` | TICKETS-11-API customer — I reopen a resolved ticket inside the window | CRM-91 | — |
+| 67 | `67-story-crm-93.md` | TICKETS-12-WEB agent — my own tickets are one click away | CRM-93 | — |
+| 68 | `68-story-crm-87.md` | TICKETS-9-API admin — I add, rename and retire a category without touching the seed | CRM-87 | — |
+| 77 | `77-story-crm-90.md` | TICKETS-10-WEB agent — I change a ticket's category | CRM-90 | — |
+| 78 | `78-story-crm-92.md` | TICKETS-11-WEB customer — I reopen a resolved ticket inside the window | CRM-92 | — |
+| 79 | `79-story-crm-88.md` | TICKETS-9-WEB admin — I add, rename and retire a category without touching the seed | CRM-88 | — |
 
 ## Dependency notes
 

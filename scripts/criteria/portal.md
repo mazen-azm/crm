@@ -75,3 +75,28 @@ A customer signs in and sees their tickets, and nothing else.
 *Out of scope*
 - Replies and the internal-note distinction — PORTAL-3-WEB, next block.
 - Reopening, rating, and reading articles. Later stories own each.
+
+## PORTAL-3-WEB
+
+A customer reads their ticket: the replies, never the internal notes.
+
+*Acceptance criteria*
+- Given a customer's own ticket, then they can open it and read its thread —
+  the public replies, oldest first, each saying who wrote it and when.
+- Given the desk's internal notes, then nothing on the screen shows them, hints
+  at them, or leaves a gap where they were. The API does not send them
+  (CONVERSATION-2-API); this screen has nothing to filter, and a test asserts it
+  filters nothing — a screen that hid what it had been given would mean the API
+  had sent it.
+- Given a reply from the desk, then it is distinguishable from the customer's
+  own without either being labelled by role in a way that reads as a status.
+- Given a resolved ticket inside the window, then the customer can reply, and
+  replying reopens it (T-5) — the screen says that will happen before they do
+  it, rather than surprising them with a status change.
+- Given a long thread, then the screen pages it using the API's window and adds
+  none of its own (BR-4).
+- Given somebody else's ticket id typed into the address, then the screen shows
+  what a missing ticket shows. It has nothing else to show, because the API
+  answers the same 404 for both.
+- Given every string, then it came from a resource file, in both languages, and
+  the thread reads in both directions (BR-6).

@@ -1100,3 +1100,163 @@ change somebody should make deliberately rather than find in a diff.
 
 The signal to look for, next time: a WEB story whose `needs` are all API
 stories that answer some OTHER question.
+
+## L-57 — A suite that flakes under load is not a gate, and the load is the bug
+
+**Rule:** when a test fails once and passes in isolation, do not shrug and
+re-run. Time it. A test that normally takes 200ms and took 50 seconds did not
+fail because of what it asserts — it failed because it was starved, and the
+starvation is a property of the suite that will get worse with every file
+added. Measure the failure rate, find what is being exhausted, and cap it. A
+gate that fails one run in three is not a gate; it is a thing people learn to
+re-run.
+
+**Where it came from:** the API suite reached 51 test files, nearly all of
+which open an HTTP server on an ephemeral port and drive it over the loopback.
+`node --test` runs files in parallel, so all 51 servers existed at once. Three
+failures over one day — a pagination test, a throttle test, a clock test — each
+passing alone, each having taken 200× to 250× its normal time in the run that
+failed. Measured: one failure in three runs at the default concurrency, none in
+four runs capped at four files at a time.
+
+**And the diagnosis was wrong.** Capping helped and did not fix it: a later run
+failed two tests, one of them in a completely normal 205ms. Reading what those
+two actually reported, rather than how long they took:
+
+- one got a response body of `missing or invalid path argument` — a string this
+  API never sends, and not JSON;
+- the other timed out on response headers, `UND_ERR_HEADERS_TIMEOUT`.
+
+Both are the request not reaching the server. That is loopback interference in
+this environment, not starvation and not a bug in the suite — and the cap
+reduces the incidence only because fewer concurrent sockets means fewer chances
+to be hit.
+
+**So the rule stands and the second half of it matters more:** time the
+failure, and then *read what it actually said*. The timing made a pattern
+visible and then pointed at the wrong cause, and a plausible cause with a
+measurement next to it is exactly the kind of wrong that gets written down and
+believed. The cap stays because it is cheap and it helps; the sentence
+explaining it now says what it is really doing.
+
+## L-58 — A hint is advice; make the correction instead
+
+**Rule:** when a mistake is deterministic to detect AND deterministic to
+correct, correct it in the pipeline rather than adding a line to a document
+asking somebody not to make it. A standing hint reduces a mistake; it does not
+remove it, because a hint is read by whoever chooses to read it. Reserve the
+prose for judgements — the things that cannot be corrected mechanically because
+they need an argument.
+
+**Where it came from:** two mechanical mistakes recurred across plans. The
+heading number (a plan titles itself by its position within its feature, the
+filename by its position in the project) and the tracker key (`backlog.txt` has
+ids and no keys, so a plan citing `X-1-API (CRM-nn)` was counting).
+
+Both were caught by `verify-plan`, repeatedly — five plans for the heading, and
+three for the key. `story-keys.txt` was added so the planner had somewhere to
+read a key instead of counting, and every intake's standing hints were updated
+to point at it. A plan generated after both still cited the wrong story.
+
+So `plan-next.sh` now writes the heading number itself, and runs
+`scripts/fix-plan-keys.mjs` to rewrite the keys from `story-keys.txt`. Both run
+at the moment the file is renamed, when the right answer is already in hand.
+`verify-plan` still checks the result against Jira, so a correction cannot
+introduce a wrong answer of its own — which is the condition that makes this
+safe rather than merely convenient.
+
+The companion to L-54: a guess a check corrects is still a guess, and the
+second half of removing the guess is not always giving the writer a better
+source. Sometimes it is not asking them.
+
+---
+
+## L-59 — Three instances of L-56: the write side is a unit too
+
+**Rule:** when a plan's story is about SEEING something, check that a story
+exists for MAKING it. A read surface for data nothing can produce is not a
+smaller story — it is a story that cannot be demonstrated at all, and the gap
+is always in the layer nobody wrote a unit for.
+
+**Where it came from:** `CONVERSATION-2-WEB (CRM-103)` asks the desk to see
+public replies and internal notes side by side, and to know which it is about
+to write. The API could read both — `CONVERSATION-2-API` shipped the filtered
+thread and a census proving a note never reaches a customer — and could write
+neither: `conversation.service.js` set `kind: 'public'` as a literal, with a
+comment saying the note "has its own story". It has none. Six conversation
+units, and not one of them lets the desk write the thing the other five are
+careful about.
+
+That is the same shape as L-56's `PORTAL-2-WEB`, and it is now the third time:
+a customer listing their own tickets, and now writing a note. Both were found
+at build time, by a screen with nothing to call.
+
+So the check is no longer "does every layer story have its API half" but the
+narrower question that catches these: **for every noun a story reads, name the
+story that writes it.** A literal in the service with a comment deferring to a
+story is a claim about the backlog, and a claim about the backlog is checkable
+— this one was false when it was written.
+
+---
+
+## L-60 — A dependency the graph cannot express is a dependency nothing enforces
+
+**Rule:** when the sort puts a story first and a reader would not, the answer is
+usually that the file cannot say what the reader knows. Extend the notation
+rather than reordering by hand — a manual reorder is right once, and the
+schedule runs unattended every five hours.
+
+**Where it came from:** `plan-order` put `CONVERSATION-3-WEB (CRM-105)` — a
+customer replying on their own ticket — ahead of `PORTAL-3-WEB (CRM-123)`,
+which builds the screen that reply box goes on. The sort was right about what
+it had been told: the backlog's `needs` column is written once per capability
+and shared by both of its layers, so saying "the WEB half waits on that screen"
+would also have claimed the API half did, which is false. The commonest thing
+there is to say about a two-layer story was the one thing the column could not
+say.
+
+So an entry may now name a layer — `WEB:POR-3-WEB` — and is kept by that layer
+only. Two lines of grammar, in the two places that parse it.
+
+And that is the second half of the lesson. `scripts/lib/backlog.mjs` is what
+plan-order sorts by; `scripts/verify-backlog.mjs` has always parsed the same
+file independently. Teaching one and not the other would have been silent —
+the checker would have called every scoped entry a dangling reference, or
+worse, passed while disagreeing. They now compare their own needs graphs to
+each other, and a mutation removing the syntax from either side fails the
+check by name. Two parsers of one grammar are fine; two parsers that never
+meet are not (the same argument as [[verify-the-plan-not-just-the-code]]).
+
+---
+
+## L-61 — Ask what the screen will CALL before planning what it will show
+
+**Rule:** for every screen a plan describes, list the requests it will make and
+check each one against the router before writing a task. A plan that names a
+route which does not exist is not slightly wrong — every task under it is
+written against an API that cannot answer.
+
+**Where it came from:** `PORTAL-3-WEB (CRM-123)`. The plan described a customer
+opening one of their tickets, and there is no route that returns one ticket —
+not for a customer, not for the desk. The whole product reads lists. Nothing in
+138 units provides it, so the story could not be started, let alone finished.
+
+The same plan then assumed `reopenWindowOpen` or `canReply` "mirroring whatever
+CONVERSATION-2-API exposes". It exposes neither. The screen owes the customer a
+warning before they type, and the only field that looks like an answer —
+`allowedTransitions` — is derived from the status alone, so it lists `reopened`
+a month after the resolution. A hedge is not a citation, and both hedges were
+wrong.
+
+Four stories now (L-56, L-59, twice here). The pattern is stable enough to
+name: **the missing unit is always in the layer the story is not in.** A WEB
+story's plan reads WEB files carefully and takes the API on trust, because the
+API is where it is not looking.
+
+What made this one different is that the guards caught the consequence. Adding
+the route turned two censuses red on the first run — the ownership census
+demanding it be driven, the staff-only census demanding it be named open with a
+reason. Neither is a test somebody remembered to write; both read the routes
+off the router. That is the argument for a census over a checklist, made by the
+censuses rather than about them.
+

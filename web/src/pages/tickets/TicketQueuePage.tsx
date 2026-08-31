@@ -17,9 +17,14 @@ import { useTranslation } from '../../shared/i18n';
 import { priorityLabel, statusLabel } from './ticket-labels';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useAssignees } from './useAssignees';
+import { useMe } from '../../shared/session/use-me';
 import { TicketHistory } from './TicketHistory';
+import { ReplyBox } from './ReplyBox';
+import { TicketThread } from './TicketThread';
+import type { Message } from './useReply';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
+import { useChangeCategory } from './useChangeCategory';
 import { useTicketCategories } from './useTicketCategories';
 import {
   PAGE_SIZE,
@@ -42,25 +47,46 @@ const SEPARATOR = ' · ';
 // question, the other performs a write.
 const UNASSIGN = '__unassigned__';
 
+// The picker's word for "no category". A separate sentinel from UNASSIGN and
+// from the FILTER's 'none', for the reason UNASSIGN has its own: one asks a
+// question about a queue and the other performs a write, and a value shared
+// between them would make a filter's vocabulary a write's vocabulary.
+const NO_CATEGORY = '__no_category__';
+
 function Row({
   ticket,
   t,
   formatDate,
   assignees,
-  onAssigned,
+  categories,
+  onTicketChanged,
 }: {
   ticket: Ticket;
   t: T;
   formatDate: (v: string) => string;
   assignees: ReturnType<typeof useAssignees>;
-  onAssigned: (ticket: Ticket) => void;
+  // Handed in for the same reason the staff list is: the page already loaded
+  // it for the filter, and twenty-five rows fetching it again would be the
+  // same list twenty-five times.
+  categories: ReturnType<typeof useTicketCategories>;
+  // Whatever the row just changed about the ticket, in the shape the API
+  // answered with. It was `onAssigned` while assigning was the only thing a
+  // row could do; a status move, a category change and now a reply all end
+  // here, and a name that says what one caller wanted misleads the next.
+  onTicketChanged: (ticket: Ticket) => void;
 }) {
   const assign = useAssignTicket();
   const move = useChangeStatus();
+  const filing = useChangeCategory();
   const [choice, setChoice] = useState(ticket.assigneeId ?? UNASSIGN);
+  const [filed, setFiled] = useState(ticket.categoryId ?? NO_CATEGORY);
   const [target, setTarget] = useState('');
   const [note, setNote] = useState('');
   const [noteMissing, setNoteMissing] = useState(false);
+  // Messages written from this row since it was rendered, public and internal
+  // alike. They belong to the row rather than to the thread because the thread
+  // is closed until somebody opens it.
+  const [posted, setPosted] = useState<Message[]>([]);
 
   const submit = async () => {
     const next = choice === UNASSIGN ? null : choice;
@@ -68,10 +94,20 @@ function Row({
     // it. A screen that keeps the revision it loaded with refuses the agent's
     // own second assignment, and the bug looks like a race that is not there.
     const updated = await assign.assign(ticket, next).catch(() => null);
-    if (updated) onAssigned(updated);
+    if (updated) onTicketChanged(updated);
+  };
+
+  const refile = async () => {
+    const next = filed === NO_CATEGORY ? null : filed;
+    const updated = await filing.change(ticket, next).catch(() => null);
+    // The row follows the answer rather than the choice: the response carries
+    // the ticket at its new revision, and every other control on this row is
+    // holding the old one.
+    if (updated) onTicketChanged(updated);
   };
 
   const stale = assign.status === 'error' && assign.error?.code === 'REVISION_MISMATCH';
+  const filingStale = filing.status === 'error' && filing.error?.code === 'REVISION_MISMATCH';
 
   // The API always sends this and a test pins that it does. It is defaulted
   // anyway, and defaulted to NOTHING rather than to everything: an API old
@@ -96,7 +132,7 @@ function Row({
     if (updated) {
       setNote('');
       setTarget('');
-      onAssigned(updated);
+      onTicketChanged(updated);
     }
   };
 
@@ -162,6 +198,52 @@ function Row({
           <ErrorState
             title={t.ticketAssign.failedTitle}
             body={t.errors[assign.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+          />
+        ) : null}
+
+        {/* Filing, beside assigning: both are "who or what does this belong
+            to", both write with the revision they read, and both answer with
+            the ticket rather than with nothing. */}
+        <Stack direction="row" gap={2}>
+          <Field id={`category-${ticket.id}`} label={t.ticketCategory.label}>
+            {({ id }) => (
+              <Select id={id} value={filed} onChange={(event) => setFiled(event.target.value)}>
+                {/* Live categories and no category, and nothing else. A
+                    retired one is not offered — the API refuses it, and a
+                    picker that offered it would make the refusal the
+                    interface. It stays readable on a ticket that already
+                    carries it, which is a different question. */}
+                <option value={NO_CATEGORY}>{t.ticketCategory.none}</option>
+                {categories.categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+          <Button
+            variant="secondary"
+            disabled={filing.status === 'loading' || filed === (ticket.categoryId ?? NO_CATEGORY)}
+            onClick={() => void refile()}
+          >
+            {filing.status === 'loading' ? t.ticketCategory.filing : t.ticketCategory.submit}
+          </Button>
+        </Stack>
+
+        {filingStale ? (
+          <ErrorState
+            title={t.ticketCategory.staleTitle}
+            body={t.errors.REVISION_MISMATCH}
+            onRetry={() => window.location.reload()}
+            retryLabel={t.ticketAssign.reload}
+          />
+        ) : null}
+
+        {filing.status === 'error' && !filingStale && filing.error ? (
+          <ErrorState
+            title={t.ticketCategory.failedTitle}
+            body={t.errors[filing.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
           />
         ) : null}
 
@@ -240,6 +322,28 @@ function Row({
             default and fetched on opening — a row that read its own history
             unasked would make one page of the queue twenty-five requests. */}
         <TicketHistory ticketId={ticket.id} assignees={assignees} />
+
+        {/* The conversation, then the box that writes into it. In that order
+            because an agent reads what has been said before saying the next
+            thing — and because the box's mode is the last thing they see
+            before they type. */}
+        <TicketThread ticketId={ticket.id} assignees={assignees} posted={posted} />
+
+        <ReplyBox
+          ticketId={ticket.id}
+          onReplied={({ message, ticket: updated }) => {
+            // Held here rather than in the thread: the thread may never have
+            // been opened, and a reply that vanished because nobody had
+            // expanded the list yet reads as a reply that was not sent.
+            setPosted((held) => [...held, message]);
+            // The row follows the ticket. The first public reply on a `new`
+            // ticket opens it, server-side — a row still saying New after the
+            // reply that opened it is the screen disagreeing with the ticket.
+            // The revision comes with it, because every other control on this
+            // row holds one and they are all stale now.
+            onTicketChanged(updated);
+          }}
+        />
       </Stack>
     </Card>
   );
@@ -251,6 +355,7 @@ export function TicketQueuePage() {
   const queue = useTicketQueue();
   const categories = useTicketCategories();
   const assignees = useAssignees();
+  const { me } = useMe();
 
   // Tickets this screen has changed since the page was fetched, so a row shows
   // the assignment that just happened and carries the revision that came back
@@ -279,7 +384,13 @@ export function TicketQueuePage() {
       : null,
     draft.assigneeId
       ? `${t.ticketQueue.filterAssignee}: ${
-          draft.assigneeId === UNASSIGNED ? t.ticketQueue.unassigned : draft.assigneeId
+          draft.assigneeId === UNASSIGNED
+            ? t.ticketQueue.unassigned
+            : // A name, not the id. This read `draft.assigneeId` and printed a
+              // UUID into a sentence somebody is meant to read — invisible
+              // while the only way to set the filter was to pick a name from a
+              // list, and unmissable now that one click sets it to your own.
+              (assignees.nameFor(draft.assigneeId) ?? draft.assigneeId)
         }`
       : null,
   ].filter(Boolean) as string[];
@@ -355,6 +466,26 @@ export function TicketQueuePage() {
         </Field>
 
         <Button type="submit">{t.ticketQueue.apply}</Button>
+        {/* One click, and nobody types their own id. It applies the same
+            filter the picker sets, so what comes back is the queue — same
+            rows, same paging, same words — and the URL carries it, which
+            makes it a view somebody can send to a colleague and one the back
+            button returns to.
+
+            Hidden until we know who is asking: a button that filtered by
+            `undefined` would quietly show the whole queue and look like it
+            had worked. */}
+        {me?.id ? (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setDraft({ ...draft, assigneeId: me.id });
+              queue.apply({ ...draft, assigneeId: me.id });
+            }}
+          >
+            {t.ticketQueue.mine}
+          </Button>
+        ) : null}
       </Stack>
 
       {busy ? <Skeleton lines={5} height="64px" label={t.states.loading} /> : null}
@@ -398,7 +529,8 @@ export function TicketQueuePage() {
                 t={t}
                 formatDate={formatDate}
                 assignees={assignees}
-                onAssigned={(next) => setUpdated((current) => ({ ...current, [next.id]: next }))}
+                categories={categories}
+                onTicketChanged={(next) => setUpdated((current) => ({ ...current, [next.id]: next }))}
               />
             );
           })}

@@ -7,6 +7,8 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { readBacklog } from './lib/backlog.mjs'
+
 const HERE = dirname(fileURLToPath(import.meta.url))
 const LAYERS = ['API', 'WEB', 'MOB', 'ALL']
 const ACTORS = ['system', 'agent', 'admin', 'customer', 'any', 'developer', 'client']
@@ -60,7 +62,22 @@ for (const { text, n } of lines('backlog.txt')) {
   }
   const rl = ruleList === '-' ? [] : ruleList.split(/\s+/)
   const nl = needList === '-' ? [] : needList.split(/\s+/)
-  for (const u of story.layers) { u.rules = rl; u.needs = nl }
+  for (const u of story.layers) {
+    u.rules = rl
+    // A needs entry may name one layer — `WEB:POR-3-WEB` is the WEB half's
+    // dependency and not the API half's. The same rule lives in
+    // scripts/lib/backlog.mjs, which is what plan-order sorts by; this is the
+    // check, and a check that did not know the syntax would call every scoped
+    // entry a dangling reference. Kept in step by the test below, which reads
+    // both and compares them.
+    u.needs = nl
+      .map((need) => {
+        const layer = need.match(/^(API|WEB|MOB|ALL):(.+)$/)
+        if (!layer) return need
+        return layer[1] === u.layer ? layer[2] : null
+      })
+      .filter(Boolean)
+  }
   for (const r of rl) {
     if (!rules.has(r)) fail.push(`backlog.txt:${n} cites ${r}, which rules.txt does not define`)
     else rules.get(r).owners.push(`${cur.slug.toUpperCase()}-${num}`)
@@ -182,6 +199,41 @@ for (const u of units.values())
       waits.get(u.block).push(`${u.id} waits on ${need}`)
     }
   }
+
+// The other parser, on the same file.
+//
+// scripts/lib/backlog.mjs reads backlog.txt too — it is what plan-order sorts
+// by — and this script has always read it independently. Two parsers of one
+// grammar agree until one of them learns something, and the layer-scoped needs
+// entry is exactly that: taught here and there in one change, and nothing
+// would have noticed if it had been taught in only one.
+//
+// So they are compared. Not the whole file: the needs graph, which is the part
+// both compute and the part an ordering decision is made from. A check that
+// read one source would prove only that the source agrees with itself.
+{
+  const lib = readBacklog(HERE)
+  for (const [id, u] of units) {
+    // The library adds one edge this script does not: a WEB half waits on its
+    // own API half. Obvious to a reader, needed by a sort, and nothing here
+    // sorts — so it is removed before the two are compared rather than added.
+    const own = id.replace(/-WEB$/, '-API')
+    const theirs = (lib.needs.get(id) ?? []).filter((n) => !(id.endsWith('-WEB') && n === own))
+
+    // How MANY needs each parser kept, not which. This script keeps the short
+    // prefix the file uses and the library expands it to a full id, so the
+    // lists are written in two namespaces and comparing them word for word
+    // would be comparing the spellings. The count is what the grammar decides:
+    // a scoped entry is kept by one layer and dropped by the other, and a
+    // parser that has not learnt the syntax keeps it for both.
+    if (theirs.length !== u.needs.length) {
+      fail.push(
+        `${id}: the two backlog parsers disagree about how many needs it has — `
+        + `lib says ${theirs.length} [${theirs.join(' ')}], verify-backlog says ${u.needs.length} [${u.needs.join(' ')}]`,
+      )
+    }
+  }
+}
 
 // report
 const total = [...units.values()].reduce((a, u) => a + u.pts, 0)

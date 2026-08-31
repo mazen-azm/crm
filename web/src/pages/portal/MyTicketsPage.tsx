@@ -63,7 +63,11 @@ export function MyTicketsPage() {
           {page.items.map((ticket) => (
             <Card key={ticket.id}>
               <Stack gap={1}>
-                <Text>{ticket.subject}</Text>
+                {/* The row is the way in. A screen nobody can reach from
+                    the screen before it is a screen that does not exist —
+                    and the subject is what somebody is looking for, so it is
+                    what they click. */}
+                <Link to={`/portal/tickets/${ticket.id}`}>{ticket.subject}</Link>
                 {/* The same words the desk reads, from the same module. Two
                     copies of a mapping disagree the first time one changes,
                     and neither screen looks wrong on its own. */}

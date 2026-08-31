@@ -150,6 +150,17 @@ for intake in ${(f)QUEUE}; do
       nn="${${f:t}%%-*}"
       /usr/bin/sed -i '' -E "1,10s/^# Story [0-9]+ —/# Story ${nn} —/" "$f"
     done
+    # And the tracker keys it cited, corrected against story-keys.txt.
+    #
+    # That file gave the planner somewhere to read a key instead of counting,
+    # and the standing hint in every intake points at it. It reduced the
+    # mistake and did not remove it — a plan generated after both still cited
+    # the wrong story. A hint is advice; the mapping is machine-readable and
+    # the correction is deterministic, so it is made rather than asked for.
+    # verify-plan still checks the result against Jira.
+    for f in .squad/plans/*/*"story-${key}.md"(N); do
+      node scripts/fix-plan-keys.mjs "$f"
+    done
     echo "[$(date '+%F %T')] $key planned"
   else
     # Say which. "quota or error" sent somebody looking at a usage limit for

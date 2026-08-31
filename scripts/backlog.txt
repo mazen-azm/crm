@@ -89,7 +89,7 @@ FEATURE conversation|CNV|Conversation|Replies, internal notes, the timeline
 
 STORY 1|reply-stops-clock|agent|I reply; the first public reply opens the ticket and stops the clock, once|API:6:5,WEB:6:3,MOB:10:3|T-2 S-1|TCK-7-API SLA-1-API
 STORY 2|note-never-leaks|agent|my internal note never reaches a customer, in any response|API:6:5,WEB:6:2|SC-2|CNV-1-API
-STORY 3|customer-reply-reopens|customer|I reply on my own ticket; replying to a resolved one reopens it|API:6:3,WEB:6:2|T-5|CNV-1-API TCK-11-API
+STORY 3|customer-reply-reopens|customer|I reply on my own ticket; replying to a resolved one reopens it|API:6:3,WEB:6:2|T-5|CNV-1-API TCK-11-API WEB:POR-3-WEB
 STORY 4|thread-pages|agent|a long thread pages rather than arriving whole|API:6:3,WEB:6:2|BR-4|CNV-1-API
 
 FEATURE service-levels|SLA|Service levels|The promise about time, pauses, breaches, escalation

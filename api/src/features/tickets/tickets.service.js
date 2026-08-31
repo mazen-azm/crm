@@ -13,6 +13,10 @@ import {
   validateAssignment,
   validateCategoryQuery,
   validateRaisedTicket,
+  withinReopenWindow,
+  normaliseCategoryName,
+  validateCategoryName,
+  validateCategoryChange,
   validateStatusChange,
 } from './tickets.rules.js';
 import {
@@ -25,9 +29,15 @@ import {
   findTicketById,
   countCustomerTickets,
   insertTicket,
+  findCategoryById,
+  findLiveCategoryByName,
+  insertCategory,
   listCategories as listCategoryRows,
   listCustomerTickets,
   listTickets,
+  renameCategory as renameCategoryRow,
+  retireCategory as retireCategoryRow,
+  updateTicketCategory,
   updateTicketStatus,
 } from './tickets.repository.js';
 
@@ -35,9 +45,23 @@ import {
 // literally called `open`: a `pending` ticket is waiting on the customer and a
 // `reopened` one is back on the pile, and both are work. `resolved` and
 // `closed` are the two the desk has finished with.
+// What a category looks like to anyone outside this feature. deleted_at is not
+// a field: a retired category is absent from the list, and the one route that
+// reads a retired one by id is answering a question about a ticket rather than
+// about the list.
+//
+// It was written inline inside listCategories until three more callers needed
+// it. Two copies of a shape drift the first time one gains a field.
+const categoryShape = (row) => ({
+  id: row.id,
+  name: row.name,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
 const OPEN_ON_THE_DESK = Object.freeze(['new', 'open', 'pending', 'reopened']);
 
-const publicShape = (row) => ({
+const publicShape = (row, nowSeconds) => ({
   id: row.id,
   customerId: row.customer_id,
   categoryId: row.category_id,
@@ -64,6 +88,21 @@ const publicShape = (row) => ({
   // rule in two places, or offers every move and lets the 409 narrow them,
   // which makes the refusal the interface rather than the backstop.
   allowedTransitions: allowedFrom(row.status),
+  // Whether a reply would still reopen this (T-5), answered by the same rule
+  // the refusal reads rather than by a client counting days.
+  //
+  // A fact about the TICKET, not about the reader: a customer's reply reopens
+  // a resolved ticket and an agent's does not, so a field named for the act
+  // would be false for half of the people it is sent to. The portal knows who
+  // its reader is and says what it means for them.
+  //
+  // Without it the warning the portal owes a customer — that replying will
+  // reopen this — is either absent or computed from a fourteen-day rule the
+  // screen has copied, which is the product rule in two places. That is the
+  // argument allowedTransitions makes above for its own existence.
+  reopenWindowOpen:
+    row.status === 'resolved'
+    && withinReopenWindow({ resolvedAt: row.resolved_at, nowSeconds }),
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -145,7 +184,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
 
         // Read back inside the transaction: the revision was defaulted by the
         // column, so the row is the only place it exists.
-        return publicShape(findTicketById(db, { id }));
+        return publicShape(findTicketById(db, { id }), now());
       });
     },
 
@@ -172,7 +211,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       if (scope.customerId !== undefined) filters.customerId = scope.customerId;
 
       return {
-        items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map(publicShape),
+        items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map((row) => publicShape(row, now())),
         // The matches, not the page.
         total: countTickets(db, { filters }),
         limit,
@@ -227,7 +266,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           statuses: OPEN_ON_THE_DESK,
           limit,
           offset,
-        }).map(publicShape),
+        }).map((row) => publicShape(row, now())),
         total: countCustomerTickets(db, { customerId, statuses: OPEN_ON_THE_DESK }),
         limit,
         offset,
@@ -272,6 +311,98 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
     // The categories a form offers when raising a ticket. A read, so no audit
     // row — and paginated like every other list, because six rows today is not
     // a reason for this one list to be the one that is different (BR-4).
+    // An admin adds a category, without a migration and without touching the
+    // seed. SC-3 says the seed produces a working system; it does not say the
+    // system is stuck with what the seed produced.
+    addCategory(actor, { name }) {
+      const invalid = validateCategoryName({ name });
+      if (invalid.length > 0) throw unprocessable(invalid);
+      const clean = normaliseCategoryName(name);
+
+      return transact(db, () => {
+        // Checked here rather than left to the unique index, for CRM-82's
+        // reason: an index that fires gives a raw SQLite error, which escapes
+        // as a 500 and tells an admin their reasonable request was our fault.
+        // The index stays as the second guard.
+        if (findLiveCategoryByName(db, { name: clean })) throw unprocessable(['name']);
+
+        const id = randomUUID();
+        const at = stamp();
+        const created = insertCategory(db, { id, name: clean, at });
+
+        audit.record(actor, {
+          entity: 'ticket-category',
+          entityId: id,
+          verb: 'category.create',
+          before: null,
+          after: { name: clean },
+          at,
+        });
+
+        return categoryShape(created);
+      });
+    },
+
+    // A rename reaches every ticket that carries the category, because a ticket
+    // references it rather than copying its name — which is the thing that
+    // makes a rename possible at all, and the reason `raise` stores an id.
+    renameCategory(actor, { id, name }) {
+      const invalid = validateCategoryName({ name });
+      if (invalid.length > 0) throw unprocessable(invalid);
+      const clean = normaliseCategoryName(name);
+
+      return transact(db, () => {
+        const before = findCategoryById(db, { id });
+        // A retired category is not renamed. Its name is what the tickets
+        // carrying it say happened, and BR-1 keeps them for exactly that.
+        if (!before || before.deleted_at) throw new HttpError(404, 'NOT_FOUND');
+
+        const taken = findLiveCategoryByName(db, { name: clean });
+        // Renaming a category to what it is already called is not a conflict
+        // with itself. It is a no-op the caller may not have meant, and
+        // refusing it would make "no change" indistinguishable from "taken".
+        if (taken && taken.id !== id) throw unprocessable(['name']);
+
+        const at = stamp();
+        renameCategoryRow(db, { id, name: clean, at });
+
+        audit.record(actor, {
+          entity: 'ticket-category',
+          entityId: id,
+          verb: 'category.rename',
+          before: { name: before.name },
+          after: { name: clean },
+          at,
+        });
+
+        return categoryShape(findCategoryById(db, { id }));
+      });
+    },
+
+    // Retiring takes it off the list the form offers. It does NOT take it off
+    // the tickets that carry it: a category that vanished from its tickets
+    // would rewrite history to tidy a picker (BR-1).
+    retireCategory(actor, { id }) {
+      return transact(db, () => {
+        const before = findCategoryById(db, { id });
+        if (!before || before.deleted_at) throw new HttpError(404, 'NOT_FOUND');
+
+        const at = stamp();
+        retireCategoryRow(db, { id, at });
+
+        audit.record(actor, {
+          entity: 'ticket-category',
+          entityId: id,
+          verb: 'category.retire',
+          before: { deletedAt: null },
+          after: { deletedAt: at },
+          at,
+        });
+
+        return { id, retiredAt: at };
+      });
+    },
+
     listCategories(actor, { q, sort, limit, offset }) {
       const invalid = validateCategoryQuery({ q, sort });
       if (invalid.length > 0) throw unprocessable(invalid);
@@ -285,12 +416,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           sort: sort ?? DEFAULT_CATEGORY_SORT,
           limit,
           offset,
-        }).map((row) => ({
-          id: row.id,
-          name: row.name,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-        })),
+        }).map(categoryShape),
         total: countCategories(db, { filters }),
         limit,
         offset,
@@ -371,12 +497,207 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           at,
         });
 
-        return publicShape(findTicketById(db, { id }));
+        return publicShape(findTicketById(db, { id }), now());
       });
     },
 
     // The second BR-5 write. It reads like assign because it is the same
     // shape; what is different is that a refusal here has to explain itself.
+    // The third BR-5 write. Same shape as assign and status: the revision in
+    // the WHERE, `revision = revision + 1` in the SET, and `changes === 0` as
+    // the refusal — a caller whose revision is not the ticket's did not see
+    // what they are about to overwrite.
+    changeCategory(actor, { id, categoryId, revision }) {
+      const invalid = validateCategoryChange({ categoryId, revision });
+      if (invalid.length > 0) throw unprocessable(invalid);
+
+      const at = stamp();
+
+      return transact(db, () => {
+        const before = findTicketById(db, { id });
+        if (!before) throw new HttpError(404, 'NOT_FOUND');
+        // Ownership, as in assign — the same blanket refusal for the same
+        // reason: a ticket's category is the desk's filing, not the customer's.
+        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+
+        // null is a ticket with no category, which the column allows and a
+        // ticket may legitimately have. Anything else must be a category that
+        // is still on the list — checked here rather than left to the foreign
+        // key, which can see that a row exists and cannot see that it was
+        // retired. `raise` refuses a retired category for exactly this reason
+        // and this does not weaken it: what may not be chosen for a new ticket
+        // may not be chosen for an old one.
+        if (categoryId !== null && !findLiveCategoryId(db, { categoryId })) {
+          throw unprocessable(['categoryId']);
+        }
+
+        const { changes } = updateTicketCategory(db, { id, categoryId, revision, at });
+        if (changes === 0) throw new ConflictError('REVISION_MISMATCH');
+
+        audit.record(actor, {
+          entity: 'ticket',
+          entityId: id,
+          verb: 'ticket.category',
+          before: { categoryId: before.category_id },
+          after: { categoryId },
+          at,
+        });
+
+        return publicShape(findTicketById(db, { id }), now());
+      });
+    },
+
+    // The ticket, with the ownership rule attached, for another feature that
+    // needs it. It opens no transaction — so a caller inside one can use it,
+    // and a caller doing a pure read is not made to open one.
+    //
+    // A read with the rule attached rather than a read and a rule: a caller
+    // cannot get a ticket this actor may not touch and then decide for itself
+    // what to do about that. The refusal is the same 404 a missing ticket
+    // gets, from the one place that decides it.
+    //
+    // It was `readForReply` while replying was the only caller. Reading a
+    // ticket's messages is the second, and a name that says what one caller
+    // wanted is a name that misleads the next one.
+    // One ticket, in the shape every other route answers with.
+    //
+    // readForActor decides who may see it, so this adds no rule of its own —
+    // and deliberately returns the same shape the queue's rows carry, because
+    // a screen that read a ticket differently depending on which route it came
+    // from would be two descriptions of one thing.
+    read(actor, { id }) {
+      return publicShape(this.readForActor(actor, { id }), now());
+    },
+
+    readForActor(actor, { id }) {
+      const ticket = findTicketById(db, { id });
+      if (!ticket) throw new HttpError(404, 'NOT_FOUND');
+      if (actor?.role === 'customer' && ticket.customer_id !== actor.customerId) {
+        throw new HttpError(404, 'NOT_FOUND');
+      }
+      return ticket;
+    },
+
+    // The reopen a REPLY causes (T-5), from inside the caller's transaction.
+    //
+    // It opens none of its own, like openOnFirstReply beside it, because the
+    // message and the status move commit together — a reply that reopened a
+    // ticket and then failed to say so would be worse than either alone.
+    //
+    // It shares the window rule rather than repeating it: `withinReopenWindow`
+    // is the one place that decides when a resolution becomes final, and
+    // changeStatus asks it the same question.
+    //
+    // Answers whether it reopened anything. `false` for a ticket that was not
+    // resolved, which is most replies; the window's refusal throws, because
+    // that is a request the caller must not treat as a quiet no-op.
+    reopenOnReply(actor, { id, at }) {
+      const before = findTicketById(db, { id });
+      if (!before) throw new HttpError(404, 'NOT_FOUND');
+
+      // Closed is terminal, and a reply is not a way round that. It is refused
+      // rather than accepted-and-ignored: a customer replying to a closed
+      // ticket means to reopen it, and storing the message while the reopen
+      // cannot happen would leave them believing they had been heard.
+      //
+      // The same answer the state machine gives, from the same table — T-7's
+      // shape, and `allowed` is empty because from closed nothing is legal.
+      // TICKETS-4-API made that argument and this does not reopen it.
+      if (before.status === 'closed') throw new ConflictError('ILLEGAL_TRANSITION', allowedFrom('closed'));
+
+      // Any other status that is not `resolved` — the reply is just a reply.
+      if (before.status !== 'resolved') return false;
+
+      if (!withinReopenWindow({ resolvedAt: before.resolved_at, nowSeconds: now() })) {
+        throw new ConflictError('REOPEN_WINDOW_CLOSED');
+      }
+
+      const { changes } = updateTicketStatus(db, {
+        id,
+        status: 'reopened',
+        revision: before.revision,
+        at,
+        resolutionNote: null,
+      });
+      if (changes === 0) throw new Error('the ticket moved under a transaction that held it');
+
+      audit.record(actor, {
+        entity: 'ticket',
+        entityId: id,
+        verb: 'ticket.status',
+        before: { status: 'resolved' },
+        after: { status: 'reopened' },
+        at,
+      });
+      return true;
+    },
+
+    // A ticket in the shape a caller may see, by id, with no transaction and
+    // no ownership check.
+    //
+    // No check because the only caller reads it AFTER readForActor has already
+    // decided the actor may touch this ticket, inside the same transaction —
+    // and a second check there would be the same question asked twice, with a
+    // second chance to answer it differently. The name says what it does; a
+    // caller that has not already established the right has no business
+    // calling it, and there is exactly one.
+    publicById(id) {
+      const row = findTicketById(db, { id });
+      return row ? publicShape(row, now()) : null;
+    },
+
+    // T-2's transition, and only that one: a `new` ticket becomes `open` when
+    // the desk first answers it.
+    //
+    // It opens NO transaction, because it is called from inside the one that
+    // wrote the reply — the reply, the clock stop and this move commit
+    // together or not at all. Same shape as identity's makeUser.
+    //
+    // It lives here rather than in the conversation feature because the
+    // transition table lives here: a second place that moved a ticket's status
+    // would be a second set of rules about which moves are legal, agreeing
+    // with this one right up until somebody edited one of them.
+    //
+    // No revision, and that is the difference from changeStatus. This is not
+    // somebody choosing a move against a ticket they read a moment ago — it is
+    // a consequence of a write that is already happening, inside the same
+    // transaction, holding the row. BR-5 guards against overwriting a change
+    // you did not see; there is nothing here that a caller could have missed.
+    openOnFirstReply(actor, { id, at }) {
+      const before = findTicketById(db, { id });
+      if (!before) throw new HttpError(404, 'NOT_FOUND');
+      // Not `new` means the desk has already answered, or the ticket has moved
+      // on some other way. T-2 names one transition and this makes no others.
+      if (before.status !== 'new') return false;
+      if (!allowedFrom('new').includes('open')) {
+        // The transitions table is the authority even for a move this feature
+        // is sure about. If it ever stops allowing new -> open, this should
+        // stop too rather than write a status the table forbids.
+        throw new Error('the transition table no longer allows new -> open');
+      }
+
+      const { changes } = updateTicketStatus(db, {
+        id,
+        status: 'open',
+        revision: before.revision,
+        at,
+        resolutionNote: null,
+      });
+      // Inside the caller's transaction, holding the row read a line ago —
+      // so zero changes is not a stale revision, it is a bug here.
+      if (changes === 0) throw new Error('the ticket moved under a transaction that held it');
+
+      audit.record(actor, {
+        entity: 'ticket',
+        entityId: id,
+        verb: 'ticket.status',
+        before: { status: before.status },
+        after: { status: 'open' },
+        at,
+      });
+      return true;
+    },
+
     changeStatus(actor, { id, status, revision, note }) {
       const invalid = validateStatusChange({ status, revision, note });
       if (invalid.length > 0) throw unprocessable(invalid);
@@ -387,12 +708,45 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         const before = findTicketById(db, { id });
         if (!before) throw new HttpError(404, 'NOT_FOUND');
 
-        // Ownership, as in assign — and a blanket refusal for the same
-        // reason: moving a ticket through the state machine is the desk's
-        // work. A customer's own actions on their ticket are replies, and
-        // replies reopen it by rule T-5 rather than by a status change
-        // somebody chose.
-        if (actor?.role === 'customer') throw new HttpError(404, 'NOT_FOUND');
+        // Ownership, and no longer a blanket refusal.
+        //
+        // This used to refuse every customer, and the comment argued that
+        // moving a ticket through the state machine is the desk's work and a
+        // customer's own actions are replies. That was right about the desk
+        // and wrong about the customer: TICKETS-11-API gives them one move,
+        // `resolved -> reopened` on their own ticket, and CONVERSATION-3-API
+        // gives them the same move as a consequence of replying. Two ways to
+        // do one thing, and this is the one somebody chooses deliberately.
+        //
+        // Exactly one move, and no other. A customer may not resolve, may not
+        // close, may not move a ticket to pending — those are the desk saying
+        // something about work it is doing. And somebody else's ticket is the
+        // same 404 a missing one gets, whichever move they asked for, so
+        // nothing about the answer says which of the two rules refused them.
+        if (actor?.role === 'customer') {
+          const owns = before.customer_id === actor.customerId;
+          if (!owns || status !== 'reopened') throw new HttpError(404, 'NOT_FOUND');
+        }
+
+        // T-5's window, and it applies to whoever is asking.
+        //
+        // Not a rule about customers: it is a fact about the ticket. T-6 closes
+        // a resolved ticket once the same fourteen days have passed, so after
+        // the window there is nothing to reopen anyway — two rules for one
+        // period, differing by who asks, would be two answers to when a
+        // resolution becomes final.
+        //
+        // Measured from resolved_at, not updated_at: updated_at moves for
+        // anything, and a window any activity resets is not a window. A NULL
+        // resolved_at fails the check, which is the safe direction — a ticket
+        // whose resolution moment is unknown is not reopenable.
+        if (
+          status === 'reopened'
+          && before.status === 'resolved'
+          && !withinReopenWindow({ resolvedAt: before.resolved_at, nowSeconds: now() })
+        ) {
+          throw new ConflictError('REOPEN_WINDOW_CLOSED');
+        }
 
         // Both refusals below carry the legal moves from where the ticket
         // IS, not from where the caller wanted it — the caller already knows
@@ -439,7 +793,7 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           at,
         });
 
-        return publicShape(findTicketById(db, { id }));
+        return publicShape(findTicketById(db, { id }), now());
       });
     },
   };
