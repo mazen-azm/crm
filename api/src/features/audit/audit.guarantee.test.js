@@ -70,6 +70,7 @@ const EXERCISED = new Set([
   'POST /api/v1/me/password',
   'POST /api/v1/customers',
   'PATCH /api/v1/customers/:id',
+  'DELETE /api/v1/customers/:id',
   'POST /api/v1/customers/:id/notes',
   'POST /api/v1/customers/:id/sign-in',
   'POST /api/v1/tickets',
@@ -133,6 +134,14 @@ test('each mutating route writes exactly one audit row', async () => {
   const withEmail = await (await call('/api/v1/customers', {
     method: 'POST',
     body: { name: 'Granted A Sign In', email: 'granted@support-desk.local' },
+  })).json();
+
+  // A customer of its own to delete. The seeded one the steps above act on
+  // cannot be the one deleted here: whichever order the steps run in, a
+  // deleted customer answers 404 to the note and the correction beside it.
+  const toDelete = await (await call('/api/v1/customers', {
+    method: 'POST',
+    body: { name: 'To Be Deleted', email: 'deleted@support-desk.local' },
   })).json();
 
   // Raised outside the counted steps below: each of those asserts exactly one
@@ -246,6 +255,8 @@ test('each mutating route writes exactly one audit row', async () => {
         method: 'PATCH',
         body: { phone: '+20 2 5555 0199' },
       })],
+    ['DELETE /api/v1/customers/:id', () =>
+      call(`/api/v1/customers/${toDelete.id}`, { method: 'DELETE' })],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
         method: 'POST',

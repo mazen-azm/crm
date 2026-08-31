@@ -185,7 +185,10 @@ question faster than a guess does.
 exclude the deleted. Search does too. Check before adding a filter — filtering
 twice is one product rule in two places.
 
-**Admin-only is `requireAdmin`-shaped, not a check inside the service.** See
+**Admin-only is a `requirePermission` guard on the route, not a check inside
+the service.** There is no `requireAdmin` — `tickets.routes.js:52` builds a local
+`adminOnly = requirePermission((subject) => subject.role === 'admin')` and the
+three category writes use it. See
 how the category writes are guarded, and note that
 `staff-only.guarantee.test.js` drives every route: a new one must either refuse
 a customer or be named in `OPEN_TO_A_CUSTOMER` with the reason.

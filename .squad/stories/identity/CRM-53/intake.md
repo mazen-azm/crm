@@ -180,6 +180,14 @@ in `identity.rules.js`, and turned into a subject by
 one, or needs something else that distinguishes a token minted before a moment
 from one minted after it.
 
+**`signToken({ sub, role, exp })` encodes those three and nothing else**
+(`identity.rules.js:24`), and `TOKEN_TTL_SECONDS` is eight hours. So `exp`
+already determines when a token was issued — `exp - TTL` — and a rule could be
+built on that arithmetic without touching the token at all. Do not: it is only
+true while the TTL never changes, and the day somebody shortens it every token
+in flight silently reports a different issue time. If an issue time is needed,
+put it in the token.
+
 **The clock is whole seconds** — `now = () => Math.floor(Date.now() / 1000)`,
 injected everywhere and replaced in tests. A token minted in the same second as
 the password change is indistinguishable from one minted just before it by any

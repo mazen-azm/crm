@@ -356,6 +356,26 @@
             "description": "Unhandled — the shape every error here has, with a requestId."
           }
         }
+      },
+      "delete": {
+        "summary": "Delete a customer. Soft, like every removal here (BR-1): `deleted_at` is set and the row stays, so the audit rows that name them keep naming them and their tickets are untouched — a support history is what the desk is for, and deleting the person it is about must not quietly delete what happened. The list, the search and the count already ask for live rows. Admin only, the way retiring a category is: it changes what everybody else sees and no screen can undo it. Their sign-in account is NOT touched — stated here rather than left for somebody to discover. Reading a known id still answers, deliberately: a retired customer is not a missing one.",
+        "responses": {
+          "200": {
+            "description": "{ id, deletedAt } — the moment it happened, so a caller need not read it back."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking. Deleting is an admin’s."
+          },
+          "404": {
+            "description": "No such customer, and the same answer for one already deleted — deleting twice is not two events, and no second audit row is written."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
       }
     },
     "/api/v1/customers/{id}/notes": {

@@ -186,6 +186,19 @@ export function updateCustomerContacts(db, { id, changes, at }) {
   return db.prepare(`SELECT ${PROJECTION} FROM customers WHERE id = ?`).get(id);
 }
 
+// Soft, like every removal here (BR-1). The row stays, the audit rows that
+// name them stay, and their tickets are untouched — the list, the search and
+// the count already ask for `deleted_at IS NULL`, so hiding them costs no new
+// filter and cannot be forgotten in one place and not another.
+//
+// Scoped to live rows, so deleting twice reports nothing changed rather than
+// moving the moment it happened. The same shape retireCategory has.
+export function softDeleteCustomer(db, { id, at }) {
+  return db
+    .prepare('UPDATE customers SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(at, at, id).changes;
+}
+
 export function setCustomerUserId(db, { customerId, userId, at }) {
   return db
     .prepare('UPDATE customers SET user_id = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
