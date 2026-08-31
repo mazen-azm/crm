@@ -5,6 +5,8 @@ import {
   findTargetByPriority,
   findTicketPriority,
   insertClock,
+  pauseClock as pauseClockRow,
+  resumeClock as resumeClockRow,
   stopClock as stopClockRow,
 } from './service-levels.repository.js';
 
@@ -44,6 +46,30 @@ export function createServiceLevels({ db, now = () => Math.floor(Date.now() / 10
         insertClock(db, { id, ticketId, kind, startedAt, at });
         return { id, kind, startedAt };
       });
+    },
+
+    // S-4: the resolution clock stops counting while a ticket waits on the
+    // customer.
+    //
+    // The RESOLUTION clock only. Pending means waiting on the customer, which
+    // can only happen after somebody answered them — a promise about answering
+    // that could be paused by the answer is not a promise, and S-4 names the
+    // resolution clock and means it.
+    //
+    // From inside the caller's transaction, like stopClock beside it: the
+    // status move and the pause commit together or not at all.
+    pause({ ticketId, at }) {
+      return pauseClockRow(db, { ticketId, kind: 'resolution', at }) === 1;
+    },
+
+    // And starts again, adding what the pause cost.
+    //
+    // Called on the way out of `pending` — to open, to resolved, to anywhere.
+    // A ticket resolved while still pending closes its pause first, or the
+    // resolution would be recorded as slower than it was, which is the
+    // opposite of what S-4 is for.
+    resume({ ticketId, at }) {
+      return resumeClockRow(db, { ticketId, kind: 'resolution', at }) === 1;
     },
 
     // Stop a clock, from inside the CALLER's transaction.
@@ -87,10 +113,27 @@ export function createServiceLevels({ db, now = () => Math.floor(Date.now() / 10
         // whenever the gap was noticed.
         if (!clock) throw new Error(`ticket ${ticketId} has no ${kind} clock`);
 
-        const deadlineMs = Date.parse(clock.started_at) + minutes[kind] * 60_000;
+        // The accrued pauses, plus the one still open if there is one.
+        //
+        // The open pause matters more than the closed ones: a ticket sitting
+        // in `pending` for a week has nothing added yet, and a deadline that
+        // ignored it would report the ticket overdue for exactly as long as it
+        // waits on the customer. That is the common case — somebody looks at
+        // the queue WHILE it is waiting — and it is what S-4 forbids.
+        //
+        // first_response has no pause and never will; `paused_ms` is 0 on that
+        // row, so this is one expression rather than a branch.
+        const openPauseMs = clock.pause_started_at === null || clock.pause_started_at === undefined
+          ? 0
+          : nowMs - Date.parse(clock.pause_started_at);
+        const pausedMs = clock.paused_ms + openPauseMs;
+        const deadlineMs = Date.parse(clock.started_at) + minutes[kind] * 60_000 + pausedMs;
         out[kind] = {
           startedAt: clock.started_at,
           stoppedAt: clock.stopped_at ?? null,
+          // What the promise has been paused for, so a screen can say why a
+          // deadline moved rather than leaving somebody to wonder.
+          pausedMs,
           deadline: new Date(deadlineMs).toISOString(),
           // A stopped clock is not overdue: it was answered, whenever that was.
           overdue: clock.stopped_at === null && nowMs >= deadlineMs,

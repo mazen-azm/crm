@@ -1,0 +1,19 @@
+-- When the pause a clock is currently in began, or NULL when it is running.
+--
+-- `paused_ms` (0003) is the total already accrued; this is the one in
+-- progress. Two columns rather than one because a pause has to survive being
+-- open: a ticket sitting in `pending` is not overdue WHILE it sits there, and
+-- a deadline computed on read has to know that without waiting for the pause
+-- to close.
+--
+-- TEXT holding ISO-8601, like `started_at` and `stopped_at` beside it. The
+-- deadline arithmetic already parses ISO; a lone numeric timestamp here would
+-- be the one somebody forgets to convert.
+--
+-- `paused_ms` keeps its name and its unit. Every duration in this feature is
+-- milliseconds — the deadline is `Date.parse(started_at) + minutes * 60_000`,
+-- compared against `now() * 1000` — and a duration belongs in the unit its
+-- arithmetic uses. That the clock ticks in whole seconds makes the value a
+-- multiple of 1000; that is a fact about the clock, not a reason to convert at
+-- every use.
+ALTER TABLE sla_clocks ADD COLUMN pause_started_at TEXT;

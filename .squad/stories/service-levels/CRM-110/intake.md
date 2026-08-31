@@ -183,6 +183,20 @@ shape, and note that it is named in **two** censuses:
 `stale-write.guarantee.test.js` (with the reason it carries no revision) and
 `audit.guarantee.test.js`. A new sweep route will be caught by both.
 
+**Nothing stops the resolution clock — found while building
+`SERVICE-LEVELS-2-API (CRM-109)`, and this story is where it lands.**
+`stopClock` is called for `first_response` when the desk first replies
+(`conversation.service.js:142`) and for nothing else. Resolving a ticket leaves
+its resolution clock running, so `readDeadlines` reports every resolved ticket
+overdue once enough time passes — and a breach sweep built on top of that would
+record a breach against every ticket the desk resolved on time.
+
+This story's own criterion is that "a clock that stopped before its deadline
+records nothing". That sentence needs stopping to work. Stop the resolution
+clock when a ticket is resolved, from inside the status change's transaction,
+the way the reply already stops the first-response one — and pin it, because
+nothing currently would notice if it stopped again.
+
 **A breach is a row, and once is a constraint.** `sla_clocks` already has a
 unique constraint per ticket and kind (0003); a breaches table wants the same
 shape rather than a `SELECT` that runs first. A check is a race and a

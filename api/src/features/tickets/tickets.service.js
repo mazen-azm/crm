@@ -888,6 +888,22 @@ export function createTicketsService({ db, notifications, now = () => Math.floor
           throw new HttpError(409, 'REVISION_MISMATCH');
         }
 
+        // S-4, on both edges of `pending`, inside this transaction.
+        //
+        // Entering pauses the resolution clock; leaving closes the pause and
+        // adds what it cost — including on the way to `resolved`, where the
+        // pause has to be counted before the clock stops or the resolution
+        // would be recorded as slower than it was.
+        //
+        // Keyed off the move rather than the destination alone, because
+        // `pending → pending` is not a move the state machine allows and a
+        // check on the destination would pause a clock that is already paused.
+        if (before.status !== 'pending' && status === 'pending') {
+          serviceLevels.pause({ ticketId: id, at });
+        } else if (before.status === 'pending' && status !== 'pending') {
+          serviceLevels.resume({ ticketId: id, at });
+        }
+
         audit.record(actor, {
           entity: 'ticket',
           entityId: id,
