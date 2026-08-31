@@ -182,10 +182,10 @@
     },
     "/api/v1/accounts/{id}/disable": {
       "post": {
-        "summary": "Disable an account. Nothing is deleted; the row keeps its history.",
+        "summary": "Disable an account. Nothing is deleted; the row keeps its history. Disabling also hands back the tickets that account still has to work on — everything assigned to them that is not closed, unassigned in the SAME transaction as the disable. An account disabled with its queue still assigned to it is worse than either outcome alone: the work is invisible in every unassigned view and its owner cannot sign in to hand it over. A resolved ticket is included because a reply within its window reopens it, and then it is somebody's again; a closed one is not, because rewriting who finished it to tidy a queue would make the record wrong. Each move is audited as an ordinary assignment with the disabling admin as the actor, and each ticket's revision is bumped — so an agent who had one open is refused rather than allowed to write over it.",
         "responses": {
           "200": {
-            "description": "Body: { user }, with deletedAt set."
+            "description": "{ user, unassigned }. `unassigned` is how many tickets were handed back — zero is an answer, not an omission. An admin deciding whether to disable somebody is deciding what happens to their work, and a number they have to go and count is a number they will not count."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."

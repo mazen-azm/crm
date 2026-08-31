@@ -26,6 +26,7 @@ import {
   findLiveCategoryId,
   findLiveAssigneeId,
   findLiveCustomerId,
+  findOpenTicketsAssignedTo,
   findTicketById,
   countCustomerTickets,
   insertTicket,
@@ -576,6 +577,44 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         throw new HttpError(404, 'NOT_FOUND');
       }
       return ticket;
+    },
+
+    // Hand back everything an agent still has to work on, because their
+    // account is being disabled.
+    //
+    // From inside the caller's transaction, like stopClock and
+    // openOnFirstReply beside it: identity disables the user and this moves
+    // the tickets, and an account disabled with its queue still assigned to it
+    // is worse than either outcome alone — the work is invisible and its owner
+    // cannot sign in. SQLite refuses BEGIN inside BEGIN, so this opens none.
+    //
+    // It lives here rather than in identity because the tickets table is this
+    // feature's, and a second place that wrote assignee_id would be a second
+    // set of rules about what an assignment is.
+    unassignAllFor(actor, { assigneeId, at }) {
+      const theirs = findOpenTicketsAssignedTo(db, { assigneeId });
+
+      for (const ticket of theirs) {
+        // The revision read a line ago, inside this transaction — so the
+        // compare-and-set cannot fail, and BR-5's guard stays on every write
+        // rather than gaining an exception for sweeps. The bump matters: an
+        // agent holding this ticket open is correctly refused afterwards.
+        assignTicket(db, { id: ticket.id, assigneeId: null, revision: ticket.revision, at });
+
+        // The disabling ADMIN is the actor, not the agent losing the ticket.
+        // The trail must not show tickets that moved with nobody moving them,
+        // and nobody is what an audit row with the wrong actor amounts to.
+        audit.record(actor, {
+          entity: 'ticket',
+          entityId: ticket.id,
+          verb: 'ticket.assign',
+          before: { assigneeId },
+          after: { assigneeId: null },
+          at,
+        });
+      }
+
+      return theirs.length;
     },
 
     // The reopen a REPLY causes (T-5), from inside the caller's transaction.
