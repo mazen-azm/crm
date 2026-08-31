@@ -179,4 +179,8 @@ the browser's, in the wrong language and outside the resource files.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Any `api/` change** — `CUSTOMERS-7-API (CRM-67)` owns the route.
+- **Deleting a customer**, and the confirm that goes with it —
+  `CUSTOMERS-8-WEB (CRM-70)`.
+- **A revision on the write.** The API takes none; a screen that sent one would
+  be inventing a rule the server does not have.

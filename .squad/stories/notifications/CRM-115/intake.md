@@ -201,4 +201,12 @@ exercised.** Adding a notification must not change what those already assert.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Any delivery channel** — email, push, or a live connection. The brief puts
+  those under Specified, and this story is the record each of them would read.
+- **A screen.** Nothing in this sprint draws one. A route nothing calls is a
+  stated gap rather than an oversight.
+- **Notifying about anything else** — a reply, a status move, a service level
+  about to be missed. Each would be its own story and none is written.
+- **Telling somebody a ticket stopped being theirs.** The story is "becomes
+  mine"; `IDENTITY-9-API (CRM-54)` unassigns a disabled agent's queue and tells
+  nobody, deliberately.

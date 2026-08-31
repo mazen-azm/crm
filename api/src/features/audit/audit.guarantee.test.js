@@ -69,6 +69,7 @@ const EXERCISED = new Set([
   'POST /api/v1/accounts/:id/set-password',
   'POST /api/v1/me/password',
   'POST /api/v1/customers',
+  'PATCH /api/v1/customers/:id',
   'POST /api/v1/customers/:id/notes',
   'POST /api/v1/customers/:id/sign-in',
   'POST /api/v1/tickets',
@@ -240,6 +241,11 @@ test('each mutating route writes exactly one audit row', async () => {
     // customer is the walk-in counter and has none.
     ['POST /api/v1/customers/:id/sign-in', () =>
       call(`/api/v1/customers/${withEmail.id}/sign-in`, { method: 'POST' }), 2],
+    ['PATCH /api/v1/customers/:id', () =>
+      call(`/api/v1/customers/${customer.id}`, {
+        method: 'PATCH',
+        body: { phone: '+20 2 5555 0199' },
+      })],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
         method: 'POST',
