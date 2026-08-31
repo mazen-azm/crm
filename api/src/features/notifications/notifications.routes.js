@@ -16,7 +16,7 @@ export function notificationsRouter({ service }) {
   // nothing here for one to read. Saying so with a guard is clearer than an
   // empty list that looks like a bug.
   router.get('/me/notifications', requireStaff(), (req, res) => {
-    res.json(service.mine(req.subject, readPagination(req)));
+    res.json(service.mine(req.subject, { filter: req.query?.filter, ...readPagination(req) }));
   });
 
   router.post('/me/notifications/:id/read', requireStaff(), (req, res) => {

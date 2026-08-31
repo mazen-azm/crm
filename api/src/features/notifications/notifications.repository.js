@@ -18,14 +18,24 @@ export function insertNotification(db, { id, userId, ticketId, kind, at }) {
   return publicShape(db.prepare(`SELECT ${PROJECTION} FROM notifications WHERE id = ?`).get(id));
 }
 
+// Unread is `read_at IS NULL`, and the predicate is written once here rather
+// than at each call site — the same shape the conversation repository uses for
+// `publicOnly`. Two copies of a predicate disagree the first time either
+// changes, and this one decides what a badge says.
+const UNREAD_ONLY = 'AND read_at IS NULL';
+
 // Mine, oldest first, and stable when two share a second — the same shape the
 // ticket thread and the audit feed use, for the same reason.
-export function listNotifications(db, { userId, limit, offset }) {
+//
+// Oldest first holds for the unread view too: somebody clearing a backlog
+// works from the oldest, and a filtered list that reversed would be a second
+// answer to what order these are in.
+export function listNotifications(db, { userId, unreadOnly, limit, offset }) {
   return db
     .prepare(`
       SELECT ${PROJECTION}
         FROM notifications
-       WHERE user_id = ?
+       WHERE user_id = ? ${unreadOnly ? UNREAD_ONLY : ''}
        ORDER BY created_at ASC, rowid ASC
        LIMIT ? OFFSET ?
     `)
@@ -33,8 +43,13 @@ export function listNotifications(db, { userId, limit, offset }) {
     .map(publicShape);
 }
 
-export function countNotifications(db, { userId }) {
-  return db.prepare('SELECT count(*) AS n FROM notifications WHERE user_id = ?').get(userId).n;
+// The count obeys the same predicate as the list, for the reason the message
+// thread's does: a total that counted something else would be a number about a
+// different question.
+export function countNotifications(db, { userId, unreadOnly }) {
+  return db
+    .prepare(`SELECT count(*) AS n FROM notifications WHERE user_id = ? ${unreadOnly ? UNREAD_ONLY : ''}`)
+    .get(userId).n;
 }
 
 // Scoped to the reader as well as the id, so somebody else's notification is
