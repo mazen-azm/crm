@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
   Button,
@@ -16,6 +16,7 @@ import {
   TextArea,
 } from '../../shared/ui';
 import { useTranslation } from '../../shared/i18n';
+import { useMe } from '../../shared/session/use-me';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { priorityLabel, statusLabel } from '../tickets/ticket-labels';
 import { useAssignees } from '../tickets/useAssignees';
@@ -23,6 +24,7 @@ import { useCustomer } from './useCustomer';
 import { useGrantSignIn } from './useGrantSignIn';
 import { isBlank, useWriteNote } from './useWriteNote';
 import { useCorrectContacts } from './useCorrectContacts';
+import { useDeleteCustomer } from './useDeleteCustomer';
 import type { Customer, Note } from './useCustomer';
 
 // The separator is punctuation, not words, so it does not belong in the
@@ -43,6 +45,10 @@ export function CustomerScreenPage() {
   const staff = useAssignees();
 
   const correction = useCorrectContacts(id);
+  const removal = useDeleteCustomer(id);
+  const navigate = useNavigate();
+  const { isAdmin } = useMe();
+  const [confirming, setConfirming] = useState(false);
   // The customer as this screen has corrected it. The write answers with the
   // customer, so the card follows the answer rather than reloading the screen
   // — a reload would also throw away a half-typed note in the composer below.
@@ -365,6 +371,71 @@ export function CustomerScreenPage() {
           ))}
         </Stack>
       )}
+
+      {/* Removing the customer, last on the screen: it is the one action here
+          that cannot be undone from any screen, and it belongs after
+          everything somebody might have come to read.
+
+          isAdmin is undefined until /me answers, and nothing role-dependent is
+          drawn then. "Not an admin" and "we do not know yet" are different,
+          and drawing the refusal for the second tells an admin they are not
+          one for as long as a request takes. */}
+      {isAdmin === false ? (
+        <Card>
+          {/* Courtesy, not enforcement. SC-2 puts the rule in the API, which
+              refuses an agent whatever this draws. */}
+          <Text variant="muted">{t.customerScreen.deleteNotAdmin}</Text>
+        </Card>
+      ) : null}
+
+      {isAdmin === true ? (
+        <Card>
+          <Stack gap={2}>
+            {confirming ? (
+              <>
+                {/* It asks first, in place. window.confirm is used nowhere in
+                    this codebase and could not be translated if it were. */}
+                <Text>{t.customerScreen.deleteConfirm}</Text>
+                <Stack direction="row" gap={2} align="start">
+                  <Button
+                    disabled={removal.status === 'loading'}
+                    onClick={() => {
+                      removal
+                        .remove()
+                        .then(() => {
+                          // Away from a screen whose subject is gone. Staying
+                          // would leave the reader looking at a 404 they
+                          // caused — and `replace`, so the back button does
+                          // not return them to it.
+                          navigate('/customers', { replace: true });
+                        })
+                        .catch(() => {});
+                    }}
+                  >
+                    {removal.status === 'loading'
+                      ? t.customerScreen.deleting
+                      : t.customerScreen.deleteConfirmYes}
+                  </Button>
+                  <Button variant="secondary" onClick={() => setConfirming(false)}>
+                    {t.customerScreen.deleteCancel}
+                  </Button>
+                </Stack>
+              </>
+            ) : (
+              <Button variant="secondary" onClick={() => setConfirming(true)}>
+                {t.customerScreen.deleteCustomer}
+              </Button>
+            )}
+
+            {removal.status === 'error' && removal.error ? (
+              <ErrorState
+                title={t.customerScreen.deleteFailed}
+                body={t.errors[removal.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+              />
+            ) : null}
+          </Stack>
+        </Card>
+      ) : null}
     </Stack>
   );
 }
