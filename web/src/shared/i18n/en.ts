@@ -26,6 +26,7 @@ export const en = {
     navQueue: 'The queue',
     navRaiseTicket: 'Raise a ticket',
     navPassword: 'Your password',
+    navNotifications: 'Notifications',
     navAudit: 'Audit log',
     navCategories: 'Ticket categories',
     navSetPassword: 'Set a password',
@@ -347,6 +348,22 @@ export const en = {
   // Its own group, one level deep like every other: the resource files are
   // a flat map of groups to strings, and a third level is not something
   // `Messages` can describe.
+  notifications: {
+    title: 'Notifications',
+    ticketAssigned: 'A ticket became yours.',
+    somethingHappened: 'Something happened on a ticket of yours.',
+    openTicket: 'Open the ticket',
+    markRead: 'Mark as read',
+    readAt: 'Read',
+    markFailedTitle: 'That was not marked as read',
+    errorTitle: 'Your notifications did not load',
+    emptyTitle: 'Nothing new',
+    emptyBody: 'When a ticket becomes yours, it will appear here.',
+    newer: 'Newer',
+    older: 'Older',
+    staffOnlyTitle: 'This screen is for the desk',
+    staffOnlyBody: 'Notifications are written for the people working the queue.',
+  },
   auditEntities: {
     ticket: 'Ticket',
     customer: 'Customer',

@@ -2,6 +2,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import { I18nProvider } from '../shared/i18n';
 import { AuthProvider } from './auth-context';
+import { UnreadNotifications } from './unread-notifications';
 import { ThemeProvider } from './theme-context';
 import { AppRoutes } from './routes';
 
@@ -16,7 +17,11 @@ export function App() {
             not inside. */}
         <ThemeProvider>
           <AuthProvider>
-            <AppRoutes />
+            {/* Inside AuthProvider, because it asks the API a question and
+                there is nothing to ask until there is a token. */}
+            <UnreadNotifications>
+              <AppRoutes />
+            </UnreadNotifications>
           </AuthProvider>
         </ThemeProvider>
       </I18nProvider>
