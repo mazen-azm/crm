@@ -18,8 +18,14 @@ import { createTicketsService } from './tickets.service.js';
 // would be a second, different answer to "is this ticket mine". The service is
 // where the one answer lives, and ticket-ownership.guarantee.test.js reads
 // these routes off the router so a new one cannot skip it.
-export function ticketsRouter({ db, now }) {
-  const service = createTicketsService({ db, now });
+// `service` may be handed in, and compose does hand it in. This router used to
+// build its own, which meant two tickets services existed — one for the routes
+// and one for the features that call across (conversation, identity,
+// customers). They behaved identically until one was given a collaborator the
+// other did not have: the notification written when a ticket becomes somebody's
+// went to the instance the routes never used, so assigning through the API told
+// nobody. Two objects for one thing agree until they do not.
+export function ticketsRouter({ db, now, service = createTicketsService({ db, now }) }) {
   const router = express.Router();
 
   // Any signed-in staff member raises a ticket for a customer. One queue —

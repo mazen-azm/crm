@@ -108,7 +108,7 @@ const publicShape = (row, nowSeconds) => ({
   updatedAt: row.updated_at,
 });
 
-export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1000) }) {
+export function createTicketsService({ db, notifications, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
   const audit = createAuditWriter({ db });
   const serviceLevels = createServiceLevels({ db, now });
@@ -497,6 +497,15 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           after: { assigneeId },
           at,
         });
+
+        // Told, in the same transaction. An assignment nobody is told about is
+        // the gap NOTIFICATIONS-1-API exists to close, and a notification for
+        // an assignment that did not happen is worse than either.
+        //
+        // Notifications decides whether there is anything to write — nobody is
+        // told they assigned a ticket to themselves — because that is a rule
+        // about notifying and not a rule about assigning.
+        notifications?.ticketAssigned(actor, { ticketId: id, assigneeId, at });
 
         return publicShape(findTicketById(db, { id }), now());
       });

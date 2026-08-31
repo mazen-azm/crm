@@ -3,6 +3,7 @@ import { channelsRouter } from './features/channels/index.js';
 import { conversationRouter, createConversationService } from './features/conversation/index.js';
 import { createCustomersService, customersRouter } from './features/customers/index.js';
 import { createIdentityService, identityRouter, identitySubjectResolver } from './features/identity/index.js';
+import { createNotificationsService, notificationsRouter } from './features/notifications/index.js';
 import { createServiceLevels } from './features/service-levels/index.js';
 import { createTicketsService, ticketsRouter, validateTicketFields } from './features/tickets/index.js';
 import { createKeyedThrottle } from './platform/http/throttle.js';
@@ -24,7 +25,12 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // another only through its index, so nothing below imports a sibling's
       // internals — and one instance rather than three means there is one
       // answer to what the customers service is.
-      const tickets = createTicketsService({ db, now });
+      // Notifications first: tickets writes one from inside its assignment
+      // transaction, and the seam is a service handed in rather than a feature
+      // reaching across — the same shape identity/tickets and
+      // customers/identity already use.
+      const notifications = createNotificationsService({ db, now });
+      const tickets = createTicketsService({ db, notifications, now });
       // What a ticket says. It owns one table and calls two features for what
       // they own — tickets moves a status, service-levels stops a clock — and
       // does all of it in one transaction, which is why neither of the methods
@@ -44,7 +50,9 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
 
       v1.use(identityRouter({ service: identityService }));
       v1.use(customersRouter({ customers }));
-      v1.use(ticketsRouter({ db, now }));
+      // The same tickets service the other features hold, not a second one.
+      v1.use(ticketsRouter({ db, now, service: tickets }));
+      v1.use(notificationsRouter({ service: notifications }));
       // One throttle per composed app, the way sign-in's is built inside its
       // own service: every test then starts with empty counters and cannot
       // inherit another test's.
