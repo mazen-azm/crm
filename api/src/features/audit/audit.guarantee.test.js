@@ -85,6 +85,7 @@ const EXERCISED = new Set([
   'PATCH /api/v1/ticket-categories/:id',
   'DELETE /api/v1/ticket-categories/:id',
   'POST /api/v1/tickets/:id/replies',
+  'POST /api/v1/me/notifications/:id/read',
   'POST /api/v1/intake/:channel/tickets',
 ]);
 
@@ -107,7 +108,7 @@ test('every mutating route the router serves is exercised by this file', async (
 });
 
 test('each mutating route writes exactly one audit row', async () => {
-  const { call, auditCount, adminPassword, session } = await start();
+  const { call, auditCount, adminPassword, session, real } = await start();
 
   const steps = [
     ['POST /api/v1/accounts', () =>
@@ -147,6 +148,12 @@ test('each mutating route writes exactly one audit row', async () => {
     method: 'POST',
     body: { name: 'To Be Deleted', email: 'deleted@support-desk.local' },
   })).json();
+
+  // Who the census is signed in as, so a notification can be written FOR them.
+  // One is needed because the read route below marks their own, and nothing
+  // the census does would produce one: a notification is written when somebody
+  // ELSE assigns you a ticket, and the census acts as one person throughout.
+  const me = await (await call('/api/v1/me')).json();
 
   // Raised outside the counted steps below: each of those asserts exactly one
   // new audit row, and raising a ticket writes one of its own. Driven for real
@@ -240,6 +247,16 @@ test('each mutating route writes exactly one audit row', async () => {
     // one per route, so the recognised case is the one that belongs in it; the
     // two-row case is pinned in the channels feature's own tests, where the
     // count is the thing being tested rather than the frame around it.
+    // Written straight into the table: the route that creates one is an
+    // assignment BY SOMEBODY ELSE, and this census is one person. The route
+    // being driven here is the read.
+    ['POST /api/v1/me/notifications/:id/read', () => {
+      real.prepare(`
+        INSERT INTO notifications (id, user_id, ticket_id, kind, created_at)
+        VALUES ('census-notification', ?, ?, 'ticket.assigned', '2026-08-31T00:00:00.000Z')
+      `).run(me.id, replied.id);
+      return call('/api/v1/me/notifications/census-notification/read', { method: 'POST' });
+    }],
     ['POST /api/v1/intake/:channel/tickets', () =>
       call('/api/v1/intake/web/tickets', {
         method: 'POST',
