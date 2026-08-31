@@ -17,6 +17,7 @@ import {
   countSearchLiveCustomers,
   findCustomerById,
   findLiveCustomerByEmail,
+  softDeleteCustomer,
   updateCustomerContacts,
   findLiveCustomerById,
   insertCustomer,
@@ -205,6 +206,46 @@ export function createCustomersService({ db, tickets, identity, now = () => Math
         });
 
         return publicShape(written);
+      });
+    },
+
+    // Removing a customer, without removing what happened.
+    //
+    // BR-1: the row stays and `deleted_at` is set. The list, the search and
+    // the count already ask for live rows, so nothing new has to remember to
+    // hide them — and their tickets are left exactly as they are, because a
+    // support history is what the desk is for and deleting the person it is
+    // about must not quietly delete what happened.
+    //
+    // Reading a known id still answers. That is deliberate and older than this
+    // story: a retired customer is not a missing one, and their tickets and
+    // notes did not stop existing when they left. What this story adds is a
+    // test saying so — until now nothing could delete a customer, so the
+    // behaviour was argued in a comment and pinned by nothing.
+    remove(actor, { id }) {
+      const at = stamp();
+
+      return transact(db, () => {
+        // Live only, so a customer already deleted is the 404 a missing one
+        // gets and no second audit row is written. Deleting twice is not two
+        // events.
+        const row = findLiveCustomerById(db, { id });
+        if (!row) throw new HttpError(404, 'NOT_FOUND');
+
+        softDeleteCustomer(db, { id, at });
+
+        audit.record(actor, {
+          entity: 'customer',
+          entityId: id,
+          verb: 'customer.delete',
+          // What they were, so the trail can still say who was removed after
+          // the list has stopped showing them.
+          before: { name: row.name, email: row.email, phone: row.phone },
+          after: { deletedAt: at },
+          at,
+        });
+
+        return { id, deletedAt: at };
       });
     },
 

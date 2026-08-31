@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { requireStaff } from '../../platform/http/permission.js';
+import { requirePermission, requireStaff } from '../../platform/http/permission.js';
 import { readPagination } from '../../platform/http/pagination.js';
 
 // req and res stop here. The service takes values and returns values.
@@ -42,6 +42,16 @@ export function customersRouter({ customers: service }) {
   // Correcting the details. requireStaff, like every other customer route: an
   // agent on the telephone is who corrects a misheard address, and the desk's
   // work is not an admin's alone.
+  // Deleting is an admin's, the way retiring a category is: it changes what
+  // everybody else sees and it cannot be undone from any screen. Correcting
+  // the details beside it is any staff member's, because an agent on the
+  // telephone is who hears the correction.
+  const adminOnly = requirePermission((subject) => subject.role === 'admin');
+
+  router.delete('/customers/:id', adminOnly, (req, res) => {
+    res.json(service.remove(req.subject, { id: req.params.id }));
+  });
+
   router.patch('/customers/:id', requireStaff(), (req, res) => {
     res.json(service.update(req.subject, { id: req.params.id, patch: req.body }));
   });
