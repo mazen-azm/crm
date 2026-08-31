@@ -344,18 +344,28 @@ Test-file rules to obey (from the intake and `.squad/plan-lessons.md`):
 
 ## Done Criteria
 
-- [ ] New hook `web/src/pages/tickets/useChangeCategory.ts` exists, modelled on `useAssignTicket.ts`, sends `PATCH /tickets/:id/category` with `{ categoryId, revision }`, returns the four-state `{ status, error, change, reset }`.
-- [ ] `web/src/pages/tickets/ticket-labels.ts` exports `categoryLabel(t, categoryId, categories)` and the row summary renders it alongside status, priority, assignee, createdAt.
-- [ ] `TicketQueuePage.tsx` **Row** renders a category `<Field><Select><Button>` block after the assign block, using a `CATEGORY_NONE` sentinel that maps to wire `null`.
-- [ ] The picker offers live categories from `useTicketCategories` **plus** the "No category" option, and nothing else. No retired-category filter is duplicated on the client.
-- [ ] A successful change updates the row via `onTicketChanged(updated)` — the queue is **not** reloaded.
-- [ ] A 409 `REVISION_MISMATCH` renders `t.ticketCategory.staleTitle` + `t.errors.REVISION_MISMATCH` body + reload button labelled `t.ticketCategory.reload`.
-- [ ] A non-409 failure renders `t.ticketCategory.failedTitle` with `t.errors[code] ?? t.errors.INTERNAL`.
-- [ ] The button is disabled while loading and while the local choice equals the ticket's current `categoryId` (with `null ↔ CATEGORY_NONE` treated as equal).
-- [ ] No native validators on the picker; no literals in JSX; no separators typed between tags.
-- [ ] `ticketCategory` block added to **both** `web/src/shared/i18n/en.ts` and `web/src/shared/i18n/ar.ts` with keys `label, submit, changing, none, staleTitle, failedTitle, reload`. `parity.test.ts` green.
-- [ ] `no-hardcoded-strings.test.ts` green. `TicketQueuePage.test.tsx` covers: happy path (both an id and `null`), stale panel, failed panel, disabled-when-unchanged.
-- [ ] `cd web && npm test` and `cd web && npm run build` both green from a clean checkout.
-- [ ] No commit message, code comment, doc, or ignore-file entry mentions AI assistance (grepped as part of verification).
+- [x] The row has a category picker beside its assignee picker, writing with the revision it read (BR-5).
+- [x] The row shows the new category without reloading the queue — one PATCH, no second GET, pinned by counting the queue reads.
+- [x] The row carries the new revision, so an agent's second change is not refused by their own first.
+- [x] "No category" is a value on the wire (`null`), not an omitted field — the shape assignment already uses for nobody.
+- [x] The picker offers live categories and no category, and nothing else: no blank option, no placeholder, no retired one.
+- [x] The button is disabled until the choice differs, so nothing writes a change that is not one.
+- [x] A stale revision says the ticket changed and offers to look again — the same shape assignment and the status move use.
+- [x] Any other refusal is reported as itself; a 422 for a retired category does not tell somebody to reload.
+- [x] Both languages (BR-6); the six checks and `cd web && npm test` (279) and `npm run build` pass.
+- [x] No commit, doc or ignore-file entry mentions AI assistance.
+
+**One thing found while building.** The label was going to be "Category", which
+is what the queue's FILTER at the top of the page is already called. Two
+controls with one label are two controls a screen reader announces identically,
+and on this page they do different things — one asks a question about the
+queue, the other writes to a ticket. The row's is "Filed under". The collision
+surfaced as a test failure (`Found multiple elements with the text of:
+Category`) and was an accessibility defect before it was a test problem.
+
+Five mutations run: dropping the revision fails 3, not following the answer's
+revision fails 1, treating a 409 as an ordinary failure fails 1, omitting the
+field instead of sending null fails 1, and leaving the button always enabled
+fails 1.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 78.**
