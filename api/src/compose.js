@@ -31,12 +31,16 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // reaching across — the same shape identity/tickets and
       // customers/identity already use.
       const notifications = createNotificationsService({ db, now });
-      const tickets = createTicketsService({ db, notifications, now });
+      // Before tickets, which holds it: one instance, so the sweep route, the
+      // conversation feature and the status change all read the same object.
+      // Two would be identical until one of them was given something the other
+      // was not, which is L-62 and has happened here once already.
+      const serviceLevels = createServiceLevels({ db, now });
+      const tickets = createTicketsService({ db, notifications, serviceLevels, now });
       // What a ticket says. It owns one table and calls two features for what
       // they own — tickets moves a status, service-levels stops a clock — and
       // does all of it in one transaction, which is why neither of the methods
       // it calls opens one.
-      const serviceLevels = createServiceLevels({ db, now });
       const conversation = createConversationService({ db, tickets, serviceLevels, now });
       // Customers holds identity because granting a customer a sign-in writes
       // a user row and the customers.user_id link in one transaction, and
@@ -52,7 +56,7 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       v1.use(identityRouter({ service: identityService }));
       v1.use(customersRouter({ customers }));
       // The same tickets service the other features hold, not a second one.
-      v1.use(ticketsRouter({ db, now, service: tickets }));
+      v1.use(ticketsRouter({ db, now, service: tickets, serviceLevels }));
       v1.use(notificationsRouter({ service: notifications }));
       v1.use(auditRouter({ reader: createTrailReader({ db }) }));
       // One throttle per composed app, the way sign-in's is built inside its

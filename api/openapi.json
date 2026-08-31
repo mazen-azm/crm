@@ -843,6 +843,25 @@
           }
         }
       }
+    },
+    "/api/v1/tickets/sweep-breaches": {
+      "post": {
+        "summary": "Record every deadline that has passed as a stored fact (S-5). A breach is written, never recomputed on read: a number worked out each time somebody looks is a number that changes when nobody changed anything. Once is enforced by a unique constraint on (ticket_id, kind), not by a SELECT running first — a check is a race and a constraint is not, and two sweeps overlapping is an operational normality rather than an error. The paused time counts (S-4): a ticket that spent a week waiting on the customer is not late for that week, and the sweep computes the deadline with the SAME expression the queue reads it with, so the two cannot disagree about what late means. A clock that stopped before its deadline records nothing — the desk answered in time. No scheduler was added; this is a route an operator or a cron calls, as TICKETS-14-API established. Admin only, and the audit row carries no actor: the rule decided which promises were missed, not whoever ran the sweep.",
+        "responses": {
+          "200": {
+            "description": "{ recorded, at } — how many breaches were written. A sweep that finds nothing writes nothing and is not an error; most sweeps find nothing."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
     }
   }
 }

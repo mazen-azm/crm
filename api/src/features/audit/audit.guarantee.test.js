@@ -87,6 +87,7 @@ const EXERCISED = new Set([
   'POST /api/v1/tickets/:id/replies',
   'POST /api/v1/me/notifications/:id/read',
   'POST /api/v1/tickets/sweep-auto-close',
+  'POST /api/v1/tickets/sweep-breaches',
   'POST /api/v1/intake/:channel/tickets',
 ]);
 
@@ -268,6 +269,15 @@ test('each mutating route writes exactly one audit row', async () => {
          WHERE id = ?
       `).run(replied.id);
       return call('/api/v1/tickets/sweep-auto-close', { method: 'POST' });
+    }],
+    // One ticket whose promise has fallen due. Its audit row carries no actor
+    // — the rule decided it, not whoever ran the sweep.
+    ['POST /api/v1/tickets/sweep-breaches', () => {
+      real.prepare(`
+        UPDATE sla_clocks SET started_at = '2020-01-01T00:00:00.000Z', stopped_at = NULL
+         WHERE ticket_id = ? AND kind = 'resolution'
+      `).run(replied.id);
+      return call('/api/v1/tickets/sweep-breaches', { method: 'POST' });
     }],
     ['POST /api/v1/intake/:channel/tickets', () =>
       call('/api/v1/intake/web/tickets', {
