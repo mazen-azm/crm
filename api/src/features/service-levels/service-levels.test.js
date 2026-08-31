@@ -44,7 +44,10 @@ test('a ticket gets both clocks, started at its creation', () => {
   assert.deepEqual(rows.map((r) => r.kind), ['first_response', 'resolution']);
   for (const row of rows) {
     assert.equal(row.started_at, RAISED_AT, 'S-1: both start at creation');
-    assert.equal(row.paused_ms, 0, 'pausing is S-4, a later story');
+    // S-4 has shipped since; a freshly raised ticket has still paused for
+    // nothing, which is what this asserts. paused-time.test.js is where the
+    // pausing itself is proved.
+    assert.equal(row.paused_ms, 0, 'nothing has paused it yet');
   }
 });
 
