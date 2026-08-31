@@ -21,6 +21,7 @@ export const ar = defineLocale({
     navQueue: 'الطابور',
     navRaiseTicket: 'فتح تذكرة',
     navPassword: 'كلمة مرورك',
+    navNotifications: 'الإشعارات',
     navAudit: 'سجل التدقيق',
     navCategories: 'تصنيفات التذاكر',
     navSetPassword: 'ضبط كلمة مرور',
@@ -293,6 +294,22 @@ export const ar = defineLocale({
   // Its own group, one level deep like every other: the resource files are
   // a flat map of groups to strings, and a third level is not something
   // `Messages` can describe.
+  notifications: {
+    title: 'الإشعارات',
+    ticketAssigned: 'أصبحت تذكرة من نصيبك.',
+    somethingHappened: 'حدث شيء في إحدى تذاكرك.',
+    openTicket: 'افتح التذكرة',
+    markRead: 'علّمها كمقروءة',
+    readAt: 'قُرِئت',
+    markFailedTitle: 'لم تُعلَّم كمقروءة',
+    errorTitle: 'لم تُحمَّل إشعاراتك',
+    emptyTitle: 'لا جديد',
+    emptyBody: 'عندما تصبح تذكرة من نصيبك، ستظهر هنا.',
+    newer: 'أحدث',
+    older: 'أقدم',
+    staffOnlyTitle: 'هذه الشاشة للمكتب',
+    staffOnlyBody: 'الإشعارات تُكتب لمن يعملون على الطابور.',
+  },
   auditEntities: {
     ticket: 'تذكرة',
     customer: 'عميل',
