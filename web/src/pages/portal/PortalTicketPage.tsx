@@ -85,6 +85,26 @@ export function PortalTicketPage() {
   const busy = reply.status === 'loading';
   const failed = reply.status === 'error' ? reply.error : null;
 
+  // Where a customer's reply would be refused, and why. Two states, both
+  // stated by the API rather than counted here:
+  //
+  //   closed    — terminal. TICKETS-4-API's argument, and a reply is not a way
+  //               round it.
+  //   resolved  — outside T-5's fourteen days. `reopenWindowOpen` is the
+  //               server's answer to that, computed with the server's clock.
+  //
+  // Anything else takes a reply, including a resolved ticket inside the
+  // window, which is the case the warning above is for.
+  const closed = ticket.status === 'closed';
+  const elapsed = ticket.status === 'resolved' && !ticket.reopenWindowOpen;
+  const refused = closed || elapsed;
+  // The closed sentence is this screen's own, because the shared one for
+  // ILLEGAL_TRANSITION describes a move nobody tried to make. The elapsed one
+  // is the shared sentence for its code, which was written for a customer and
+  // already says what to do instead — copying it here would be two places for
+  // one string.
+  const refusalReason = closed ? t.portalTicket.replyClosedTicket : t.errors.REOPEN_WINDOW_CLOSED;
+
   return (
     <Stack as="section" gap={4}>
       <Stack gap={1}>
@@ -168,6 +188,21 @@ export function PortalTicketPage() {
               this screen does. */}
           {ticket.reopenWindowOpen ? <Text>{t.portalTicket.replyReopens}</Text> : null}
 
+          {/* And where a reply would be refused, the reason instead of the
+              box. Offering somebody a form whose only outcome is a refusal
+              wastes what they write and tells them afterwards.
+
+              Both facts come from the API — the status, and whether the
+              window is still open — and neither is worked out here. What this
+              decides is only whether to draw a box, and the API still refuses
+              the write either way: a window that closes while somebody is
+              typing is refused by the server, and the sentence they read then
+              is the same one. */}
+
+          {refused ? (
+            <Text>{refusalReason}</Text>
+          ) : (
+          <>
           <Field
             id="portal-reply"
             label={t.portalTicket.replyLabel}
@@ -217,6 +252,9 @@ export function PortalTicketPage() {
           >
             {busy ? t.portalTicket.sending : t.portalTicket.send}
           </Button>
+
+          </>
+          )}
 
           {failed && !failed.fields?.length ? (
             <ErrorState

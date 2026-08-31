@@ -150,12 +150,31 @@ All new tests are Vitest + Testing Library, matching the shape of the existing `
 
 ## Done Criteria
 
-- [ ] A resolved ticket **inside the window** on `PortalTicketPage` shows the reply control and the `replyReopens` sentence.
-- [ ] A resolved ticket **outside the window** shows the `closedNoReopen` sentence and **no** reply control.
-- [ ] The window fact comes from the API's ticket-read payload, not from a client-side clock computation.
-- [ ] A submitted reply on a resolved-but-elapsed ticket surfaces a sentence that reads correctly for a customer (screen-local override in place if the shared `t.errors[code]` sentence is wrong).
-- [ ] All new strings are in both `web/src/shared/i18n/en.ts` and `web/src/shared/i18n/ar.ts` in the same commit; `parity.test.ts` and `no-hardcoded-strings.test.ts` pass.
-- [ ] Interpolated values in translated sentences are wrapped in U+2068 / U+2069.
-- [ ] `cd web && npm test` and `cd web && npm run build` are both green.
-- [ ] No `api/` files are touched.
-- [ ] No commit or code comment mentions AI assistance.
+- [x] A resolved ticket inside the window shows the reply control and the reopen sentence.
+- [x] Outside the window there is no reply control, and the reason is shown instead.
+- [x] A closed ticket is the same: no control, and this screen's own sentence rather than the shared one about a move nobody made.
+- [x] The window fact comes from the API's ticket payload (`reopenWindowOpen`), computed with the server's clock. Nothing here counts days.
+- [x] The refusal path still works and still reads correctly — the window closing while somebody types, and the desk closing the ticket while they type, are both pinned.
+- [x] Both languages (BR-6), including the refusal sentences.
+- [x] `cd web && npm test` (282) and `npm run build` green; `cd api && npm test` (458) untouched and green.
+- [x] No `api/` file touched.
+- [x] Nothing mentions AI assistance.
+
+**This story changed a decision made two stories ago, on purpose.**
+`CONVERSATION-3-WEB (CRM-105)` kept the reply box on a ticket whose window had
+passed and let the API refuse it, and said so in its plan. TICKETS-11-WEB's
+criterion is explicit that a customer is *"not offered an action that will be
+refused"*, so the box is now withheld and the reason shown in its place. Three
+tests written for the old behaviour were rewritten rather than deleted: two of
+them became the race they now describe — the window closing, or the desk
+closing the ticket, while somebody is still typing — which is the case where
+the refusal path is still reached and still has to read correctly.
+
+The screen decides only whether to draw a box. It reads two facts the API
+states, the status and `reopenWindowOpen`, and counts nothing; the API refuses
+the write either way.
+
+Three mutations run: offering the box whatever the state fails 3, forgetting
+the window and refusing every resolved ticket fails 5, and using one sentence
+for both refusals fails 2.
+

@@ -152,16 +152,44 @@ test('a resolved ticket inside the window says replying will reopen it, before t
   expect(warning.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
-test('outside the window there is no warning, and the box is still there', async () => {
+test('outside the window a customer is not offered a reply that would be refused', async () => {
   portal({ one: json(ticket({ status: 'resolved', reopenWindowOpen: false })) });
   open();
 
   await screen.findByRole('heading', { name: 'The invoice is wrong' });
   // No warning: replying will not reopen it, so saying so would be a promise
-  // the API refuses. The box stays — whether a reply is accepted is the API's
-  // answer, and a screen that hid the box would be deciding it here.
+  // the API refuses.
   expect(screen.queryByText(en.portalTicket.replyReopens)).not.toBeInTheDocument();
-  expect(screen.getByLabelText(en.portalTicket.replyLabel)).toBeInTheDocument();
+  // And no box. A form whose only outcome is a refusal wastes what somebody
+  // writes and tells them afterwards — TICKETS-11-WEB asks for the reason
+  // instead, before they start.
+  expect(screen.queryByLabelText(en.portalTicket.replyLabel)).not.toBeInTheDocument();
+  // The shared sentence for the code, which was written for a customer and
+  // already says what to do instead.
+  expect(screen.getByText(en.errors.REOPEN_WINDOW_CLOSED)).toBeInTheDocument();
+});
+
+test('a closed ticket offers no reply either, in words that fit', async () => {
+  portal({ one: json(ticket({ status: 'closed' })) });
+  open();
+
+  await screen.findByRole('heading', { name: 'The invoice is wrong' });
+  expect(screen.queryByLabelText(en.portalTicket.replyLabel)).not.toBeInTheDocument();
+  // Not the shared ILLEGAL_TRANSITION sentence: "that is not a move this
+  // ticket can make from where it is" describes a move nobody tried to make.
+  expect(screen.getByText(en.portalTicket.replyClosedTicket)).toBeInTheDocument();
+  expect(screen.queryByText(en.errors.ILLEGAL_TRANSITION)).not.toBeInTheDocument();
+});
+
+test('a ticket that still takes a reply is offered one, with no refusal showing', async () => {
+  portal({ one: json(ticket({ status: 'open' })) });
+  open();
+
+  // The screen decides only whether to draw a box. Anything that is not
+  // closed, and not resolved-past-the-window, takes a reply.
+  expect(await screen.findByLabelText(en.portalTicket.replyLabel)).toBeInTheDocument();
+  expect(screen.queryByText(en.errors.REOPEN_WINDOW_CLOSED)).not.toBeInTheDocument();
+  expect(screen.queryByText(en.portalTicket.replyClosedTicket)).not.toBeInTheDocument();
 });
 
 test('a reply is sent, appears, and the ticket is read again', async () => {
@@ -252,6 +280,14 @@ test('an empty thread says so rather than showing a blank pane', async () => {
   expect(await screen.findByText(en.portalTicket.emptyTitle)).toBeInTheDocument();
 });
 
+test('the refusal reads in both languages too', async () => {
+  portal({ one: json(ticket({ status: 'closed' })) });
+  open('/portal/tickets/t-1', 'ar');
+
+  expect(await screen.findByText(ar.portalTicket.replyClosedTicket)).toBeInTheDocument();
+  expect(ar.portalTicket.replyClosedTicket).not.toBe(en.portalTicket.replyClosedTicket);
+});
+
 test('every string comes from the resource file, in both languages', async () => {
   portal({ one: json(ticket({ status: 'resolved', reopenWindowOpen: true })) });
   open('/portal/tickets/t-1', 'ar');
@@ -299,27 +335,13 @@ test('a reply that reopens the ticket moves the status the reader can see', asyn
   expect(screen.queryByText(en.portalTicket.replyReopens)).not.toBeInTheDocument();
 });
 
-test('a closed ticket is refused in words that fit what the customer did', async () => {
+test('a window that closes while somebody is typing is still refused, and reads right', async () => {
+  // The screen was loaded INSIDE the window, so the box was drawn. The
+  // fourteenth day passes while the reply is being written. The API is the
+  // enforcement — the screen's decision was only whether to offer a box — and
+  // the sentence somebody reads then is the same shared one.
   portal({
-    one: json(ticket({ status: 'closed' })),
-    replied: json({ code: 'ILLEGAL_TRANSITION', allowed: [], requestId: 'r-1' }, 409),
-  });
-  open();
-
-  const box = await screen.findByLabelText(en.portalTicket.replyLabel);
-  await userEvent.type(box, 'One more thing.');
-  await userEvent.click(screen.getByRole('button', { name: en.portalTicket.send }));
-
-  // NOT the shared sentence. "That is not a move this ticket can make from
-  // where it is" is true of the desk's status control and nonsense to somebody
-  // who did not try to move anything — they wrote a message.
-  expect(await screen.findByText(en.portalTicket.replyClosedTicket)).toBeInTheDocument();
-  expect(screen.queryByText(en.errors.ILLEGAL_TRANSITION)).not.toBeInTheDocument();
-});
-
-test('a window that has closed keeps the shared sentence, which was written for this', async () => {
-  portal({
-    one: json(ticket({ status: 'resolved', reopenWindowOpen: false })),
+    one: json(ticket({ status: 'resolved', reopenWindowOpen: true })),
     replied: json({ code: 'REOPEN_WINDOW_CLOSED', requestId: 'r-1' }, 409),
   });
   open();
@@ -328,11 +350,25 @@ test('a window that has closed keeps the shared sentence, which was written for 
   await userEvent.type(box, 'It came back.');
   await userEvent.click(screen.getByRole('button', { name: en.portalTicket.send }));
 
-  // Deliberately the shared one. It already says what happened and what to do
-  // instead, in a customer's words — and a screen-specific copy of a sentence
-  // that is right would be two places for one string, drifting the first time
-  // either changed.
   expect(await screen.findByText(en.errors.REOPEN_WINDOW_CLOSED)).toBeInTheDocument();
+});
+
+test('a ticket closed while somebody is typing is refused in this screen’s words', async () => {
+  // The same race, on the other rule: the desk closes the ticket while the
+  // customer writes. ILLEGAL_TRANSITION's shared sentence is about a move, and
+  // they did not try to make one.
+  portal({
+    one: json(ticket({ status: 'open' })),
+    replied: json({ code: 'ILLEGAL_TRANSITION', allowed: [], requestId: 'r-1' }, 409),
+  });
+  open();
+
+  const box = await screen.findByLabelText(en.portalTicket.replyLabel);
+  await userEvent.type(box, 'One more thing.');
+  await userEvent.click(screen.getByRole('button', { name: en.portalTicket.send }));
+
+  expect(await screen.findByText(en.portalTicket.replyClosedTicket)).toBeInTheDocument();
+  expect(screen.queryByText(en.errors.ILLEGAL_TRANSITION)).not.toBeInTheDocument();
 });
 
 test('a failed reply keeps what was typed', async () => {
