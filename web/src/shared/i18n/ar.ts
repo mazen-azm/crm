@@ -261,6 +261,14 @@ export const ar = defineLocale({
     internalTag: 'ملاحظة داخلية — لا يراها العميل',
     customerAuthor: 'العميل',
   },
+  ticketCategory: {
+    label: 'مُصنَّفة تحت',
+    none: 'بلا تصنيف',
+    submit: 'غيِّر التصنيف',
+    filing: 'جارٍ التغيير…',
+    staleTitle: 'تغيّرت هذه التذكرة أثناء قراءتك لها',
+    failedTitle: 'لم يتغيّر التصنيف',
+  },
   ticketStatus: {
     label: 'انقل إلى',
     choose: 'اختر الحالة',

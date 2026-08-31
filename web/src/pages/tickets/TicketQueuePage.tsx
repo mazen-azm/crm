@@ -24,6 +24,7 @@ import { TicketThread } from './TicketThread';
 import type { Message } from './useReply';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
+import { useChangeCategory } from './useChangeCategory';
 import { useTicketCategories } from './useTicketCategories';
 import {
   PAGE_SIZE,
@@ -46,17 +47,28 @@ const SEPARATOR = ' · ';
 // question, the other performs a write.
 const UNASSIGN = '__unassigned__';
 
+// The picker's word for "no category". A separate sentinel from UNASSIGN and
+// from the FILTER's 'none', for the reason UNASSIGN has its own: one asks a
+// question about a queue and the other performs a write, and a value shared
+// between them would make a filter's vocabulary a write's vocabulary.
+const NO_CATEGORY = '__no_category__';
+
 function Row({
   ticket,
   t,
   formatDate,
   assignees,
+  categories,
   onTicketChanged,
 }: {
   ticket: Ticket;
   t: T;
   formatDate: (v: string) => string;
   assignees: ReturnType<typeof useAssignees>;
+  // Handed in for the same reason the staff list is: the page already loaded
+  // it for the filter, and twenty-five rows fetching it again would be the
+  // same list twenty-five times.
+  categories: ReturnType<typeof useTicketCategories>;
   // Whatever the row just changed about the ticket, in the shape the API
   // answered with. It was `onAssigned` while assigning was the only thing a
   // row could do; a status move, a category change and now a reply all end
@@ -65,7 +77,9 @@ function Row({
 }) {
   const assign = useAssignTicket();
   const move = useChangeStatus();
+  const filing = useChangeCategory();
   const [choice, setChoice] = useState(ticket.assigneeId ?? UNASSIGN);
+  const [filed, setFiled] = useState(ticket.categoryId ?? NO_CATEGORY);
   const [target, setTarget] = useState('');
   const [note, setNote] = useState('');
   const [noteMissing, setNoteMissing] = useState(false);
@@ -83,7 +97,17 @@ function Row({
     if (updated) onTicketChanged(updated);
   };
 
+  const refile = async () => {
+    const next = filed === NO_CATEGORY ? null : filed;
+    const updated = await filing.change(ticket, next).catch(() => null);
+    // The row follows the answer rather than the choice: the response carries
+    // the ticket at its new revision, and every other control on this row is
+    // holding the old one.
+    if (updated) onTicketChanged(updated);
+  };
+
   const stale = assign.status === 'error' && assign.error?.code === 'REVISION_MISMATCH';
+  const filingStale = filing.status === 'error' && filing.error?.code === 'REVISION_MISMATCH';
 
   // The API always sends this and a test pins that it does. It is defaulted
   // anyway, and defaulted to NOTHING rather than to everything: an API old
@@ -174,6 +198,52 @@ function Row({
           <ErrorState
             title={t.ticketAssign.failedTitle}
             body={t.errors[assign.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+          />
+        ) : null}
+
+        {/* Filing, beside assigning: both are "who or what does this belong
+            to", both write with the revision they read, and both answer with
+            the ticket rather than with nothing. */}
+        <Stack direction="row" gap={2}>
+          <Field id={`category-${ticket.id}`} label={t.ticketCategory.label}>
+            {({ id }) => (
+              <Select id={id} value={filed} onChange={(event) => setFiled(event.target.value)}>
+                {/* Live categories and no category, and nothing else. A
+                    retired one is not offered — the API refuses it, and a
+                    picker that offered it would make the refusal the
+                    interface. It stays readable on a ticket that already
+                    carries it, which is a different question. */}
+                <option value={NO_CATEGORY}>{t.ticketCategory.none}</option>
+                {categories.categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+          <Button
+            variant="secondary"
+            disabled={filing.status === 'loading' || filed === (ticket.categoryId ?? NO_CATEGORY)}
+            onClick={() => void refile()}
+          >
+            {filing.status === 'loading' ? t.ticketCategory.filing : t.ticketCategory.submit}
+          </Button>
+        </Stack>
+
+        {filingStale ? (
+          <ErrorState
+            title={t.ticketCategory.staleTitle}
+            body={t.errors.REVISION_MISMATCH}
+            onRetry={() => window.location.reload()}
+            retryLabel={t.ticketAssign.reload}
+          />
+        ) : null}
+
+        {filing.status === 'error' && !filingStale && filing.error ? (
+          <ErrorState
+            title={t.ticketCategory.failedTitle}
+            body={t.errors[filing.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
           />
         ) : null}
 
@@ -459,6 +529,7 @@ export function TicketQueuePage() {
                 t={t}
                 formatDate={formatDate}
                 assignees={assignees}
+                categories={categories}
                 onTicketChanged={(next) => setUpdated((current) => ({ ...current, [next.id]: next }))}
               />
             );

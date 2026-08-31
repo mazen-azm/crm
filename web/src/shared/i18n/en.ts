@@ -307,6 +307,18 @@ export const en = {
     internalTag: 'Internal note — the customer cannot see this',
     customerAuthor: 'The customer',
   },
+  ticketCategory: {
+    // Not 'Category' — the queue's FILTER at the top of the page is already
+    // labelled that, and two controls with one label are two controls a
+    // screen reader announces identically. This one says what it does to the
+    // ticket rather than naming the field.
+    label: 'Filed under',
+    none: 'No category',
+    submit: 'Change the category',
+    filing: 'Changing…',
+    staleTitle: 'This ticket changed while you were reading it',
+    failedTitle: 'The category was not changed',
+  },
   ticketStatus: {
     label: 'Move to',
     choose: 'Choose a status',
