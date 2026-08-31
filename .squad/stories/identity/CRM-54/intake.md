@@ -181,6 +181,18 @@ pattern is a method on the tickets service that is callable from inside the
 caller's transaction: `stopClock`, `openOnFirstReply`, `reopenOnReply`,
 `readForActor`, `publicById`. Read one of them before writing another.
 
+**`disableAccount` already opens its own transaction** —
+`identity.service.js:248` does an explicit `BEGIN` / `COMMIT` / `ROLLBACK`
+around `disableUser` and its audit row. The unassignments belong inside that
+same transaction, so the tickets method it calls must open none of its own.
+It also already refuses two cases before starting: a user that is not there
+(404) and one already disabled or the last admin (409). Neither should change,
+and neither should move tickets.
+
+**It returns `{ user }` today.** The count is a new field beside it, not a new
+shape: existing tests read `.user`, and a response that stopped carrying it
+would break them for no reason the story asks for.
+
 **Transactions do not nest.** SQLite refuses `BEGIN` inside `BEGIN`. A method
 meant to be called from inside somebody else's transaction opens none of its
 own, and says so in its comment. Every one of the five above does.

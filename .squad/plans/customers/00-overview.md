@@ -21,6 +21,7 @@ Entry point for the **customers** feature. Stories execute in order by their `NN
 | 80 | `80-story-crm-67.md` | CUSTOMERS-7-API agent — I correct a customer's contact details | CRM-67 | — |
 | 81 | `81-story-crm-68.md` | CUSTOMERS-7-WEB agent — I correct a customer's contact details | CRM-68 | — |
 | 82 | `82-story-crm-69.md` | CUSTOMERS-8-API admin — deleting a customer hides them and keeps the audit trail | CRM-69 | — |
+| 83 | `83-story-crm-70.md` | CUSTOMERS-8-WEB admin — deleting a customer hides them and keeps the audit trail | CRM-70 | — |
 
 ## Dependency notes
 
