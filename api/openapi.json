@@ -761,10 +761,10 @@
     },
     "/api/v1/me/notifications": {
       "get": {
-        "summary": "The notifications belonging to whoever is asking, oldest first, paged with the window every list here obeys (BR-4). Under /me like /me/tickets and /me/password: a route that took a user id would be a route somebody could put another id into, and the ownership rule would have to be written rather than being true by construction. Staff only — nothing writes a notification for a customer, so there is nothing here for one to read, and saying so with a guard is clearer than an empty list that looks like a bug. Reading this list changes nothing: marking one read is a write of its own, or an agent who glanced at the screen would have dismissed everything on it.",
+        "summary": "The notifications belonging to whoever is asking, oldest first, paged with the window every list here obeys (BR-4). Under /me like /me/tickets and /me/password: a route that took a user id would be a route somebody could put another id into, and the ownership rule would have to be written rather than being true by construction. Staff only — nothing writes a notification for a customer, so there is nothing here for one to read, and saying so with a guard is clearer than an empty list that looks like a bug. Reading this list changes nothing: marking one read is a write of its own, or an agent who glanced at the screen would have dismissed everything on it. `?filter=unread` narrows it to the ones not yet read; `all` is the default and is spelled out so a screen can say what it means. Any other value is refused 422 naming the field — a screen sending a filter it invented is a screen whose author believed it did something, and answering with everything would let that belief survive. The unread view keeps the same oldest-first order: somebody clearing a backlog works from the oldest.",
         "responses": {
           "200": {
-            "description": "{ items, total, limit, offset }. Each item carries the TICKET'S ID and not a copy of its subject — a subject copied when the notification was written is a subject that goes stale the first time somebody edits it. `readAt` is null until it is read, rather than a boolean, because when somebody read it is worth keeping."
+            "description": "{ items, total, unread, limit, offset }. `total` is what matches the query — so it equals `unread` when the query IS the unread one. `unread` is the caller's unread count whatever was asked for and whatever page came back: a badge is about the person, not the window, and one derived from the page in hand is wrong on every page but the first and changes when somebody turns a page without reading anything. { items, total, limit, offset }. Each item carries the TICKET'S ID and not a copy of its subject — a subject copied when the notification was written is a subject that goes stale the first time somebody edits it. `readAt` is null until it is read, rather than a boolean, because when somebody read it is worth keeping."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."
@@ -773,7 +773,7 @@
             "description": "A customer asking."
           },
           "422": {
-            "description": "`limit` or `offset` outside what the window allows; the field is named (BR-4)."
+            "description": "`limit` or `offset` outside what the window allows, or a `filter` that is not `all` or `unread`; the field is named (BR-4)."
           },
           "500": {
             "description": "Unhandled — the shape every error here has, with a requestId."

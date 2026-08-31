@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { HttpError } from '../../platform/http/errors.js';
+import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { createAuditWriter } from '../audit/index.js';
 import {
   countNotifications,
@@ -14,6 +14,11 @@ import {
 // call site, so the vocabulary is somewhere a reader can find it — and so the
 // second kind, whenever a story asks for one, is added beside it.
 export const TICKET_ASSIGNED = 'ticket.assigned';
+
+// What the list may be narrowed to. `all` is the default and is spelled out
+// rather than left as an absence, so a screen can say what it means and a
+// reader of the document can see there are two.
+export const FILTERS = ['all', 'unread'];
 
 export function createNotificationsService({ db, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
@@ -62,10 +67,23 @@ export function createNotificationsService({ db, now = () => Math.floor(Date.now
     // the query is scoped rather than filtered afterwards — filtering after
     // the fact means the rows were fetched and are one mistake from the
     // response.
-    mine(actor, { limit, offset }) {
+    mine(actor, { filter, limit, offset }) {
+      // Refused rather than treated as `all`. A screen sending a filter it
+      // invented is a screen whose author believed it did something, and
+      // answering with everything would let that belief survive.
+      if (filter !== undefined && !FILTERS.includes(filter)) throw unprocessable(['filter']);
+      const unreadOnly = filter === 'unread';
+
       return {
-        items: listNotifications(db, { userId: actor.id, limit, offset }),
-        total: countNotifications(db, { userId: actor.id }),
+        items: listNotifications(db, { userId: actor.id, unreadOnly, limit, offset }),
+        // What matches the query — so it equals `unread` below when the query
+        // is the unread one, and that is not a coincidence worth hiding.
+        total: countNotifications(db, { userId: actor.id, unreadOnly }),
+        // And what is unread, whatever was asked for. A badge is about the
+        // person, not about the window: one derived from the page in hand is
+        // wrong on every page but the first, and changes when somebody turns
+        // a page without reading anything.
+        unread: countNotifications(db, { userId: actor.id, unreadOnly: true }),
         limit,
         offset,
       };

@@ -154,7 +154,10 @@ test('an agent reads their own, oldest first, in the API’s window', async () =
 
   const page = await (await agent.call('/api/v1/me/notifications')).json();
 
-  assert.deepEqual(Object.keys(page).sort(), ['items', 'limit', 'offset', 'total']);
+  // `unread` joined them with NOTIFICATIONS-2-API: a screen showing a badge
+  // should not have to ask twice, and a count taken from the page in hand is
+  // wrong on every page but the first.
+  assert.deepEqual(Object.keys(page).sort(), ['items', 'limit', 'offset', 'total', 'unread']);
   assert.equal(page.total, 3);
   const stamps = page.items.map((n) => n.createdAt);
   assert.deepEqual(stamps, [...stamps].sort());
@@ -247,4 +250,74 @@ test('a customer has none and is refused rather than shown an empty list', async
   // one to read. A guard says that; an empty list looks like a bug.
   assert.equal((await theirs('/api/v1/me/notifications')).status, 403);
   assert.equal((await theirs('/api/v1/me/notifications/any/read', { method: 'POST' })).status, 403);
+});
+
+test('the list can be narrowed to the unread ones', async () => {
+  const { admin, makeAgent, raise, assign } = await start();
+  const agent = await makeAgent('an-agent@support-desk.local');
+  for (let i = 0; i < 3; i += 1) await assign(admin)(await raise(), agent.user.id);
+
+  const all = await (await agent.call('/api/v1/me/notifications')).json();
+  await agent.call(`/api/v1/me/notifications/${all.items[0].id}/read`, { method: 'POST' });
+
+  const unread = await (await agent.call('/api/v1/me/notifications?filter=unread')).json();
+
+  // A person with four hundred read notifications and two new ones cannot
+  // find the two by paging — and a screen fetching every page to filter them
+  // itself is the client inventing a query the server can answer.
+  assert.equal(unread.items.length, 2);
+  assert.ok(unread.items.every((n) => n.readAt === null));
+  // `total` is what matches the query, so here it IS the unread count.
+  assert.equal(unread.total, 2);
+  // And the unread view keeps the order the whole list has.
+  const stamps = unread.items.map((n) => n.createdAt);
+  assert.deepEqual(stamps, [...stamps].sort());
+});
+
+test('the unread count comes back whatever was asked for, and is about the person', async () => {
+  const { admin, makeAgent, raise, assign } = await start();
+  const agent = await makeAgent('an-agent@support-desk.local');
+  for (let i = 0; i < 3; i += 1) await assign(admin)(await raise(), agent.user.id);
+
+  // A window of one over three unread.
+  const page = await (await agent.call('/api/v1/me/notifications?limit=1')).json();
+
+  assert.equal(page.items.length, 1);
+  assert.equal(page.total, 3);
+  // Not one. A badge derived from the page in hand would say 1 here and would
+  // change when somebody turned the page without reading anything.
+  assert.equal(page.unread, 3);
+
+  await agent.call(`/api/v1/me/notifications/${page.items[0].id}/read`, { method: 'POST' });
+  assert.equal((await (await agent.call('/api/v1/me/notifications?limit=1')).json()).unread, 2);
+});
+
+test('the count is somebody’s own, not everybody’s', async () => {
+  const { admin, makeAgent, raise, assign } = await start();
+  const mine = await makeAgent('mine@support-desk.local');
+  const other = await makeAgent('other@support-desk.local');
+  await assign(admin)(await raise(), other.user.id);
+  await assign(admin)(await raise(), other.user.id);
+
+  const page = await (await mine.call('/api/v1/me/notifications')).json();
+
+  assert.equal(page.unread, 0);
+  assert.equal(page.total, 0);
+});
+
+test('a filter nobody offered is refused, naming the field', async () => {
+  const { admin, makeAgent, raise, assign } = await start();
+  const agent = await makeAgent('an-agent@support-desk.local');
+  await assign(admin)(await raise(), agent.user.id);
+
+  for (const value of ['read', 'new', 'UNREAD', '']) {
+    const res = await agent.call(`/api/v1/me/notifications?filter=${value}`);
+    assert.equal(res.status, 422, value);
+    assert.deepEqual((await res.json()).fields, ['filter'], value);
+  }
+
+  // `all` is a value, not an absence, and both mean the same thing.
+  const spelled = await (await agent.call('/api/v1/me/notifications?filter=all')).json();
+  const implied = await (await agent.call('/api/v1/me/notifications')).json();
+  assert.deepEqual(spelled, implied);
 });
