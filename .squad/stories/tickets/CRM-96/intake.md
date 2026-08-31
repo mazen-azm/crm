@@ -196,4 +196,12 @@ the answer does. Closing must go through it, not around it.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Reopening a ticket the sweep closed.** Closed is terminal —
+  `TICKETS-4-API`'s argument, which this does not weaken.
+- **Telling anybody it happened.** A notification per auto-close would be one
+  per resolved ticket a fortnight later.
+- **Adding a scheduler, a timer or a background worker to this application.**
+  The plan must say how the sweep is triggered; it must not introduce a runtime
+  the project does not have.
+- **A second fourteen-day constant.** T-5's `REOPEN_WINDOW_DAYS` is the same
+  fortnight.

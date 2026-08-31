@@ -197,4 +197,12 @@ revision bolted on.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Applying BR-5 outside tickets.** The rule names the writes it covers, and a
+  customer's contact details are not among them — `CUSTOMERS-7-API (CRM-67)`
+  says so in its own criteria.
+- **Telling the caller what changed or who changed it.** The refusal says the
+  ticket moved; the history says the rest and is one request away.
+- **Adding a revision to `POST /tickets/:id/replies`.** A reply is not an edit
+  of a field somebody read. The census will find it, so it needs a named
+  exemption with the reason — not a revision bolted on.
+- **The screen** — `TICKETS-13-WEB (CRM-95)`.

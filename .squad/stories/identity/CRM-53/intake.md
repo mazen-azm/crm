@@ -201,4 +201,9 @@ number 0013. `rowid` cannot be indexed — SQLite refused that once already.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **A list of active sessions, or ending one by name.** Nothing asks for it and
+  it needs a session record this deliberately does not create.
+- **Ending sessions when an account is disabled.** Already true by a different
+  mechanism — the resolver re-reads the user row on every request.
+- **Changing how long a token lasts.** `TOKEN_TTL_SECONDS` is not this story's.
+- **Any screen.** No WEB half exists for this story.

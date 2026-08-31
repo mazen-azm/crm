@@ -195,4 +195,10 @@ and that is deliberate.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Any `revision` on a customer write.** BR-5 names the writes it covers and
+  this is not one of them. Adding one here would be a rule this story invented.
+- **The `address` column.** It exists, `PROJECTION` does not return it and no
+  route has ever written it (L-49). Correcting contact details means the fields
+  the API actually carries.
+- **Changing which sign-in account a customer has** — `CUSTOMERS-6-API`.
+- **The screen** — `CUSTOMERS-7-WEB (CRM-68)`.

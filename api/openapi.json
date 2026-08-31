@@ -333,6 +333,29 @@
             "description": "Internal."
           }
         }
+      },
+      "patch": {
+        "summary": "Correct a customer's contact details. Any subset of name, email and phone; a field not sent is left alone, because a correction is usually one field and a client that had to send all three to change one would overwrite the other two with whatever it last read. The WHOLE customer is validated rather than the fields that arrived — that a customer needs a name is a rule about a customer, and checking only what was sent would let a correction that clears the name pass because the name was not the field being corrected. No revision: BR-5 names the writes it covers and this is not one of them.",
+        "responses": {
+          "200": {
+            "description": "The customer as it now stands, in the shape every other customer route answers with."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "A customer asking. The desk’s records are the desk’s."
+          },
+          "404": {
+            "description": "No such customer, and the same answer for one that has been deleted — reading a deleted customer is allowed because their tickets and notes did not stop existing, and correcting one is not, because there is nobody to correct."
+          },
+          "422": {
+            "description": "`fields` names what was wrong: a value the shared validator refuses, an email another LIVE customer holds, `changes` when no field was sent at all, or the fields that were sent unchanged — a request that changes nothing is refused rather than written as an audit row saying nothing happened."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
       }
     },
     "/api/v1/customers/{id}/notes": {

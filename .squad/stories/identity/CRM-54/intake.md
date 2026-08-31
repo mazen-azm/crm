@@ -195,4 +195,13 @@ users, so nothing on the web side needs changing for the queue's picker.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Choosing who the tickets go to instead.** They go to nobody, which the
+  queue renders and `TICKETS-3-API` allows; assigning them onward is a decision
+  an admin makes afterwards on the screen that exists for it.
+- **Telling the disabled person, or anybody else.** `NOTIFICATIONS-1-API
+  (CRM-115)` tells an agent when a ticket becomes theirs, and nothing tells
+  anybody when one stops being.
+- **Closed tickets.** Left alone: unassigning is about work somebody still has
+  to do.
+- **Re-enabling.** It does not give the tickets back, and no story says it
+  should.

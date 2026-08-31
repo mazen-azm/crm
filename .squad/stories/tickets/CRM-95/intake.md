@@ -173,4 +173,7 @@ everywhere — the point of the story is that one cause has one answer.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Any `api/` change** — `TICKETS-13-API (CRM-94)` owns the rule and the
+  refusal.
+- **Inventing a fourth control.** The story is that the three that exist say
+  one thing about one cause.

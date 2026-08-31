@@ -39,6 +39,13 @@ export function customersRouter({ customers: service }) {
     res.status(201).json(service.create(req.subject, req.body ?? {}));
   });
 
+  // Correcting the details. requireStaff, like every other customer route: an
+  // agent on the telephone is who corrects a misheard address, and the desk's
+  // work is not an admin's alone.
+  router.patch('/customers/:id', requireStaff(), (req, res) => {
+    res.json(service.update(req.subject, { id: req.params.id, patch: req.body }));
+  });
+
   router.get('/customers/:id/notes', requireStaff(), (req, res) => {
     res.json(
       service.listNotes(req.subject, {

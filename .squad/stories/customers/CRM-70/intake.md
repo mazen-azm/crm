@@ -177,4 +177,8 @@ longer exists leaves the reader looking at a 404 they caused.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Any `api/` change** — `CUSTOMERS-8-API (CRM-69)` owns the route and the
+  rule about who may call it.
+- **A role gate in the router.** The screen says so for a non-admin who
+  arrives; the refusal that matters is the API's (SC-2), and a second gate here
+  would be one rule in two places.

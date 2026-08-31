@@ -196,4 +196,10 @@ id; nothing cascades, and nothing should.
 
 ## Out of scope
 
-- What this story explicitly does **not** cover:
+- **Anything that hard-deletes.** BR-1: `deleted_at` is set and the row stays.
+- **The customer's sign-in account.** This story does not touch it, and says so
+  rather than leaving it for somebody to discover: the account remains.
+- **Their tickets.** They are left exactly as they are; nothing cascades.
+- **Restoring a deleted customer.** The row survives so it is possible, and no
+  story asks for it.
+- **The screen** — `CUSTOMERS-8-WEB (CRM-70)`.

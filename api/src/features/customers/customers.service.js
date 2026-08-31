@@ -17,6 +17,7 @@ import {
   countSearchLiveCustomers,
   findCustomerById,
   findLiveCustomerByEmail,
+  updateCustomerContacts,
   findLiveCustomerById,
   insertCustomer,
   insertCustomerNote,
@@ -29,6 +30,11 @@ import {
 // What a customer looks like to anyone outside this feature. deleted_at is not
 // a field here: a caller never sees one, because a deleted customer is never
 // returned.
+// The fields a correction may touch — the contact details, and nothing that
+// belongs to another story: not the sign-in link (CUSTOMERS-6-API's), and not
+// `address`, which no route has ever written and PROJECTION does not return.
+const CORRECTABLE = ['name', 'email', 'phone'];
+
 const publicShape = (row) => ({
   id: row.id,
   name: row.name,
@@ -125,6 +131,80 @@ export function createCustomersService({ db, tickets, identity, now = () => Math
         });
 
         return publicShape(created);
+      });
+    },
+
+    // Correcting a customer's contact details.
+    //
+    // The whole customer is validated, not the fields that arrived. The rule
+    // that a customer needs a name is a rule about a CUSTOMER, and checking
+    // only what was sent would let a correction that clears the name pass
+    // because the name was not the field being corrected. So the patch is
+    // merged onto the stored row and the result is checked — which also means
+    // one validator serves creation and correction, and cannot disagree with
+    // itself.
+    //
+    // No revision. BR-5 names the writes it covers and this is not one of
+    // them (CUSTOMERS-7-API's criteria say so); adding one here would be a
+    // rule this story invented for itself.
+    update(actor, { id, patch }) {
+      const sent = CORRECTABLE.filter((field) =>
+        Object.prototype.hasOwnProperty.call(patch ?? {}, field));
+      // Nothing to do is refused rather than answered 200. A caller that sent
+      // no field meant to send one, and a silent success hides the mistake
+      // until somebody notices the correction never happened.
+      if (sent.length === 0) throw unprocessable(['changes']);
+
+      const at = stamp();
+
+      return transact(db, () => {
+        const row = findLiveCustomerById(db, { id });
+        // Reading a deleted customer is allowed — their tickets and notes did
+        // not stop existing. Correcting one is not: there is nobody to
+        // correct, and the answer is the one a missing customer gets.
+        if (!row) throw new HttpError(404, 'NOT_FOUND');
+
+        const held = { name: row.name, email: row.email, phone: row.phone };
+        const merged = { ...held };
+        for (const field of sent) merged[field] = patch[field];
+
+        const invalid = validateCustomer(merged);
+        if (invalid.length > 0) throw unprocessable(invalid);
+
+        const wanted = normaliseCustomer(merged);
+        // What actually moves. A diff listing every field as changed is a diff
+        // nobody can read, and the fields nobody sent must not appear in it
+        // even when the caller sent a value equal to the stored one.
+        const changes = {};
+        for (const field of sent) {
+          if (wanted[field] !== held[field]) changes[field] = wanted[field];
+        }
+        if (Object.keys(changes).length === 0) throw unprocessable(sent);
+
+        // Checked here rather than left to the unique index, for the reason
+        // create records: an index that fires is a 500 telling the caller
+        // their typo was our fault. Their own address is not a conflict with
+        // themselves.
+        if (changes.email !== undefined) {
+          const holder = findLiveCustomerByEmail(db, { email: changes.email });
+          if (holder && holder.id !== id) throw unprocessable(['email']);
+        }
+
+        const written = updateCustomerContacts(db, { id, changes, at });
+
+        audit.record(actor, {
+          entity: 'customer',
+          entityId: id,
+          verb: 'customer.update',
+          // Both sides carry the same keys, and only the ones that moved —
+          // so the trail reads as "email: this to that" rather than as a
+          // record of everything the customer happens to have.
+          before: Object.fromEntries(Object.keys(changes).map((f) => [f, held[f]])),
+          after: changes,
+          at,
+        });
+
+        return publicShape(written);
       });
     },
 
