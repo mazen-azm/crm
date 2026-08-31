@@ -25,7 +25,11 @@ import { createTicketsService } from './tickets.service.js';
 // other did not have: the notification written when a ticket becomes somebody's
 // went to the instance the routes never used, so assigning through the API told
 // nobody. Two objects for one thing agree until they do not.
-export function ticketsRouter({ db, now, service = createTicketsService({ db, now }) }) {
+// `serviceLevels` is handed in for the breach sweep below. The router does not
+// build one: compose already has the instance the tickets service holds, and a
+// second would be a second object deciding what a deadline is — the defect
+// L-62 names, met once already.
+export function ticketsRouter({ db, now, service = createTicketsService({ db, now }), serviceLevels }) {
   const router = express.Router();
 
   // Any signed-in staff member raises a ticket for a customer. One queue —
@@ -124,6 +128,18 @@ export function ticketsRouter({ db, now, service = createTicketsService({ db, no
   // acting for the desk is the closest thing this product has to an operator.
   // The audit row still carries no actor: the admin chose when it ran, not
   // which tickets were due.
+  // The breach sweep, beside the auto-close one.
+  //
+  // Under /tickets rather than a path of service-levels' own, for two reasons.
+  // The service-levels feature says in its index that it serves no HTTP path —
+  // its deadlines travel on a ticket's responses — and that stays true. And
+  // stale-write.guarantee.test.js reads every ticket write off the router: a
+  // sweep somewhere it does not watch is a write nobody holds to BR-5, which
+  // is the conversation worth having rather than avoiding.
+  router.post('/tickets/sweep-breaches', adminOnly, (req, res) => {
+    res.json(serviceLevels.sweepBreaches());
+  });
+
   router.post('/tickets/sweep-auto-close', adminOnly, (req, res) => {
     res.json(service.sweepAutoClose());
   });

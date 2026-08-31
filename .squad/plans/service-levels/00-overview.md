@@ -9,6 +9,7 @@ Entry point for the **service-levels** feature. Stories execute in order by thei
 | _add rows as stories are planned_ |
 | 32 | `32-story-crm-108.md` | SERVICE-LEVELS-1-API system — a ticket carries both deadlines, from its priority | CRM-108 | — |
 | 95 | `95-story-crm-109.md` | SERVICE-LEVELS-2-API agent — time waiting on the customer is not counted against me | CRM-109 | — |
+| 96 | `96-story-crm-110.md` | SERVICE-LEVELS-3-API agent — a missed deadline is recorded once and shown on the queue | CRM-110 | — |
 
 ## Dependency notes
 

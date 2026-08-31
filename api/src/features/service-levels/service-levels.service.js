@@ -1,10 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
+import { createAuditWriter, transact } from '../audit/index.js';
+
 import {
   findClocksByTicket,
   findTargetByPriority,
   findTicketPriority,
   insertClock,
+  findBreachesByTicket,
+  findBreachesForTickets,
+  findRunningClocks,
+  insertBreach,
   pauseClock as pauseClockRow,
   resumeClock as resumeClockRow,
   stopClock as stopClockRow,
@@ -29,8 +35,27 @@ export const CLOCK_KINDS = Object.freeze(['first_response', 'resolution']);
 // Nothing here writes to sla_breaches. A passed deadline is reported; a breach
 // is a stored row that SERVICE-LEVELS-3-API writes, never a value recomputed on
 // read (S-5).
+// When a promise falls due, in milliseconds.
+//
+// ONE expression, used by the read and by the sweep. Two would be two answers
+// to "when was this due" — and S-5 says a breach is a stored fact precisely so
+// that nobody has to ask twice and get different numbers.
+//
+// The pauses count: the accrued total, plus the one still open. A ticket
+// waiting on the customer is not late while it waits (S-4), and the sweep must
+// agree with the queue about that or it would record breaches the screen does
+// not show.
+export function deadlineMsFor(clock, minutes, nowMs) {
+  const openPauseMs = clock.pause_started_at === null || clock.pause_started_at === undefined
+    ? 0
+    : nowMs - Date.parse(clock.pause_started_at);
+  const pausedMs = (clock.paused_ms ?? 0) + openPauseMs;
+  return { deadlineMs: Date.parse(clock.started_at) + minutes * 60_000 + pausedMs, pausedMs };
+}
+
 export function createServiceLevels({ db, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
+  const audit = createAuditWriter({ db });
 
   return {
     // Called by the tickets feature inside the same transaction that creates
@@ -70,6 +95,78 @@ export function createServiceLevels({ db, now = () => Math.floor(Date.now() / 10
     // opposite of what S-4 is for.
     resume({ ticketId, at }) {
       return resumeClockRow(db, { ticketId, kind: 'resolution', at }) === 1;
+    },
+
+    // S-5: record every deadline that has passed, as a fact.
+    //
+    // A route an operator or a cron calls, the shape TICKETS-14-API
+    // established — there is no scheduler here and none is added. Evaluating
+    // on read was refused there and is refused here for a second reason: S-5
+    // says a breach is STORED and never recomputed, and a read that wrote one
+    // would be recomputing it every time somebody looked.
+    //
+    // One transaction per row, so a ticket that cannot be written does not
+    // undo the rest. The sweep is a series of independent facts.
+    sweepBreaches() {
+      const at = stamp();
+      const nowMs = now() * 1000;
+      const recorded = [];
+
+      for (const clock of findRunningClocks(db)) {
+        const minutes = clock.kind === 'first_response'
+          ? clock.first_response_minutes
+          : clock.resolution_minutes;
+        const { deadlineMs } = deadlineMsFor(clock, minutes, nowMs);
+        if (nowMs < deadlineMs) continue;
+
+        transact(db, () => {
+          // The moment it was missed, not the moment the sweep noticed. A
+          // breach stamped with the sweep's own time would make every breach
+          // look like it happened when somebody last ran a cron.
+          const changes = insertBreach(db, {
+            id: randomUUID(),
+            ticketId: clock.ticket_id,
+            kind: clock.kind,
+            breachedAt: new Date(deadlineMs).toISOString(),
+            at,
+          });
+          // Nothing written means the constraint refused a second one. Not an
+          // error: two sweeps overlapping is ordinary, and this is the
+          // constraint doing the job a SELECT would have raced on.
+          if (changes === 0) return;
+
+          audit.record(null, {
+            entity: 'ticket',
+            entityId: clock.ticket_id,
+            verb: 'sla.breach',
+            before: null,
+            after: { kind: clock.kind, breachedAt: new Date(deadlineMs).toISOString() },
+            at,
+          });
+
+          recorded.push({ ticketId: clock.ticket_id, kind: clock.kind });
+        });
+      }
+
+      return { recorded: recorded.length, at };
+    },
+
+    // The breaches on one ticket, read rather than worked out (S-5).
+    breachesFor({ ticketId }) {
+      return findBreachesByTicket(db, { ticketId }).map((row) => ({
+        kind: row.kind,
+        breachedAt: row.breached_at,
+      }));
+    },
+
+    // And for a page of tickets at once — a queue of twenty-five rows is one
+    // query rather than twenty-five.
+    breachesForMany({ ticketIds }) {
+      const byTicket = new Map(ticketIds.map((id) => [id, []]));
+      for (const row of findBreachesForTickets(db, { ticketIds })) {
+        byTicket.get(row.ticket_id)?.push({ kind: row.kind, breachedAt: row.breached_at });
+      }
+      return byTicket;
     },
 
     // Stop a clock, from inside the CALLER's transaction.
@@ -123,11 +220,7 @@ export function createServiceLevels({ db, now = () => Math.floor(Date.now() / 10
         //
         // first_response has no pause and never will; `paused_ms` is 0 on that
         // row, so this is one expression rather than a branch.
-        const openPauseMs = clock.pause_started_at === null || clock.pause_started_at === undefined
-          ? 0
-          : nowMs - Date.parse(clock.pause_started_at);
-        const pausedMs = clock.paused_ms + openPauseMs;
-        const deadlineMs = Date.parse(clock.started_at) + minutes[kind] * 60_000 + pausedMs;
+        const { deadlineMs, pausedMs } = deadlineMsFor(clock, minutes[kind], nowMs);
         out[kind] = {
           startedAt: clock.started_at,
           stoppedAt: clock.stopped_at ?? null,

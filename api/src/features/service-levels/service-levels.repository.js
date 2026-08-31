@@ -23,6 +23,76 @@ export function findClocksByTicket(db, { ticketId }) {
     .all(ticketId);
 }
 
+// Every clock still running, with what the deadline is computed from: the
+// ticket's CURRENT priority and its target row.
+//
+// The deadline itself is not computed here. It is worked out in one place in
+// the service — the same expression the single-ticket read uses — because two
+// answers to "when was this due" is exactly the drift S-5 exists to prevent.
+//
+// Only live, unstopped, undeleted clocks: a stopped one was answered and a
+// deleted ticket has no promise.
+export function findRunningClocks(db) {
+  return db
+    .prepare(`
+      SELECT c.ticket_id, c.kind, c.started_at, c.paused_ms, c.pause_started_at,
+             t.priority,
+             s.first_response_minutes, s.resolution_minutes
+        FROM sla_clocks c
+        JOIN tickets t ON t.id = c.ticket_id
+        JOIN sla_targets s ON s.priority = t.priority
+       WHERE c.stopped_at IS NULL
+         AND c.deleted_at IS NULL
+         AND t.deleted_at IS NULL
+         AND s.deleted_at IS NULL
+       ORDER BY c.ticket_id, c.kind
+    `)
+    .all();
+}
+
+// One breach, once. The unique constraint on (ticket_id, kind) is what makes
+// it once — not a SELECT that ran first, which is a race, and not a check in
+// application code, which is the same race with more steps.
+//
+// `INSERT OR IGNORE` so a second sweep is silent rather than an error: two
+// sweeps overlapping is an operational normality, and a 500 for it would be
+// the product complaining about being run twice.
+export function insertBreach(db, { id, ticketId, kind, breachedAt, at }) {
+  return db
+    .prepare(`
+      INSERT OR IGNORE INTO sla_breaches (id, ticket_id, kind, breached_at, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `)
+    .run(id, ticketId, kind, breachedAt, at, at).changes;
+}
+
+// The breaches on one ticket, for a read that must not recompute them (S-5).
+export function findBreachesByTicket(db, { ticketId }) {
+  return db
+    .prepare(`
+      SELECT kind, breached_at
+        FROM sla_breaches
+       WHERE ticket_id = ? AND deleted_at IS NULL
+       ORDER BY kind
+    `)
+    .all(ticketId);
+}
+
+// And for a page of them at once, so a queue of twenty-five rows is one query
+// rather than twenty-five.
+export function findBreachesForTickets(db, { ticketIds }) {
+  if (ticketIds.length === 0) return [];
+  const holes = ticketIds.map(() => '?').join(', ');
+  return db
+    .prepare(`
+      SELECT ticket_id, kind, breached_at
+        FROM sla_breaches
+       WHERE ticket_id IN (${holes}) AND deleted_at IS NULL
+       ORDER BY ticket_id, kind
+    `)
+    .all(...ticketIds);
+}
+
 export function findTicketPriority(db, { ticketId }) {
   return db
     .prepare('SELECT priority FROM tickets WHERE id = ? AND deleted_at IS NULL')
