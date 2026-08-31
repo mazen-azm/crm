@@ -32,6 +32,11 @@ const NO_REVISION = new Map([
    'creating a ticket: there is no earlier version of it to overwrite'],
   [`POST ${API_V1_PREFIX}/intake/:channel/tickets`,
    'the public intake creates one too, and the caller is a stranger with nothing to have read'],
+  [`POST ${API_V1_PREFIX}/tickets/sweep-auto-close`,
+   'T-6\'s sweep closes every resolved ticket whose fourteen days have passed. The caller read no ticket and '
+   + 'named none — it asks the rule which are due — so there is no revision it could carry. It is not exempt from '
+   + 'BR-5 in substance: it reads each ticket\'s revision and passes it to the same guarded writer, and a ticket '
+   + 'that moved in between is skipped rather than overwritten'],
   [`POST ${API_V1_PREFIX}/tickets/:id/replies`,
    'a reply adds a message; it edits no field somebody read, so there is nothing for a revision to protect. '
    + 'What it CHANGES about the ticket — the first-response clock, the status, a reopen — is decided by the API '

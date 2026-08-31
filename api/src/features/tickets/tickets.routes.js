@@ -112,6 +112,22 @@ export function ticketsRouter({ db, now, service = createTicketsService({ db, no
   // different caller: the queue is the desk's and refuses a customer, and a
   // route whose meaning depended on who asked would make "what does GET
   // /tickets return" a question with two answers.
+  // The sweep T-6 needs, as a route rather than a timer.
+  //
+  // Under /tickets and not under a /maintenance prefix of its own, deliberately:
+  // it writes to tickets, and stale-write.guarantee.test.js reads every ticket
+  // write off the router. A path the census does not watch is a write nobody
+  // is holding to BR-5 — so this one is named there with the reason it carries
+  // no revision, which is the conversation worth having rather than avoiding.
+  //
+  // adminOnly because something has to authenticate, and an operator or a cron
+  // acting for the desk is the closest thing this product has to an operator.
+  // The audit row still carries no actor: the admin chose when it ran, not
+  // which tickets were due.
+  router.post('/tickets/sweep-auto-close', adminOnly, (req, res) => {
+    res.json(service.sweepAutoClose());
+  });
+
   router.get('/me/tickets', requireSubject(), (req, res) => {
     res.json(
       service.mine(req.subject, {
