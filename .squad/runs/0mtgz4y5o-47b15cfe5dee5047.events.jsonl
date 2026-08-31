@@ -1,0 +1,333 @@
+{"kind":"started","runId":"0mtgz4y5o-47b15cfe5dee5047","provider":"anthropic","model":"claude-opus-4-7","cacheEnabled":true,"plannerRuntime":"agent-sdk"}
+{"kind":"runtime_info","runId":"0mtgz4y5o-47b15cfe5dee5047","provider":"anthropic","model":"claude-opus-4-7","runtimeKind":"agent-sdk","cacheEnabled":true,"scoutEnabled":true,"validationEnabled":true,"budgetCaps":{"maxFileReads":30,"maxContextBytes":150000,"maxDurationSeconds":360},"providerOptions":{"anthropic":{"thinking":"adaptive","effort":"medium","effortByPhase":{"scout":"minimal","draft":"medium"}}}}
+{"kind":"auth_info","runId":"0mtgz4y5o-47b15cfe5dee5047","mode":"subscription","reason":"explicit-config","credentialHint":"Claude login (macOS Keychain)"}
+{"kind":"stage_started","runId":"0mtgz4y5o-47b15cfe5dee5047","stage":"scout"}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"usage":{"inputTokens":9,"outputTokens":3,"cacheCreationTokens":12499,"cacheReadTokens":0}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0,"delta":""}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"Looking at this intake, I need to identify files for a story about **"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"consolidating 409 (stale-write) error handling across three ticket queue controls** on the web UI."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"\n\n## Key Observations:\n\n1. **The work is consolidation, not creation:** Three controls (`ticketAssign`,"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":" `ticketStatus`, `ticketCategory`) already handle 409, but with three different `staleTitle` strings. The task is unifying them."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"\n2. **Three controls on the queue row** are affected:\n   - Assign ticket\n   - Status change\n   - Category change\n3."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":" **The 409 comes from the API** (CRM-94 owns that), so I need API tests"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":" as reference to understand the error format.\n4. **i18n parity** is a core acceptance criterion ("}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"BR-6) — strings must exist in both `en.ts` and `ar.ts`.\n5. **Row"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":" revision must update** on success so subsequent changes aren't rejected by the same agent.\n\n## Reasoning:\n\nI"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"'m selecting:\n- **Web components & hooks** for the three controls and the queue page that hosts them\n- **"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"Tests** for each control to see the current 409 handling and `staleTitle` usage\n- **i18n files** ("}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"EN & AR) to see what strings exist and ensure parity\n- **API error handling & tests** as reference to understand "}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"delta":"409 structure\n- **Criteria file** to validate against acceptance criteria\n- **Verification script** to understand i18n parity checking"}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":4,"usage":{"inputTokens":0,"outputTokens":2804}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":4,"usage":{"inputTokens":8,"outputTokens":4,"cacheCreationTokens":2829,"cacheReadTokens":12499}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"blockIndex":0}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"blockIndex":0,"delta":""}
+{"kind":"thinking_delta","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"blockIndex":0,"delta":""}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":5,"usage":{"inputTokens":0,"outputTokens":160}}
+{"kind":"scout_result","runId":"0mtgz4y5o-47b15cfe5dee5047","selected":["web/src/pages/tickets/TicketQueuePage.tsx","web/src/pages/tickets/TicketQueuePage.test.tsx","web/src/pages/tickets/useAssignTicket.ts","web/src/pages/tickets/AssignTicket.test.tsx","web/src/pages/tickets/useChangeStatus.ts","web/src/pages/tickets/ResolveTicket.test.tsx","web/src/pages/tickets/useChangeCategory.ts","web/src/pages/tickets/ChangeCategory.test.tsx","web/src/pages/tickets/useTicketQueue.ts","web/src/shared/i18n/en.ts","web/src/shared/i18n/ar.ts","web/src/shared/api/errors.ts","web/src/shared/api/client.ts","api/src/features/tickets/stale-write.guarantee.test.js","api/src/features/tickets/tickets.service.js","scripts/criteria/tickets.md","scripts/verify-i18n-parity.mjs"],"reasoning":"Web controls (useAssignTicket, useChangeStatus, useChangeCategory) and the queue page they're used in are the primary targets; tests for each show current 409 handling and staleTitle strings. i18n files are required for the unified message in both languages. API tests and service are reference to understand the 409 error structure. Criteria and verification script support acceptance testing and i18n parity validation."}
+{"kind":"stage_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","stage":"scout","success":true,"durationMs":34477,"tokensUsed":2981}
+{"kind":"stage_started","runId":"0mtgz4y5o-47b15cfe5dee5047","stage":"draft"}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"usage":{"inputTokens":5,"outputTokens":8,"cacheCreationTokens":17246,"cacheReadTokens":0}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":0,"blockIndex":0}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"stopReason":"tool_use_or_text"}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":2,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"f120f272-3c23-4aef-a30b-e3f9b49353fe","name":"grep","input":{"pattern":"staleTitle","regex":false,"caseInsensitive":false}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"f120f272-3c23-4aef-a30b-e3f9b49353fe","name":"grep","input":{"pattern":"staleTitle","regex":false,"caseInsensitive":false}},"bytesLoaded":0,"totalBytes":147510}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"f120f272-3c23-4aef-a30b-e3f9b49353fe","name":"grep","durationMs":81,"bytesLoaded":0,"totalBytes":147510,"isError":true,"errorSnippet":"grep: context budget (150000 bytes) would be exceeded. Finalise the plan with what you already have."}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":3,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"30292efa-4532-4d73-9ac8-a5116fa2e647","name":"list_dir","input":{"path":".squad/plans"}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"30292efa-4532-4d73-9ac8-a5116fa2e647","name":"list_dir","input":{"path":".squad/plans"}},"bytesLoaded":0,"totalBytes":147510}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"30292efa-4532-4d73-9ac8-a5116fa2e647","name":"list_dir","durationMs":1,"bytesLoaded":0,"totalBytes":147510,"isError":true,"errorSnippet":"list_dir: (directory ignored by repo-map filter)"}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":4,"usage":{"inputTokens":0,"outputTokens":192}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":4,"usage":{"inputTokens":1,"outputTokens":40,"cacheCreationTokens":338,"cacheReadTokens":17246}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":4,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"6604f26f-7610-4bb2-9dcb-60cf134ccbf7","name":"grep","input":{"pattern":"staleTitle","regex":false,"path":"web","caseInsensitive":false}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"6604f26f-7610-4bb2-9dcb-60cf134ccbf7","name":"grep","input":{"pattern":"staleTitle","regex":false,"path":"web","caseInsensitive":false}},"bytesLoaded":1551,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"6604f26f-7610-4bb2-9dcb-60cf134ccbf7","name":"grep","durationMs":9,"bytesLoaded":1551,"totalBytes":149061,"isError":false}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":5,"usage":{"inputTokens":0,"outputTokens":102}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":5,"usage":{"inputTokens":1,"outputTokens":43,"cacheCreationTokens":879,"cacheReadTokens":17584}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":5,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"2b4d9edf-9b39-4813-9ef7-c499d67b37de","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"2b4d9edf-9b39-4813-9ef7-c499d67b37de","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"2b4d9edf-9b39-4813-9ef7-c499d67b37de","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":6,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"700ec665-0846-4a5a-8244-5ba4c4a20a9f","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"700ec665-0846-4a5a-8244-5ba4c4a20a9f","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"700ec665-0846-4a5a-8244-5ba4c4a20a9f","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":7,"usage":{"inputTokens":0,"outputTokens":211}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":7,"usage":{"inputTokens":1,"outputTokens":39,"cacheCreationTokens":332,"cacheReadTokens":18463}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":7,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"e206558b-410e-41d2-ba8d-a7426d0bcc3c","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"e206558b-410e-41d2-ba8d-a7426d0bcc3c","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"e206558b-410e-41d2-ba8d-a7426d0bcc3c","name":"read_file","durationMs":1,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":8,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"4094d8b4-345d-4064-892f-235c36f8439e","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"4094d8b4-345d-4064-892f-235c36f8439e","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"4094d8b4-345d-4064-892f-235c36f8439e","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":9,"usage":{"inputTokens":0,"outputTokens":205}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":9,"usage":{"inputTokens":1,"outputTokens":10,"cacheCreationTokens":332,"cacheReadTokens":18795}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":8,"blockIndex":0}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":9,"stopReason":"tool_use_or_text"}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":10,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"19895d83-e605-4ae1-b7a0-03817b845383","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"19895d83-e605-4ae1-b7a0-03817b845383","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"19895d83-e605-4ae1-b7a0-03817b845383","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":11,"usage":{"inputTokens":0,"outputTokens":163}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":11,"usage":{"inputTokens":1,"outputTokens":39,"cacheCreationTokens":202,"cacheReadTokens":19127}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":11,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"72480101-642b-4134-84ce-e0169ef508a6","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"72480101-642b-4134-84ce-e0169ef508a6","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"72480101-642b-4134-84ce-e0169ef508a6","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":12,"usage":{"inputTokens":0,"outputTokens":116}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":12,"usage":{"inputTokens":1,"outputTokens":18,"cacheCreationTokens":155,"cacheReadTokens":19329}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":11,"blockIndex":0}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":12,"stopReason":"tool_use_or_text"}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":13,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"20cb0e9f-1b3d-42fc-820b-a6f5c559816d","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"20cb0e9f-1b3d-42fc-820b-a6f5c559816d","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"20cb0e9f-1b3d-42fc-820b-a6f5c559816d","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":14,"usage":{"inputTokens":0,"outputTokens":151}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":14,"usage":{"inputTokens":1,"outputTokens":37,"cacheCreationTokens":190,"cacheReadTokens":19484}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":14,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"8d20fd5f-43f2-4066-8b54-fa16b10e93f8","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"8d20fd5f-43f2-4066-8b54-fa16b10e93f8","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"8d20fd5f-43f2-4066-8b54-fa16b10e93f8","name":"read_file","durationMs":1,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":15,"usage":{"inputTokens":0,"outputTokens":116}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":15,"usage":{"inputTokens":1,"outputTokens":11,"cacheCreationTokens":155,"cacheReadTokens":19674}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":14,"blockIndex":0}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":15,"stopReason":"tool_use_or_text"}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":16,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"b6fbc687-0dd4-4190-9813-474bfe38413c","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"b6fbc687-0dd4-4190-9813-474bfe38413c","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"b6fbc687-0dd4-4190-9813-474bfe38413c","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":17,"usage":{"inputTokens":0,"outputTokens":194}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":17,"usage":{"inputTokens":1,"outputTokens":40,"cacheCreationTokens":233,"cacheReadTokens":19829}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":17,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"5b4a04f3-786a-4862-a40f-350fd87fb101","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"5b4a04f3-786a-4862-a40f-350fd87fb101","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"5b4a04f3-786a-4862-a40f-350fd87fb101","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":18,"usage":{"inputTokens":0,"outputTokens":116}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":18,"usage":{"inputTokens":1,"outputTokens":11,"cacheCreationTokens":155,"cacheReadTokens":20062}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":17,"blockIndex":0}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":18,"stopReason":"tool_use_or_text"}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":19,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"1626197f-944a-4c28-8f04-0fd246c0f399","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"1626197f-944a-4c28-8f04-0fd246c0f399","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"1626197f-944a-4c28-8f04-0fd246c0f399","name":"read_file","durationMs":1,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":20,"usage":{"inputTokens":0,"outputTokens":149}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":20,"usage":{"inputTokens":1,"outputTokens":40,"cacheCreationTokens":184,"cacheReadTokens":20217}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":20,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"0d0ce3f0-f3d9-472c-9f94-5a60c4cf1fc9","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"0d0ce3f0-f3d9-472c-9f94-5a60c4cf1fc9","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"0d0ce3f0-f3d9-472c-9f94-5a60c4cf1fc9","name":"read_file","durationMs":1,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":21,"usage":{"inputTokens":0,"outputTokens":107}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":21,"usage":{"inputTokens":1,"outputTokens":40,"cacheCreationTokens":142,"cacheReadTokens":20401}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":21,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"6dda6883-6503-4b32-b03a-1e015dd25fbf","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"6dda6883-6503-4b32-b03a-1e015dd25fbf","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149061}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"6dda6883-6503-4b32-b03a-1e015dd25fbf","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149061,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":22,"usage":{"inputTokens":0,"outputTokens":116}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":22,"usage":{"inputTokens":1,"outputTokens":13,"cacheCreationTokens":155,"cacheReadTokens":20543}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":21,"blockIndex":0}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":22,"stopReason":"tool_use_or_text"}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":23,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"177fe028-0dcd-489f-9b55-76166fbe8945","name":"grep","input":{"pattern":"staleTitle|staleMessage|staleAction|stale","regex":true,"path":"web/src/pages/tickets/TicketQueuePage.tsx","caseInsensitive":false}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"177fe028-0dcd-489f-9b55-76166fbe8945","name":"grep","input":{"pattern":"staleTitle|staleMessage|staleAction|stale","regex":true,"path":"web/src/pages/tickets/TicketQueuePage.tsx","caseInsensitive":false}},"bytesLoaded":642,"totalBytes":149703}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"177fe028-0dcd-489f-9b55-76166fbe8945","name":"grep","durationMs":3,"bytesLoaded":642,"totalBytes":149703,"isError":false}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":24,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"a48b4118-a07c-4ef5-9ce3-f2a8ea993188","name":"grep","input":{"pattern":"stale","regex":false,"path":"web/src/shared/i18n/en.ts","caseInsensitive":false}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"a48b4118-a07c-4ef5-9ce3-f2a8ea993188","name":"grep","input":{"pattern":"stale","regex":false,"path":"web/src/shared/i18n/en.ts","caseInsensitive":false}},"bytesLoaded":295,"totalBytes":149998}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"a48b4118-a07c-4ef5-9ce3-f2a8ea993188","name":"grep","durationMs":1,"bytesLoaded":295,"totalBytes":149998,"isError":false}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":25,"usage":{"inputTokens":0,"outputTokens":303}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":25,"usage":{"inputTokens":1,"outputTokens":41,"cacheCreationTokens":845,"cacheReadTokens":20698}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":25,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"32eef036-5120-434b-86b3-bb30b35e24bc","name":"read_file","input":{}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"32eef036-5120-434b-86b3-bb30b35e24bc","name":"read_file","input":{}},"bytesLoaded":0,"totalBytes":149998}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"32eef036-5120-434b-86b3-bb30b35e24bc","name":"read_file","durationMs":0,"bytesLoaded":0,"totalBytes":149998,"isError":true,"errorSnippet":"read_file: missing or invalid \"path\" argument."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":26,"usage":{"inputTokens":0,"outputTokens":116}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":26,"usage":{"inputTokens":1,"outputTokens":40,"cacheCreationTokens":155,"cacheReadTokens":21543}}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":26,"stopReason":"tool_use_or_text"}
+{"kind":"tool_call_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"65f9d5fd-0508-49eb-976b-223e6e732895","name":"grep","input":{"pattern":".","regex":true,"path":"web/src/pages/tickets/TicketQueuePage.tsx","caseInsensitive":false}}
+{"kind":"tool_call","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCall":{"id":"65f9d5fd-0508-49eb-976b-223e6e732895","name":"grep","input":{"pattern":".","regex":true,"path":"web/src/pages/tickets/TicketQueuePage.tsx","caseInsensitive":false}},"bytesLoaded":0,"totalBytes":149998}
+{"kind":"tool_call_completed","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":1,"toolCallId":"65f9d5fd-0508-49eb-976b-223e6e732895","name":"grep","durationMs":1,"bytesLoaded":0,"totalBytes":149998,"isError":true,"errorSnippet":"grep: context budget (150000 bytes) would be exceeded. Finalise the plan with what you already have."}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"usage":{"inputTokens":0,"outputTokens":142}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"usage":{"inputTokens":1,"outputTokens":12,"cacheCreationTokens":196,"cacheReadTokens":21698}}
+{"kind":"thinking_block_started","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":26,"blockIndex":0}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"stopReason":"tool_use_or_text"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"# Story 60 — Stale-write ref"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"usal speaks with one voice on the queue row (Story: CRM-95)\n\n## Prerequisites\n\n- **TIC"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"KETS-13-API (CRM-94)** must ship first. That story owns the 409 refusal (`RE"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"VISION_MISMATCH`) and the returning of the fresh revision on a successful write. This WEB story only unifies the on-screen behaviour of"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" the three queue-row controls that already handle the refusal.\n- Familiarity with the existing per-control 409 branches on"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" the queue row (already shipped alongside `ticketAssign`, `ticketStatus`, `ticketCategory`).\n\n---\n\n## Story Goal\n\nThe three queue-row controls that"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" write (`ticketAssign`, `ticketStatus`, `ticketCategory`) already detect a 409 `REVISION_MISMATCH` and show their own `staleTitle`. Today each control"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" uses a slightly different sentence — two say “This ticket changed while you were looking at it”, one says “…while you were reading it”, and Arabic has a mat"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ching split. Three sentences for one cause teach a user that there are three causes. The story is to reduce these three strings to **one shared string per"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" language**, keep the same recovery action across all three controls, and make sure the row picks up the fresh revision from a successful write so an agent’s second edit on the same row is not ref"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"used by their own first.\n\n**Out of scope**\n\n- Any `api/` change — CRM-94 owns the rule and the refusal.\n- A fourth control. The queue row ke"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"eps the three controls it has.\n- Any change to controls **off** the queue row (thread reply, ticket detail page). This story is scoped to `"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"TicketQueuePage.tsx`.\n\n---\n\n## Context — Read These Files First\n\n1. `web/src/pages/tickets/TicketQueuePage.tsx` — the three write controls live"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" here. Read the region around **lines 100–320**; the stale branches are at:\n   - `stale` computed at **line 109** from `ass"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ign.error?.code === 'REVISION_MISMATCH'`.\n   - Assign stale block starting **line 186**, titled `t.ticketAssign.staleTitle` (**"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"line 190**).\n   - Category stale title `t.ticketCategory.staleTitle` (**line 236**).\n   - Status stale title `t.ticketStatus.staleTitle` (**line 305**).\n   - Comment near **"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"line 343** about the row holding stale references after a write.\n2. `web/src/shared/i18n/en.ts` — the three current strings:\n   - **line 276** `staleTitle: 'This"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" ticket changed while you were looking at it'` (under `ticketAssign`).\n   - **line 342** `staleTitle: 'This ticket changed while you were reading it'` (under `ticketStatus`).\n   - **line 356** `staleTitle: 'This ticket changed while you were loo"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"king at it'` (under `ticketCategory`).\n   - Look at neighbouring keys (`staleAction`, `staleBody` if any) in the same three"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" sections — collapse all stale-related strings the same way.\n3. `web/src/shared/i18n/ar.ts` — the mirrored strings at **"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"lines 230, 292, 306**. Same collapse in Arabic.\n4. `web/src/pages/tickets/AssignTicket.test.tsx` — asserts `en.ticketAssign.staleTitle` at **lines 162 and 180"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"**. Update to the new shared key.\n5. `web/src/pages/tickets/ChangeCategory.test.tsx` — asserts `en.ticketCategory.staleTitle` at **lines 173 and 190**.\n6. `web/src/"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"pages/tickets/ResolveTicket.test.tsx` — asserts `en.ticketStatus.staleTitle` at **line 169**.\n7. `web/src/shared/i18n/parity.test.ts` — the EN/AR parity check."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" New shared keys must exist in both files with the same shape.\n8. `web/src/pages/no-hardcoded-strings.test.ts` — every user-vis"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ible string must come from a resource file (BR-6).\n9. `scripts/verify-i18n-parity.mjs` — script that verifies EN/AR parity; the shared key must satisfy it.\n10. `web"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"/src/pages/tickets/useTicketQueue.ts` — how row state is stored and mutated. Read all ~4 KB. Confirm how a successful write fl"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ows the returned ticket (with its new `revision`) back into the row so a follow-up write on the same row is not refused as stale.\n11. `web/src/pages/tickets/useAssignTicket"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":".ts`, `useChangeCategory.ts`, `useChangeStatus.ts` — read each (each ~1 KB). Confirm that the response body from the API returns the fresh `revision` and"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" that the caller (or `useTicketQueue.ts`) updates the row with it.\n12. `scripts/criteria/tickets.md` — acceptance criteria under **TICKETS-13-WEB** (~line 397)."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"\n\n---\n\n## Product rules (from story)\n\n- **BR-5** (owned upstream by CRM-94): a write carries the revision it read; the"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" API returns 409 on mismatch.\n- **BR-6**: every user-visible string comes from a resource file, in both languages."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"\n\n**Current behaviour**\n\n- Each of the three controls has its own `staleTitle` (and companion strings). Two English sentences vs"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" one; two Arabic sentences vs one. The recovery affordance offered is `window.location.reload()`.\n\n**New behaviour**\n\n- One"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" shared stale-refusal string per language, used by all three controls.\n- One shared recovery affordance across all three controls (keep `window.location.reload()` —"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" see task 3 below).\n- After a successful write, the row carries the new revision returned by the API so a second write on the same row is not refused by the first."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"\n- The 409 refusal is presented as an **informational** state (“somebody else got there first, take"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" another look”), **not** an error. It must not be routed through the generic error banner.\n\n---\n\n## Frontend Tasks\n\n### 1 — Introduce one"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" shared stale-refusal string set\n\n**File:** `web/src/shared/i18n/en.ts`\n\n- Add a new namespace, e.g. `ticketStaleWrite`, next to the existing "}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ticket-write namespaces:\n  ```ts\n  ticketStaleWrite: {\n    title: 'This ticket changed while you were looking at it',\n    body:  'Nothing went wrong — som"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ebody else got there first. Take another look.',\n    action:'Look again',\n  },\n  ```\n  Exact wording is the planner’s suggestion; match the tone of the existing `"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ticketAssign.staleTitle` (line 276) and align with the acceptance-criterion phrasing “the ticket changed while it was being read and off"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ers to look again”.\n- Remove `staleTitle` (and any sibling `staleBody` / `staleAction`) from `ticketAssign` (line 276 region), `ticketSt"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"atus` (line 342 region), `ticketCategory` (line 356 region).\n\n**File:** `web/src/shared/i18n/ar.ts`\n\n- Add the mirrored `ticketStaleWrite` block. Use one"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" Arabic sentence — collapse the two current variants at **lines 230, 292, 306**. Suggested:\n  ```ts\n  ticketStaleWrite: {\n    title: 'تغيّ"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"رت هذه التذكرة أثناء نظرك إليها',\n    body:  'لم يح"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"دث خطأ — سبقك شخصٌ آخر. انظر م"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"رة أخرى.',\n    action:'انظر مرة أخرى',\n  },\n  ```\n- Delete the three per-control stale strings at lines 230, 292, 306.\n\nBoth files must remain in lock"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"step so `parity.test.ts` and `scripts/verify-i18n-parity.mjs` pass.\n\n### 2 — Point all three queue-row controls at the sh"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ared string\n\n**File:** `web/src/pages/tickets/TicketQueuePage.tsx`\n\n- Extract the per-control stale JSX into a single small internal component or helper (e.g. `ren"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"derStaleRefusal(t)` or `<StaleRefusal />`) so the three branches at **lines 186–195**, **236–…"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"**, and **305–…** render the same title, body, and action from `t.ticketStaleWrite`.\n- Replace:\n  - `title={t.ticketAssign.staleTitle}"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"` at **line 190**\n  - `title={t.ticketCategory.staleTitle}` at **line 236**\n  - `title={t.ticketStatus.staleTitle}` at **line 305**\n  with the shared component"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" / shared key `t.ticketStaleWrite.title`.\n- The action button (currently `window.location.reload()`) is kept and centralised. See task 3.\n- Do **not** change the"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" `stale` predicate at **line 109** — it stays a check on `assign.error?.code === 'REVISION_MISMATCH'`, and the equivalent for the"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" other two mutations. Preserve the guard at **line 197** (`assign.status === 'error' && !stale && assign.error`) so the generic error banner still h"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ides when the refusal is a 409.\n\n### 3 — Keep one recovery action across all three controls\n\nThe story is explicit: “if `window.location.reload()` is kept, ke"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ep it everywhere; if it is replaced, replace it everywhere.”\n\n- Keep `window.location.reload()` for this story — replacing it is a lar"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ger UX change outside the point count. Route all three controls’ action button through the same handler in the shared component from task"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" 2.\n- Do **not** silently swap in a targeted refetch here; if the team later ch"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ooses a softer refresh, that is a separate story so all three controls move together.\n\n### 4 — Preserve fresh-revision propagation on"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" success\n\n**Files:** `web/src/pages/tickets/useTicketQueue.ts`, `useAssignTicket.ts`, `useChangeCategory.ts`, `useChangeStatus.ts`.\n\n- Read each hook and"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" confirm the success handler writes the API response (including `revision`) back onto the queue row it mutated. If any of the three drops the revision on the"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" floor (returns before merging, or merges only some fields), fix it so all three merge the"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" returned row — key at minimum `id`, `revision`, `status`, `assigneeId`, `categoryId`, `updatedAt`. The"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" comment at **TicketQueuePage.tsx line 343** already flags that a row can go stale relative to itself; make sure the three success paths obey the same mer"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ge shape.\n- No new state shape. This is a consistency task: three success paths, one merge.\n\n### 5 — Do not treat a 409 as a"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" failure surface\n\n**File:** `web/src/pages/tickets/TicketQueuePage.tsx`\n\n- Confirm each of the three controls filters the 409 out"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" of the generic error banner (assign already does at **line 197**). Apply the same `!stale` guard to the category and status branches if they lack it.\n- The shared `"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"<StaleRefusal />` renders inside the row (as today), not as a toast or a red banner. Visually ne"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"utral, not red — reuse the same styling `ticketAssign` uses today.\n\n---\n\n## Edge Cases & Failure Modes\n\n- **Two controls on the same row race."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"** Agent hits Assign, it succeeds and updates the row’s revision (task 4). They then hit Change"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" Status. Expected: the second write carries the fresh revision and is **not** refused. Enforced by task 4 mer"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ges in the three hooks.\n- **409 raced with a plain 500.** Only `REVISION_MISMATCH` shows the stale refusal;"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" any other error still uses the generic error branch — the `!stale` guard at **TicketQueuePage.tsx line 197** must apply to all"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" three controls.\n- **User in Arabic locale.** The Arabic `ticketStaleWrite` must be the exact wording used everywhere. `parity.test.ts` catches a"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" missing key; `no-mirrored-styles.test.ts` catches accidental LTR wrapping.\n- **Hardcoded f"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"allback string.** If any refactor introduces a bare English string (`'Refused: stale'` or similar), `web/src/pages/no-hardcoded-strings.test.ts` will fail. Route"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" every user-visible word through `t.ticketStaleWrite.*`.\n- **Third party mutates row while the reload button is being clicked.** Re"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"load always re-reads the queue; second stale is fine and shows the same string.\n- **Old i18n keys still referenced somewhere.** After"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" removing `ticketAssign.staleTitle`, `ticketStatus.staleTitle`, `ticketCategory.staleTitle`, grep the whole `web/` tree for each removed key — every"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" hit must be updated or removed. Leaving one stale reference will break TypeScript typing on the `t` namespace when it is typed, or f"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ail a test at runtime.\n- **New control added later.** The shared `<StaleRefusal />` keeps the promise: ad"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ding a fourth control means importing the same component and the same handler.\n\n---\n\n## Test Plan\n\n1. **`web/src/pages/tickets/AssignTic"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ket.test.tsx`** — replace both `en.ticketAssign.staleTitle` assertions (**lines 162, 180**) with `en.ticketStaleWrite.title`. Add an assertion that the “look"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" again” action is present using `en.ticketStaleWrite.action`.\n2. **`web/src/pages/tickets/ChangeCategory.test.tsx`** — replace `en.ticketCategory.staleTitle` (**lines 173, 190**) with `en."}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ticketStaleWrite.title`. Same action-button assertion.\n3. **`web/src/pages/tickets/ResolveTicket.test.tsx`** — replace `en.ticketStatus.staleTit"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"le` (**line 169**) with `en.ticketStaleWrite.title`. Same action-button assertion.\n4. **New test** in `web/src/pages/tickets/TicketQueuePage.test.tsx` (or a new file `StaleW"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"rite.test.tsx` next to the queue page) — mount the queue, force each of the three mutations to fail with a stub"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"bed `REVISION_MISMATCH`, and assert **the exact same title and body render** for all three. This is the guard against the string"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" diverging again.\n5. **New test** in the same file — successful assign returns a ticket with `revision + 1`; a follow-up change-status on the same row does"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" **not** trigger the stale branch. This proves task 4.\n6. **New test** — a non-409 error from any of the three controls still rout"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"es to the generic error branch (i.e. the stale block is not rendered when `code !== 'REVISION_MISMATCH'`). Guards"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" the `!stale` filter for all three controls.\n7. **`web/src/shared/i18n/parity.test.ts`** — should pass automatically because both files add"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" / remove the same keys. Re-run to confirm.\n8. **`web/src/pages/no-hardcoded-strings.test.ts`** — should pass; run to confirm no bare English"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" leaked in.\n\nAll web tests are vitest. Do **not** rely on typecheck alone (the web suite does not run `"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"tsc` as part of `npm test` — see standing hints).\n\n---\n\n## Migration / Rollback\n\n- No schema change. No API change.\n- Half-applied state (only some"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" controls switched to the shared key): parity test still passes, but tests 1–3 fail loudly. Rollback is a plain revert of the two"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" `i18n` files and `TicketQueuePage.tsx`.\n\n---\n\n## Verification Steps\n\n1. **Frontend tests:** `cd web && npm test` — expect"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" the three updated control tests and the new shared-behaviour test to pass, plus `parity.test.ts` and `no-hardcoded-strings.test.ts`.\n2. **Frontend build:** `c"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"d web && npm run build` — runs `tsc -b && vite build`; catches any dangling reference to a removed i18n key.\n3. **i18n parity script:** `node"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" scripts/verify-i18n-parity.mjs` from repo root.\n4. **Regression — API untouched:** `cd api && npm test` — no failures. Confirms this"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" WEB story did not drift into API code.\n5. **Regression — no AI attribution:** from repo root, `grep -R"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"niE 'copilot|chatgpt|claude|assistant|ai[- ]generated|ai[- ]assist' web/src"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"` returns nothing new introduced by this change.\n6. **Manual smoke (optional):** run"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" `cd web && npm run dev`, open two tabs on the queue as different agents, edit the same ticket from one, then hit Assign /"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" Change Status / Change Category from the other — each shows **the same title and body** and the same “look again” affordance.\n\n---\n\n## Done Criteria\n\n- [ ] One shared `"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ticketStaleWrite` namespace exists in both `web/src/shared/i18n/en.ts` and `web/src/shared/i18n/ar.ts` with `title`, `body`, `action`.\n- [ ] The three per-control stale ke"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"ys (`ticketAssign.staleTitle`, `ticketStatus.staleTitle`, `ticketCategory.staleTitle`, plus any sibling `staleBody`/`staleAction`) are removed from both language files.\n- [ ] All three queue-row controls"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" in `web/src/pages/tickets/TicketQueuePage.tsx` render the stale refusal from the shared source (same title, same body, same action"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" button) via one shared component / helper.\n- [ ] The stale refusal is not rendered as a generic error; the `!stale` guard is applied on all three controls (currently only on assign at **line 197"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"**).\n- [ ] On a successful write, the row picks up the returned fresh revision so a follow-up write on the same row is not refused by the previous one — verified by test"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" 5.\n- [ ] `AssignTicket.test.tsx`, `ChangeCategory.test.tsx`, `ResolveTicket.test.tsx` are updated to reference the shared key.\n- [ ] A"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":" new shared-behaviour test asserts the three controls render identical strings on a `REVISION_MISMATCH`.\n- [ ] `cd web && npm test` and `cd web && npm run build` both green; `scripts/verify-"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"i18n-parity.mjs` green.\n- [ ] No `api/` file is modified in the diff.\n\n**STOP HERE. Report to the user and wait for conf"}
+{"kind":"assistant_text","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":27,"delta":"irmation before proceeding to the next story.**"}
+{"kind":"turn_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":28,"stopReason":"tool_use_or_text"}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":29,"usage":{"inputTokens":0,"outputTokens":6871}}
+{"kind":"usage","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":28,"usage":{"inputTokens":21,"outputTokens":9370,"cacheCreationTokens":21894,"cacheReadTokens":314693}}
+{"kind":"cache_summary","runId":"0mtgz4y5o-47b15cfe5dee5047","turn":28,"cacheHitRatio":1,"cacheReadTokens":327192,"cacheCreationTokens":37222}
+{"kind":"stage_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","stage":"draft","success":true,"durationMs":162655}
+{"kind":"stage_started","runId":"0mtgz4y5o-47b15cfe5dee5047","stage":"validation"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"web/src/shared/i18n/ar.ts","detail":"Symbol `staleAction` not found as substring in file","excerpt":"`staleAction`"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"web/src/shared/i18n/ar.ts","detail":"Symbol `staleBody` not found as substring in file","excerpt":"`staleBody`"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"scripts/verify-i18n-parity.mjs","detail":"Symbol `revision` not found as substring in file — did you mean: `RESOURCES`, `ROOT`, `ROOTS`?","excerpt":"`revision`"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"web/src/pages/no-hardcoded-strings.test.ts","detail":"Symbol `ticketStaleWrite` not found as substring in file — did you mean: `text`, `TEXT_ATTRIBUTES`, `traverse`?","excerpt":"`ticketStaleWrite`"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"web/src/shared/i18n/en.ts","detail":"Symbol `ticketStaleWrite` not found as substring in file","excerpt":"`ticketStaleWrite`"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"web/src/shared/i18n/en.ts","detail":"Symbol `action` not found as substring in file","excerpt":"`action`"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"web/src/shared/i18n/en.ts","detail":"Symbol `staleBody` not found as substring in file","excerpt":"`staleBody`"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"web/src/shared/i18n/en.ts","detail":"Symbol `staleAction` not found as substring in file","excerpt":"`staleAction`"}
+{"kind":"validation_issue","runId":"0mtgz4y5o-47b15cfe5dee5047","severity":"warning","issueKind":"symbol_not_found","path":"scripts/verify-i18n-parity.mjs","detail":"Symbol `REVISION_MISMATCH` not found as substring in file — did you mean: `RESOURCES`, `ROOT`, `ROOTS`?","excerpt":"`REVISION_MISMATCH`"}
+{"kind":"stage_complete","runId":"0mtgz4y5o-47b15cfe5dee5047","stage":"validation","success":true,"durationMs":18}

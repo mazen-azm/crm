@@ -159,12 +159,12 @@ test('a stale revision says the ticket changed and offers to look again', async 
   await userEvent.selectOptions(picker(), 'staff-1');
   await userEvent.click(assignButton());
 
-  await waitFor(() => expect(screen.getByText(en.ticketAssign.staleTitle)).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText(en.ticketStale.title)).toBeInTheDocument());
   // Not the generic "something went wrong at our end": the code says somebody
   // else changed it, and that is an action the agent can take.
   expect(screen.getByText(en.errors.REVISION_MISMATCH)).toBeInTheDocument();
   expect(screen.queryByText(en.errors.INTERNAL)).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: en.ticketAssign.reload })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: en.ticketStale.reload })).toBeInTheDocument();
 });
 
 test('any other failure is reported as itself, not as a stale write', async () => {
@@ -177,7 +177,7 @@ test('any other failure is reported as itself, not as a stale write', async () =
   await userEvent.click(assignButton());
 
   await waitFor(() => expect(screen.getByText(en.ticketAssign.failedTitle)).toBeInTheDocument());
-  expect(screen.queryByText(en.ticketAssign.staleTitle)).not.toBeInTheDocument();
+  expect(screen.queryByText(en.ticketStale.title)).not.toBeInTheDocument();
 });
 
 test('the row shows the assignee\'s name, not their id', async () => {

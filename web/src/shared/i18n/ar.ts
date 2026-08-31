@@ -227,8 +227,6 @@ export const ar = defineLocale({
     label: 'أسنِد إلى',
     submit: 'أسنِد',
     assigning: 'جارٍ الإسناد…',
-    staleTitle: 'تغيّرت هذه التذكرة أثناء نظرك إليها',
-    reload: 'أعد تحميل الطابور',
     failedTitle: 'لم يتم الإسناد',
   },
   ticketReply: {
@@ -289,8 +287,11 @@ export const ar = defineLocale({
     none: 'بلا تصنيف',
     submit: 'غيِّر التصنيف',
     filing: 'جارٍ التغيير…',
-    staleTitle: 'تغيّرت هذه التذكرة أثناء قراءتك لها',
     failedTitle: 'لم يتغيّر التصنيف',
+  },
+  ticketStale: {
+    title: 'تغيّرت هذه التذكرة أثناء نظرك إليها',
+    reload: 'انظر مرة أخرى',
   },
   ticketStatus: {
     label: 'انقل إلى',
@@ -303,8 +304,6 @@ export const ar = defineLocale({
     noteRequired: 'الحل يحتاج ملاحظة. اكتب ما الذي تم.',
     resolvedNote: 'الحل',
     failedTitle: 'لم تتم النقلة',
-    staleTitle: 'تغيّرت هذه التذكرة أثناء نظرك إليها',
-    reload: 'أعد تحميل الطابور',
   },
   ticketHistory: {
     heading: 'السجل',
