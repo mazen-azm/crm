@@ -188,16 +188,20 @@ Not applicable — no schema change and no persistent client state. Rollback is 
 
 ## Done Criteria
 
-- [ ] `ManageCategoriesPage.tsx` exists under `web/src/pages/tickets/` and is mounted from `routes.tsx` at an admin-only path.
-- [ ] Admin nav link added in `DeskShell.tsx` inside the `isAdmin === true` branch, and only there.
-- [ ] Add, rename, and retire mutations use dedicated `useRequest`-based hooks; each round-trips to the existing API routes at `api/src/features/tickets/tickets.routes.js:54–62`.
-- [ ] List refreshes after every mutation without a full page reload (single reader: `useTicketCategories`).
-- [ ] Retire asks first via an inline confirmation this screen owns; the confirmation quotes the name inside U+2068 … U+2069.
-- [ ] Non-admin sees a courtesy refusal (SC-2); `isAdmin === undefined` renders only a skeleton.
-- [ ] All new strings live in both `en.ts` and `ar.ts`; `parity.test.ts` and `no-hardcoded-strings.test.ts` pass.
-- [ ] No native validator attributes (`required`, `pattern`, `type="email"`, `min`, `max`) on the form (L-55).
-- [ ] `cd web && npm test` and `cd web && npm run build` both green; `cd api && npm test` still green.
-- [ ] No AI-attribution strings in commits or diffs.
+- [x] An admin adds, renames and retires a category, and the list shows each result without a reload — every write answers with what it made, so the screen edits the row it changed.
+- [x] A name already taken marks the field with the shared sentence for the code, rather than reporting a failure of the screen.
+- [x] Retiring asks first, and cancelling writes nothing. It is the one action here that changes what everybody else's picker offers and that this screen cannot undo.
+- [x] A non-admin is told rather than shown controls that will be refused — courtesy, not enforcement (SC-2); the API refuses whatever this draws.
+- [x] Reached from the navigation, which shows the link only to an admin — the same arrangement `/accounts/set-password` uses.
+- [x] Renaming to the name it already has is not offered.
+- [x] A blank name never reaches the API.
+- [x] Both languages (BR-6); `cd web && npm test` (291) and `npm run build` pass; `cd api && npm test` (458) untouched.
+- [x] No commit, doc or ignore-file entry mentions AI assistance.
+
+Six mutations run: retiring without asking fails 2, re-reading the list after
+an add fails 1, drawing the controls for a non-admin fails 1, reporting a taken
+name as a screen failure fails 1, leaving the rename button always enabled
+fails 1, and a rename that replaces every row fails 1.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
 

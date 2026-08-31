@@ -89,9 +89,14 @@ export function DeskShell({ children }: { children: ReactNode }) {
             Courtesy, not enforcement: the API refuses a non-admin whether or
             not this link is here. */}
         {isAdmin === true ? (
+          <>
+          <Link to="/ticket-categories" className="desk-shell__nav-item">
+            {t.shell.navCategories}
+          </Link>
           <Link to="/accounts/set-password" className="desk-shell__nav-item">
             {t.shell.navSetPassword}
           </Link>
+          </>
         ) : null}
       </nav>
 

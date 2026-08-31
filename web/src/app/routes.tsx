@@ -13,6 +13,7 @@ import { PublicRaiseTicketPage } from '../pages/portal/PublicRaiseTicketPage';
 import { PortalTicketPage } from '../pages/portal/PortalTicketPage';
 import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
+import { TicketCategoriesPage } from '../pages/tickets/TicketCategoriesPage';
 
 // Routes import pages; nothing imports routes. The direction is
 // app -> pages -> features -> entities -> shared, and PLATFORM-15-ALL will
@@ -132,6 +133,20 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <PortalTicketPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Admin-only in the API, and the screen says so for a non-admin who
+          arrives — the same arrangement as /accounts/set-password, and for the
+          same reason: a router-level role gate would be a second place
+          deciding one rule, and the refusal that matters is the API's. */}
+      <Route
+        path="/ticket-categories"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <TicketCategoriesPage />
             </DeskShell>
           </RequireAuth>
         }
