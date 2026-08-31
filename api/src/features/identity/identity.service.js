@@ -106,6 +106,15 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
     };
   };
 
+  // One place that mints a token, so `iat` cannot be set here and forgotten
+  // there. It is the moment the token is issued, in the same whole seconds as
+  // `exp`, and it is what a password change is compared against.
+  const mint = (row) =>
+    signToken(
+      { sub: row.id, role: row.role, exp: now() + TOKEN_TTL_SECONDS, iat: now() },
+      secret,
+    );
+
   return {
     // Not a route. CUSTOMERS-6-API grants a customer a sign-in, which is one
     // user row and one customers.user_id written together — so it calls this
@@ -149,10 +158,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       throttle.forget({ subject: key });
 
       return {
-        token: signToken(
-          { sub: row.id, role: row.role, exp: now() + TOKEN_TTL_SECONDS },
-          secret,
-        ),
+        token: mint(row),
         user: { id: row.id, role: row.role, name: row.name },
       };
     },
@@ -315,7 +321,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       const at = stamp();
       db.exec('BEGIN');
       try {
-        updateUserPassword(db, { id: actor.id, passwordHash: hashPassword(newPassword), at });
+        updateUserPassword(db, { id: actor.id, passwordHash: hashPassword(newPassword), at, changedAt: now() });
         record(actor, {
           entity: 'user', entityId: actor.id, verb: 'user.change-own-password', at,
           before: null, after: { passwordSetAt: at },
@@ -328,12 +334,16 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
 
       // Not throttled, and that is a decision. Sign-in throttles guesses
       // because the guesser has nothing yet; whoever reaches here already
-      // holds a session, so guessing the current password buys them a
-      // password they could have changed anyway once IDENTITY-8-API ends
-      // other sessions. Until that story, tokens issued before this stay
-      // valid until they expire — a stated gap, and the reason this method
-      // does not pretend to be a revocation.
-      return { id: actor.id, updatedAt: at };
+      // holds a session, so guessing the current password buys them a password
+      // they could have changed anyway.
+      //
+      // A fresh token, and this is what makes "every OTHER session" true.
+      // Every token issued before this second is now refused by the resolver —
+      // including the one the caller sent with this very request. Answering
+      // with a new one keeps the session that made the change and needs no
+      // rule to tell it apart from the ones being ended, which on a whole-second
+      // clock could not be written anyway.
+      return { id: actor.id, updatedAt: at, token: mint(findAnyUserById(db, actor.id)) };
     },
 
     // An admin sets somebody else's password, so a locked-out person gets back
@@ -366,7 +376,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       const at = stamp();
       db.exec('BEGIN');
       try {
-        updateUserPassword(db, { id, passwordHash: hashPassword(password), at });
+        updateUserPassword(db, { id, passwordHash: hashPassword(password), at, changedAt: now() });
         record(actor, {
           entity: 'user', entityId: id, verb: 'user.set-password', at,
           // Neither the password nor its hash, on either side — the audit

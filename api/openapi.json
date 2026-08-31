@@ -68,10 +68,10 @@
     },
     "/api/v1/me/password": {
       "post": {
-        "summary": "Change your own password, knowing the current one. One route for every role: an admin doing this uses it too, which is why the admin route for setting somebody else's password refuses a caller their own account — an admin who could skip the current-password check on themselves would turn a stolen session into a permanent one. Body: { currentPassword, newPassword }. Tokens issued before the change stay valid until they expire; ending them is IDENTITY-8-API, and that is a stated gap.",
+        "summary": "Change your own password, knowing the current one. One route for every role: an admin doing this uses it too, which is why the admin route for setting somebody else's password refuses a caller their own account — an admin who could skip the current-password check on themselves would turn a stolen session into a permanent one. Body: { currentPassword, newPassword }. Tokens issued before the change stay valid until they expire; ending them is IDENTITY-8-API, and that is a stated gap. Changing a password ends every OTHER session (IDENTITY-8-API): the account records when its password last changed, and the resolver refuses any token issued before that. The token that made THIS request was issued under the old password and is refused too, so the answer carries a fresh one — which is what keeps the session that made the change alive without a rule to tell it apart from the ones being ended. On a whole-second clock such a rule could not be written: a token minted in the same second as the change is accepted, and that window is stated rather than hidden.",
         "responses": {
           "200": {
-            "description": "{ id, updatedAt }. No password and no hash, here or in the audit row."
+            "description": "{ id, updatedAt, token }. The token replaces the session this change just ended — a client that ignores it is signed out on its next request. No password and no hash, here or in the audit row."
           },
           "401": {
             "description": "The current password is wrong. Sign-in gives one refusal for three causes so the response cannot be used to learn which addresses exist; that reasoning does not reach here, because this caller is already authenticated and already knows the account exists. Telling them which half they got wrong leaks nothing."

@@ -61,7 +61,10 @@ test('the new password signs you in and the old one stops', async () => {
 
   const res = await changeAsAdmin({ currentPassword: adminPassword, newPassword: NEW_PASSWORD });
   assert.equal(res.status, 200);
-  assert.deepEqual(Object.keys(await res.json()).sort(), ['id', 'updatedAt']);
+  // `token` joined them with IDENTITY-8-API: the change now ends every session
+  // issued before it, including the one that made the request, so the answer
+  // has to carry the one that replaces it. Still no password and no hash.
+  assert.deepEqual(Object.keys(await res.json()).sort(), ['id', 'token', 'updatedAt']);
 
   assert.equal((await signIn(adminEmail, NEW_PASSWORD)).status, 200);
   assert.equal((await signIn(adminEmail, adminPassword)).status, 401);

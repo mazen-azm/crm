@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
-import { setAuthTokenGetter, setUnauthenticatedHandler } from '../shared/api/client';
+import { setAuthTokenGetter, setTokenReplacedHandler, setUnauthenticatedHandler } from '../shared/api/client';
 
 // The token stored here is what the API issued. It is read synchronously on
 // the first render rather than in an effect, which is what makes a reload keep
@@ -67,6 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionEnded(false);
     setToken(next);
   }, []);
+
+  // What to do when a call answers with a token that REPLACES the one being
+  // held — a password change ends every session issued before it, this one
+  // included, so its answer carries the successor. Storing a token is this
+  // context's job; the hook that receives it only announces, because a hook
+  // under pages/ reaching up to app/ is a layer violation the architecture
+  // check fails by name.
+  //
+  // Registered during render like the getter above, and for the same reason:
+  // an effect here runs after the pages' effects, and a token announced before
+  // registration would be dropped.
+  setTokenReplacedHandler(signIn);
 
   // The clearing half, without the "your session ended" half. Pressing the
   // button and the token expiring both end up here; only one of them should
