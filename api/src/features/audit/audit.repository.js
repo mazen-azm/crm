@@ -24,6 +24,53 @@ export function insertAuditEvent(db, { id, actorId, entity, entityId, verb, at, 
 // SQLite walks a b-tree backwards at no cost for ORDER BY at ASC. No second
 // index: a test asserts the planner uses this one rather than sorting, so the
 // claim is checked rather than assumed.
+// The filters an admin reads the whole trail through, as a WHERE clause and
+// the values to bind.
+//
+// `actorId: SYSTEM_ACTOR` becomes `actor_id IS NULL` rather than a comparison
+// against a value. The system genuinely does things here — an auto-close, an
+// escalation — and a filter that could not express "the system" would hide
+// exactly the rows nobody else can explain.
+//
+// A range is inclusive at both ends. The stamps are whole seconds, so an
+// exclusive upper bound would silently drop everything that happened in the
+// last second of the range somebody asked for.
+export const SYSTEM_ACTOR = 'system';
+
+function trailFilter({ actorId, entity, entityId, from, to }) {
+  const where = [];
+  const params = [];
+  if (actorId === SYSTEM_ACTOR) where.push('actor_id IS NULL');
+  else if (actorId !== undefined) { where.push('actor_id = ?'); params.push(actorId); }
+  if (entity !== undefined) { where.push('entity = ?'); params.push(entity); }
+  if (entityId !== undefined) { where.push('entity_id = ?'); params.push(entityId); }
+  if (from !== undefined) { where.push('at >= ?'); params.push(from); }
+  if (to !== undefined) { where.push('at <= ?'); params.push(to); }
+  return { where: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
+}
+
+// The whole trail, filtered. Same projection and same ordering as the
+// per-ticket read below it: `at ASC, rowid ASC`, because a second-resolution
+// stamp is not an order (L-19) and two rows written in the same second would
+// otherwise swap between two reads.
+export function listTrail(db, { limit, offset, ...filters }) {
+  const { where, params } = trailFilter(filters);
+  return db
+    .prepare(`
+      SELECT id, actor_id, entity, entity_id, verb, at, diff
+        FROM audit_events
+        ${where}
+       ORDER BY at ASC, rowid ASC
+       LIMIT ? OFFSET ?
+    `)
+    .all(...params, limit, offset);
+}
+
+export function countTrail(db, filters) {
+  const { where, params } = trailFilter(filters);
+  return db.prepare(`SELECT count(*) AS n FROM audit_events ${where}`).get(...params).n;
+}
+
 export function listAuditEvents(db, { entity, entityId, limit, offset }) {
   return db
     .prepare(`

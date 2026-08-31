@@ -1,4 +1,5 @@
 import { createApp } from './app.js';
+import { auditRouter, createTrailReader } from './features/audit/index.js';
 import { channelsRouter } from './features/channels/index.js';
 import { conversationRouter, createConversationService } from './features/conversation/index.js';
 import { createCustomersService, customersRouter } from './features/customers/index.js';
@@ -53,6 +54,7 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // The same tickets service the other features hold, not a second one.
       v1.use(ticketsRouter({ db, now, service: tickets }));
       v1.use(notificationsRouter({ service: notifications }));
+      v1.use(auditRouter({ reader: createTrailReader({ db }) }));
       // One throttle per composed app, the way sign-in's is built inside its
       // own service: every test then starts with empty counters and cannot
       // inherit another test's.
