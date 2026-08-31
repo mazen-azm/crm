@@ -174,6 +174,21 @@ export function validateCategoryName({ name }) {
 // index was supposed to prevent.
 export const normaliseCategoryName = (name) => String(name).trim();
 
+// T-6: a resolved ticket closes itself once the reopen window has passed.
+//
+// The SAME fourteen days as T-5, read from the same constant through the same
+// function. Two constants would let the rules drift apart and leave a day on
+// which a ticket is too old to reopen and not yet closed — or worse, one on
+// which it is closed and still reopenable.
+//
+// A ticket with no resolution moment is not due: it is not resolved, and
+// `withinReopenWindow` treats a missing stamp as outside the window, which is
+// the safe direction there and the wrong answer here.
+export function dueForAutoClose({ resolvedAt, nowSeconds }) {
+  if (!resolvedAt) return false;
+  return !withinReopenWindow({ resolvedAt, nowSeconds });
+}
+
 export const TRANSITIONS = Object.freeze({
   new: Object.freeze(['open', 'pending', 'resolved']),
   open: Object.freeze(['pending', 'resolved']),

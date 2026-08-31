@@ -51,7 +51,7 @@ const assigneeShape = (row) => ({
   role: row.role,
 });
 
-export function createIdentityService({ db, secret, now = () => Math.floor(Date.now() / 1000) }) {
+export function createIdentityService({ db, secret, tickets, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
 
   // One throttle per service instance, so every composeApp — and so every
@@ -106,6 +106,15 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
     };
   };
 
+  // One place that mints a token, so `iat` cannot be set here and forgotten
+  // there. It is the moment the token is issued, in the same whole seconds as
+  // `exp`, and it is what a password change is compared against.
+  const mint = (row) =>
+    signToken(
+      { sub: row.id, role: row.role, exp: now() + TOKEN_TTL_SECONDS, iat: now() },
+      secret,
+    );
+
   return {
     // Not a route. CUSTOMERS-6-API grants a customer a sign-in, which is one
     // user row and one customers.user_id written together — so it calls this
@@ -149,10 +158,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       throttle.forget({ subject: key });
 
       return {
-        token: signToken(
-          { sub: row.id, role: row.role, exp: now() + TOKEN_TTL_SECONDS },
-          secret,
-        ),
+        token: mint(row),
         user: { id: row.id, role: row.role, name: row.name },
       };
     },
@@ -252,6 +258,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       if (wouldRemoveLastAdmin(before, null)) throw new HttpError(409, 'CONFLICT');
 
       const at = stamp();
+      let unassigned = 0;
       db.exec('BEGIN');
       try {
         disableUser(db, { id, at });
@@ -259,13 +266,25 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
           entity: 'user', entityId: id, verb: 'user.disable', at,
           before: { deletedAt: null }, after: { deletedAt: at },
         });
+        // In the same transaction, deliberately. An account disabled with its
+        // queue still assigned to it is worse than either outcome alone: the
+        // work is invisible in every "unassigned" view and its owner cannot
+        // sign in to hand it over.
+        //
+        // Tickets does the moving, because the tickets table is its own — this
+        // only says when.
+        unassigned = tickets.unassignAllFor(actor, { assigneeId: id, at });
         db.exec('COMMIT');
       } catch (failure) {
         db.exec('ROLLBACK');
         throw failure;
       }
 
-      return { user: publicShape({ ...before, deleted_at: at, updated_at: at }) };
+      // The count beside the user, not instead of it. An admin deciding
+      // whether to disable somebody is deciding what happens to their work,
+      // and a number they have to go and count is a number they will not
+      // count. Zero is an answer, not an omission.
+      return { user: publicShape({ ...before, deleted_at: at, updated_at: at }), unassigned };
     },
 
     // Anybody changes their own password, knowing the current one. One route
@@ -315,7 +334,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       const at = stamp();
       db.exec('BEGIN');
       try {
-        updateUserPassword(db, { id: actor.id, passwordHash: hashPassword(newPassword), at });
+        updateUserPassword(db, { id: actor.id, passwordHash: hashPassword(newPassword), at, changedAt: now() });
         record(actor, {
           entity: 'user', entityId: actor.id, verb: 'user.change-own-password', at,
           before: null, after: { passwordSetAt: at },
@@ -328,12 +347,16 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
 
       // Not throttled, and that is a decision. Sign-in throttles guesses
       // because the guesser has nothing yet; whoever reaches here already
-      // holds a session, so guessing the current password buys them a
-      // password they could have changed anyway once IDENTITY-8-API ends
-      // other sessions. Until that story, tokens issued before this stay
-      // valid until they expire — a stated gap, and the reason this method
-      // does not pretend to be a revocation.
-      return { id: actor.id, updatedAt: at };
+      // holds a session, so guessing the current password buys them a password
+      // they could have changed anyway.
+      //
+      // A fresh token, and this is what makes "every OTHER session" true.
+      // Every token issued before this second is now refused by the resolver —
+      // including the one the caller sent with this very request. Answering
+      // with a new one keeps the session that made the change and needs no
+      // rule to tell it apart from the ones being ended, which on a whole-second
+      // clock could not be written anyway.
+      return { id: actor.id, updatedAt: at, token: mint(findAnyUserById(db, actor.id)) };
     },
 
     // An admin sets somebody else's password, so a locked-out person gets back
@@ -366,7 +389,7 @@ export function createIdentityService({ db, secret, now = () => Math.floor(Date.
       const at = stamp();
       db.exec('BEGIN');
       try {
-        updateUserPassword(db, { id, passwordHash: hashPassword(password), at });
+        updateUserPassword(db, { id, passwordHash: hashPassword(password), at, changedAt: now() });
         record(actor, {
           entity: 'user', entityId: id, verb: 'user.set-password', at,
           // Neither the password nor its hash, on either side — the audit

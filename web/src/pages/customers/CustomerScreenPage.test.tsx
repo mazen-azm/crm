@@ -139,11 +139,21 @@ test('a failure says what the code means and offers to try again', async () => {
 
 test('the contact details are isolated so a phone number is not reordered', async () => {
   vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(json(SCREEN)())));
-  const { container } = at();
+  at();
 
-  await waitFor(() => expect(screen.getByText('Leila Mansour')).toBeInTheDocument());
-  const isolated = [...container.querySelectorAll('bdi')].map((e) => e.textContent);
-  expect(isolated).toContain('+20 2 5555 0177');
+  // The details became editable (CUSTOMERS-7-WEB), so the <bdi> that used to
+  // isolate them is gone — and the problem it solved is not. An input inherits
+  // the document's direction, and a phone number inside an Arabic page would
+  // be reordered exactly as it was inside an Arabic paragraph: the groups
+  // reverse and the plus lands at the far end.
+  //
+  // dir="auto" is <bdi> for a value somebody can edit — the content decides,
+  // so this reads left to right and an Arabic name in the field above does
+  // not.
+  const phone = await screen.findByLabelText(en.customerScreen.phoneLabel);
+  expect(phone).toHaveValue('+20 2 5555 0177');
+  expect(phone).toHaveAttribute('dir', 'auto');
+  expect(await screen.findByLabelText(en.customerScreen.nameLabel)).toHaveAttribute('dir', 'auto');
 });
 
 test('a customer with no email or phone says so rather than showing nothing', async () => {
@@ -153,6 +163,18 @@ test('a customer with no email or phone says so rather than showing nothing', as
   );
   at();
 
-  await waitFor(() => expect(screen.getByText(en.customerScreen.noEmail)).toBeInTheDocument());
-  expect(screen.getByText(en.customerScreen.noPhone)).toBeInTheDocument();
+  // The same words, now as placeholders: the fields are empty because the
+  // customer has neither, and an empty box saying nothing would be a box
+  // somebody has to guess at.
+  await waitFor(() =>
+    expect(screen.getByLabelText(en.customerScreen.emailLabel)).toHaveAttribute(
+      'placeholder',
+      en.customerScreen.noEmail,
+    ),
+  );
+  expect(screen.getByLabelText(en.customerScreen.emailLabel)).toHaveValue('');
+  expect(screen.getByLabelText(en.customerScreen.phoneLabel)).toHaveAttribute(
+    'placeholder',
+    en.customerScreen.noPhone,
+  );
 });

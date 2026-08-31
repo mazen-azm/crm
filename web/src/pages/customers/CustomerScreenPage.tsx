@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import {
   Button,
@@ -7,6 +7,7 @@ import {
   EmptyState,
   ErrorState,
   Heading,
+  Input,
   Isolated,
   Field,
   Skeleton,
@@ -15,13 +16,16 @@ import {
   TextArea,
 } from '../../shared/ui';
 import { useTranslation } from '../../shared/i18n';
+import { useMe } from '../../shared/session/use-me';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { priorityLabel, statusLabel } from '../tickets/ticket-labels';
 import { useAssignees } from '../tickets/useAssignees';
 import { useCustomer } from './useCustomer';
 import { useGrantSignIn } from './useGrantSignIn';
 import { isBlank, useWriteNote } from './useWriteNote';
-import type { Note } from './useCustomer';
+import { useCorrectContacts } from './useCorrectContacts';
+import { useDeleteCustomer } from './useDeleteCustomer';
+import type { Customer, Note } from './useCustomer';
 
 // The separator is punctuation, not words, so it does not belong in the
 // resource files — but it does not belong typed between tags either, where
@@ -39,6 +43,20 @@ export function CustomerScreenPage() {
   // returned an assignee id. The screen that needs the name is the screen with
   // the list, so it resolves it rather than the API growing a join.
   const staff = useAssignees();
+
+  const correction = useCorrectContacts(id);
+  const removal = useDeleteCustomer(id);
+  const navigate = useNavigate();
+  const { isAdmin } = useMe();
+  const [confirming, setConfirming] = useState(false);
+  // The customer as this screen has corrected it. The write answers with the
+  // customer, so the card follows the answer rather than reloading the screen
+  // — a reload would also throw away a half-typed note in the composer below.
+  const [corrected, setCorrected] = useState<Customer | null>(null);
+  // What is in the three fields. Seeded from the customer when it arrives and
+  // owned by the form afterwards: a value re-derived on every render would
+  // undo somebody's typing the moment anything else on the page changed.
+  const [contacts, setContacts] = useState<Record<'name' | 'email' | 'phone', string> | null>(null);
 
   const [draft, setDraft] = useState('');
   const [missing, setMissing] = useState(false);
@@ -76,25 +94,147 @@ export function CustomerScreenPage() {
     );
   }
 
-  const { customer, tickets, notes } = screen;
+  const { tickets, notes } = screen;
+  // The corrected one where there is one, so the heading, the form and the
+  // sign-in card all read the same customer.
+  const customer = corrected ?? screen.customer;
   const allNotes = [...notes.items, ...added];
+
+  // Seeded once, from whichever customer is current. Not derived on every
+  // render: a value recomputed from the customer would undo somebody's typing
+  // the moment a note was added beside it.
+  const held = contacts ?? {
+    name: customer.name,
+    email: customer.email ?? '',
+    phone: customer.phone ?? '',
+  };
+  const edit = (field: 'name' | 'email' | 'phone', value: string) =>
+    setContacts({ ...held, [field]: value });
+
+  // Only what somebody edited. A blank field means "no value" and travels as
+  // null, which the API treats as an ordinary value — the same shape the
+  // ticket controls use for nobody and no category.
+  const orNull = (value: string) => (value.trim() === '' ? null : value);
+  const patch: Record<string, string | null> = {};
+  if (held.name !== customer.name) patch.name = held.name;
+  if (orNull(held.email) !== (customer.email ?? null)) patch.email = orNull(held.email);
+  if (orNull(held.phone) !== (customer.phone ?? null)) patch.phone = orNull(held.phone);
+  const changed = Object.keys(patch).length > 0;
+  const marked = (field: string) =>
+    correction.status === 'error' && correction.error?.fields?.includes(field);
 
   return (
     <Stack gap={4}>
       <Heading level={1}>{customer.name}</Heading>
 
+      {/* The details, and the way to correct them. They were read-only text
+          until now; an agent who mishears an address is the person who should
+          be able to fix it, and a second screen for three fields would be a
+          second place a customer is read.
+
+          The bidi isolation the read-only card had must not be lost with it.
+          A <bdi> stopped an Arabic paragraph from reordering a phone number;
+          an input inherits the document's direction and would reorder it just
+          the same, so every field carries dir="auto" — which is what <bdi>
+          does, applied to a value somebody can edit: the content decides,
+          so a phone number reads left to right and an Arabic name does not. */}
       <Card>
-        <Stack gap={1}>
+        <Stack gap={2}>
           <Text variant="muted">{t.customerScreen.contacts}</Text>
-          {/* Both are left-to-right runs that a right-to-left paragraph would
-              otherwise reorder — a phone number's groups reverse and its plus
-              lands at the far end. */}
-          <Text>
-            <Isolated>{customer.email ?? t.customerScreen.noEmail}</Isolated>
-          </Text>
-          <Text>
-            <Isolated>{customer.phone ?? t.customerScreen.noPhone}</Isolated>
-          </Text>
+
+          <Field
+            id="customer-name"
+            label={t.customerScreen.nameLabel}
+            error={marked('name') ? t.errors.VALIDATION_FAILED : undefined}
+          >
+            {({ id: fieldId, describedBy, invalid }) => (
+              <Input
+                id={fieldId}
+                aria-describedby={describedBy}
+                aria-invalid={invalid}
+                dir="auto"
+                value={held.name}
+                onChange={(event) => edit('name', event.target.value)}
+              />
+            )}
+          </Field>
+
+          <Field
+            id="customer-email"
+            label={t.customerScreen.emailLabel}
+            error={marked('email') ? t.errors.VALIDATION_FAILED : undefined}
+          >
+            {({ id: fieldId, describedBy, invalid }) => (
+              // Deliberately not type="email". The browser would refuse to
+              // submit and the API's rule would never run, and the sentence
+              // somebody reads would be the browser's — wrong language,
+              // unstyled, outside the resource files (L-55).
+              <Input
+                id={fieldId}
+                aria-describedby={describedBy}
+                aria-invalid={invalid}
+                placeholder={t.customerScreen.noEmail}
+                dir="auto"
+                value={held.email}
+                onChange={(event) => edit('email', event.target.value)}
+              />
+            )}
+          </Field>
+
+          <Field
+            id="customer-phone"
+            label={t.customerScreen.phoneLabel}
+            error={marked('phone') ? t.errors.VALIDATION_FAILED : undefined}
+          >
+            {({ id: fieldId, describedBy, invalid }) => (
+              <Input
+                id={fieldId}
+                aria-describedby={describedBy}
+                aria-invalid={invalid}
+                placeholder={t.customerScreen.noPhone}
+                dir="auto"
+                value={held.phone}
+                onChange={(event) => edit('phone', event.target.value)}
+              />
+            )}
+          </Field>
+
+          <Button
+            variant="secondary"
+            // Nothing to save is not an action. The API refuses a correction
+            // that corrects nothing, and offering the button would invite
+            // somebody to press it and read a refusal that was their own
+            // screen's fault.
+            disabled={!changed || correction.status === 'loading'}
+            onClick={() => {
+              correction
+                .correct(patch)
+                .then((saved) => {
+                  setCorrected(saved);
+                  // Re-seeded from the answer, so a value the API trimmed or
+                  // normalised is what the field then shows.
+                  setContacts({
+                    name: saved.name,
+                    email: saved.email ?? '',
+                    phone: saved.phone ?? '',
+                  });
+                })
+                .catch(() => {});
+            }}
+          >
+            {correction.status === 'loading'
+              ? t.customerScreen.contactsSaving
+              : t.customerScreen.contactsSave}
+          </Button>
+
+          {correction.status === 'error'
+          && correction.error
+          && !correction.error.fields?.length ? (
+            <ErrorState
+              title={t.customerScreen.contactsFailed}
+              body={t.errors[correction.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+            />
+          ) : null}
         </Stack>
       </Card>
 
@@ -231,6 +371,71 @@ export function CustomerScreenPage() {
           ))}
         </Stack>
       )}
+
+      {/* Removing the customer, last on the screen: it is the one action here
+          that cannot be undone from any screen, and it belongs after
+          everything somebody might have come to read.
+
+          isAdmin is undefined until /me answers, and nothing role-dependent is
+          drawn then. "Not an admin" and "we do not know yet" are different,
+          and drawing the refusal for the second tells an admin they are not
+          one for as long as a request takes. */}
+      {isAdmin === false ? (
+        <Card>
+          {/* Courtesy, not enforcement. SC-2 puts the rule in the API, which
+              refuses an agent whatever this draws. */}
+          <Text variant="muted">{t.customerScreen.deleteNotAdmin}</Text>
+        </Card>
+      ) : null}
+
+      {isAdmin === true ? (
+        <Card>
+          <Stack gap={2}>
+            {confirming ? (
+              <>
+                {/* It asks first, in place. window.confirm is used nowhere in
+                    this codebase and could not be translated if it were. */}
+                <Text>{t.customerScreen.deleteConfirm}</Text>
+                <Stack direction="row" gap={2} align="start">
+                  <Button
+                    disabled={removal.status === 'loading'}
+                    onClick={() => {
+                      removal
+                        .remove()
+                        .then(() => {
+                          // Away from a screen whose subject is gone. Staying
+                          // would leave the reader looking at a 404 they
+                          // caused — and `replace`, so the back button does
+                          // not return them to it.
+                          navigate('/customers', { replace: true });
+                        })
+                        .catch(() => {});
+                    }}
+                  >
+                    {removal.status === 'loading'
+                      ? t.customerScreen.deleting
+                      : t.customerScreen.deleteConfirmYes}
+                  </Button>
+                  <Button variant="secondary" onClick={() => setConfirming(false)}>
+                    {t.customerScreen.deleteCancel}
+                  </Button>
+                </Stack>
+              </>
+            ) : (
+              <Button variant="secondary" onClick={() => setConfirming(true)}>
+                {t.customerScreen.deleteCustomer}
+              </Button>
+            )}
+
+            {removal.status === 'error' && removal.error ? (
+              <ErrorState
+                title={t.customerScreen.deleteFailed}
+                body={t.errors[removal.error.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+              />
+            ) : null}
+          </Stack>
+        </Card>
+      ) : null}
     </Stack>
   );
 }

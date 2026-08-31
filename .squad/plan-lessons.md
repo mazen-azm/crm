@@ -1260,3 +1260,36 @@ reason. Neither is a test somebody remembered to write; both read the routes
 off the router. That is the argument for a census over a checklist, made by the
 censuses rather than about them.
 
+---
+
+## L-62 — Two objects for one thing agree until one of them is given something
+
+**Rule:** when a feature's router builds its own service AND compose builds one
+for other features to call, they are two objects, and the day either gains a
+collaborator the other lacks, the behaviour depends on which door the request
+came through. Hand the built service to the router rather than letting it
+construct a second.
+
+**Where it came from:** `NOTIFICATIONS-1-API (CRM-115)`. The notification is
+written from inside the ticket-assignment transaction, so the tickets service
+was given a `notifications` collaborator in `compose.js`. Eight tests failed
+saying nobody had been told — while the assignment itself answered 200 with the
+right assignee.
+
+`ticketsRouter({ db, now })` was calling `createTicketsService({ db, now })` on
+its own. So two tickets services existed: the one the routes used, and the one
+conversation, identity and customers hold. They had behaved identically for six
+sprints, which is exactly why nobody noticed — and the first difference between
+them was invisible from the outside, because the route it broke still returned
+the right ticket.
+
+The router now takes `service` with its own construction as a default, and
+compose passes the built one. The default keeps every existing test that calls
+`ticketsRouter({ db, now })` working, which is the point: the fix is one line in
+compose, not a migration of every caller.
+
+**The wider rule:** a "wiring works" test is not the same as "the wiring is one
+graph". Nothing here asserts that compose builds one of each service, and
+nothing yet does — but the failure looked like a broken feature for ten minutes
+and was a duplicated object.
+

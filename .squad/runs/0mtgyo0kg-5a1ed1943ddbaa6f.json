@@ -1,0 +1,56 @@
+{
+  "runId": "0mtgyo0kg-5a1ed1943ddbaa6f",
+  "provider": "anthropic",
+  "model": "claude-opus-4-7",
+  "feature": "tickets",
+  "storyId": "CRM-94",
+  "startedAt": "2026-08-31T08:13:04.096Z",
+  "completedAt": "2026-08-31T08:18:12.707Z",
+  "success": true,
+  "partial": false,
+  "planFile": ".squad/plans/tickets/87-story-crm-94.md",
+  "stats": {
+    "turns": 36,
+    "inputTokens": 40,
+    "outputTokens": 22162,
+    "cacheCreationTokens": 48494,
+    "cacheReadTokens": 379857,
+    "cacheHitRatio": 1,
+    "durationMs": 185408
+  },
+  "cacheEnabled": true,
+  "durationMs": 308602,
+  "scout": {
+    "enabled": true,
+    "selectedCount": 15,
+    "tokensUsed": 11940,
+    "durationMs": 123129
+  },
+  "validation": {
+    "enabled": true,
+    "issuesCount": 5,
+    "issuesByKind": {
+      "missing_path": 1,
+      "symbol_not_found": 4
+    },
+    "durationMs": 33
+  },
+  "plannerRuntime": {
+    "kind": "agent-sdk",
+    "provider": "anthropic"
+  },
+  "authMode": "subscription",
+  "providerOptionsSnapshot": {
+    "anthropic": {
+      "draft": {
+        "thinking": "adaptive",
+        "effort": "medium"
+      },
+      "scout": {
+        "thinking": "adaptive",
+        "effort": "minimal"
+      }
+    }
+  },
+  "version": 1
+}

@@ -198,6 +198,12 @@ Not applicable — no schema change and no persistent client state. Rollback is 
 - [x] Both languages (BR-6); `cd web && npm test` (291) and `npm run build` pass; `cd api && npm test` (458) untouched.
 - [x] No commit, doc or ignore-file entry mentions AI assistance.
 
+The screen is `TicketCategoriesPage.tsx`, not `ManageCategoriesPage.tsx` as
+the plan's test section says — named for what it shows rather than for the verb,
+matching `TicketQueuePage` beside it. `verify-docs` warns about the stale
+citation, and the warning is right; it is left as the record of a name that
+changed rather than edited away.
+
 Six mutations run: retiring without asking fails 2, re-reading the list after
 an add fails 1, drawing the controls for a non-admin fails 1, reporting a taken
 name as a screen failure fails 1, leaving the rename button always enabled

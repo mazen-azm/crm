@@ -21,6 +21,28 @@ export function identitySubjectResolver({ db, secret, now }) {
       const row = findLiveUserById(db, claims.sub);
       if (!row) return null;
 
+      // And a token outlives the password it was issued under. Changing a
+      // password ends every OTHER session (IDENTITY-8-API): the account records
+      // when its password last changed, and anything issued before that is no
+      // longer a subject.
+      //
+      // Asked here rather than at sign-in, for the reason the disabled check
+      // is: a token already in somebody's hands is only stopped by asking on
+      // every request.
+      //
+      // `>=` and not `>`. The clock is whole seconds, so the fresh token the
+      // change itself answers with carries the very second the change
+      // happened, and `>` would sign out the person who just changed their own
+      // password — which is the one session that must survive.
+      //
+      // The cost is stated rather than hidden: a token minted in the SAME
+      // second as the change, on another device, is accepted. Nothing in the
+      // token tells the two apart, because a second is the finest thing this
+      // clock measures. A test pins that window so it is a known limit rather
+      // than a surprise.
+      const issuedAt = typeof claims.iat === 'number' ? claims.iat : 0;
+      if (issuedAt < (row.password_changed_at ?? 0)) return null;
+
       // Which customer this is, for the role that has one. The ticket
       // ownership check compares against it, so it has to be on the subject
       // rather than looked up inside a service that would then be reading

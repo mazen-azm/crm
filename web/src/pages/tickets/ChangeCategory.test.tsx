@@ -170,9 +170,9 @@ test('a stale revision says the ticket changed, and offers to look again', async
   // 409 is not "something went wrong". Somebody else changed the ticket, and
   // the only useful next action is to look at it again — the same shape
   // assignment and the status move already use.
-  expect(await screen.findByText(en.ticketCategory.staleTitle)).toBeInTheDocument();
+  expect(await screen.findByText(en.ticketStale.title)).toBeInTheDocument();
   expect(screen.getByText(en.errors.REVISION_MISMATCH)).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: en.ticketAssign.reload })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: en.ticketStale.reload })).toBeInTheDocument();
 });
 
 test('any other refusal is reported without pretending it was a conflict', async () => {
@@ -187,7 +187,7 @@ test('any other refusal is reported without pretending it was a conflict', async
   expect(screen.getByText(en.errors.VALIDATION_FAILED)).toBeInTheDocument();
   // A retired category is refused by the API this way, and it is not a stale
   // revision — telling somebody to reload would send them round a loop.
-  expect(screen.queryByText(en.ticketCategory.staleTitle)).not.toBeInTheDocument();
+  expect(screen.queryByText(en.ticketStale.title)).not.toBeInTheDocument();
 });
 
 test('every string comes from the resource file, in both languages', async () => {

@@ -157,6 +157,48 @@ export function countCustomerNotes(db, { customerId }) {
 
 // The link I-1 describes, set once. Scoped to live rows for the reason every
 // write here is: a removed customer is kept for the trail, not for writing to.
+// Which columns a contact correction may touch.
+//
+// Here rather than only in the service, because this function builds column
+// names into SQL: a caller that passed an unexpected key would be writing the
+// query, and the guard belongs where the string is assembled rather than one
+// layer away from it.
+const CORRECTABLE = new Set(['name', 'email', 'phone']);
+
+// A partial contact correction. Only the columns named are written; the rest
+// are left as they are, which is what makes an audit diff readable — and what
+// stops a screen that sends all three from overwriting two to change one.
+//
+// Scoped to live rows: a deleted customer is a 404 and not an update target.
+export function updateCustomerContacts(db, { id, changes, at }) {
+  const columns = Object.keys(changes);
+  if (columns.length === 0) return null;
+  for (const column of columns) {
+    if (!CORRECTABLE.has(column)) throw new Error(`not a correctable column: ${column}`);
+  }
+
+  const assignments = columns.map((column) => `${column} = ?`).join(', ');
+  const written = db
+    .prepare(`UPDATE customers SET ${assignments}, updated_at = ? WHERE id = ? AND deleted_at IS NULL`)
+    .run(...columns.map((column) => changes[column]), at, id);
+  if (written.changes === 0) return null;
+
+  return db.prepare(`SELECT ${PROJECTION} FROM customers WHERE id = ?`).get(id);
+}
+
+// Soft, like every removal here (BR-1). The row stays, the audit rows that
+// name them stay, and their tickets are untouched — the list, the search and
+// the count already ask for `deleted_at IS NULL`, so hiding them costs no new
+// filter and cannot be forgotten in one place and not another.
+//
+// Scoped to live rows, so deleting twice reports nothing changed rather than
+// moving the moment it happened. The same shape retireCategory has.
+export function softDeleteCustomer(db, { id, at }) {
+  return db
+    .prepare('UPDATE customers SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')
+    .run(at, at, id).changes;
+}
+
 export function setCustomerUserId(db, { customerId, userId, at }) {
   return db
     .prepare('UPDATE customers SET user_id = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL')

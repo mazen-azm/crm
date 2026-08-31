@@ -18,6 +18,10 @@ Entry point for the **customers** feature. Stories execute in order by their `NN
 | 52 | `52-story-crm-64.md` | CUSTOMERS-5-API system — an arriving request matches a customer by address, or creates one | CRM-64 | — |
 | 56 | `56-story-crm-65.md` | CUSTOMERS-6-API agent — I give a customer a sign-in | CRM-65 | — |
 | 59 | `59-story-crm-66.md` | CUSTOMERS-6-WEB agent — I give a customer a sign-in | CRM-66 | — |
+| 80 | `80-story-crm-67.md` | CUSTOMERS-7-API agent — I correct a customer's contact details | CRM-67 | — |
+| 81 | `81-story-crm-68.md` | CUSTOMERS-7-WEB agent — I correct a customer's contact details | CRM-68 | — |
+| 82 | `82-story-crm-69.md` | CUSTOMERS-8-API admin — deleting a customer hides them and keeps the audit trail | CRM-69 | — |
+| 83 | `83-story-crm-70.md` | CUSTOMERS-8-WEB admin — deleting a customer hides them and keeps the audit trail | CRM-70 | — |
 
 ## Dependency notes
 

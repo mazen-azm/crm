@@ -13,6 +13,7 @@ import {
   validateAssignment,
   validateCategoryQuery,
   validateRaisedTicket,
+  dueForAutoClose,
   withinReopenWindow,
   normaliseCategoryName,
   validateCategoryName,
@@ -26,6 +27,8 @@ import {
   findLiveCategoryId,
   findLiveAssigneeId,
   findLiveCustomerId,
+  findOpenTicketsAssignedTo,
+  findResolvedTickets,
   findTicketById,
   countCustomerTickets,
   insertTicket,
@@ -107,7 +110,7 @@ const publicShape = (row, nowSeconds) => ({
   updatedAt: row.updated_at,
 });
 
-export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1000) }) {
+export function createTicketsService({ db, notifications, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
   const audit = createAuditWriter({ db });
   const serviceLevels = createServiceLevels({ db, now });
@@ -497,6 +500,15 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
           at,
         });
 
+        // Told, in the same transaction. An assignment nobody is told about is
+        // the gap NOTIFICATIONS-1-API exists to close, and a notification for
+        // an assignment that did not happen is worse than either.
+        //
+        // Notifications decides whether there is anything to write — nobody is
+        // told they assigned a ticket to themselves — because that is a rule
+        // about notifying and not a rule about assigning.
+        notifications?.ticketAssigned(actor, { ticketId: id, assigneeId, at });
+
         return publicShape(findTicketById(db, { id }), now());
       });
     },
@@ -578,6 +590,44 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
       return ticket;
     },
 
+    // Hand back everything an agent still has to work on, because their
+    // account is being disabled.
+    //
+    // From inside the caller's transaction, like stopClock and
+    // openOnFirstReply beside it: identity disables the user and this moves
+    // the tickets, and an account disabled with its queue still assigned to it
+    // is worse than either outcome alone — the work is invisible and its owner
+    // cannot sign in. SQLite refuses BEGIN inside BEGIN, so this opens none.
+    //
+    // It lives here rather than in identity because the tickets table is this
+    // feature's, and a second place that wrote assignee_id would be a second
+    // set of rules about what an assignment is.
+    unassignAllFor(actor, { assigneeId, at }) {
+      const theirs = findOpenTicketsAssignedTo(db, { assigneeId });
+
+      for (const ticket of theirs) {
+        // The revision read a line ago, inside this transaction — so the
+        // compare-and-set cannot fail, and BR-5's guard stays on every write
+        // rather than gaining an exception for sweeps. The bump matters: an
+        // agent holding this ticket open is correctly refused afterwards.
+        assignTicket(db, { id: ticket.id, assigneeId: null, revision: ticket.revision, at });
+
+        // The disabling ADMIN is the actor, not the agent losing the ticket.
+        // The trail must not show tickets that moved with nobody moving them,
+        // and nobody is what an audit row with the wrong actor amounts to.
+        audit.record(actor, {
+          entity: 'ticket',
+          entityId: ticket.id,
+          verb: 'ticket.assign',
+          before: { assigneeId },
+          after: { assigneeId: null },
+          at,
+        });
+      }
+
+      return theirs.length;
+    },
+
     // The reopen a REPLY causes (T-5), from inside the caller's transaction.
     //
     // It opens none of its own, like openOnFirstReply beside it, because the
@@ -630,6 +680,63 @@ export function createTicketsService({ db, now = () => Math.floor(Date.now() / 1
         at,
       });
       return true;
+    },
+
+    // T-6: close every resolved ticket whose fourteen days have passed.
+    //
+    // There is no scheduler in this application and none is added here. The
+    // sweep is a method something calls — a route an operator or a cron hits —
+    // and that choice is stated rather than hidden in a comment, because the
+    // alternative was worse: evaluating on read would make every read of a
+    // ticket a potential write, and a ticket nobody reads would never close,
+    // which is the one thing T-6 promises.
+    //
+    // Each ticket closes in its own transaction. One transaction around the
+    // whole sweep would mean a single ticket that could not be closed —
+    // because somebody moved it a millisecond earlier — undoing the others.
+    // The sweep is a series of independent facts, not one atomic act.
+    sweepAutoClose() {
+      const at = stamp();
+      const nowSeconds = now();
+      const closed = [];
+
+      for (const ticket of findResolvedTickets(db)) {
+        if (!dueForAutoClose({ resolvedAt: ticket.resolved_at, nowSeconds })) continue;
+
+        transact(db, () => {
+          const { changes } = updateTicketStatus(db, {
+            id: ticket.id,
+            status: 'closed',
+            // The revision read a moment ago. BR-5's guard stays on every
+            // write; the sweep is not an exception to it, and if somebody
+            // moved this ticket between the read and here, `changes` is 0 and
+            // this one is skipped rather than overwritten.
+            revision: ticket.revision,
+            at,
+            resolutionNote: null,
+          });
+          if (changes === 0) return;
+
+          // A null actor, which the trail renders as the system. Attributing
+          // it to whichever admin called the route would be a false record:
+          // they chose when the sweep ran, not which tickets were due. That is
+          // the rule's decision, and the rule has no name.
+          audit.record(null, {
+            entity: 'ticket',
+            entityId: ticket.id,
+            verb: 'ticket.status',
+            before: { status: 'resolved' },
+            after: { status: 'closed' },
+            at,
+          });
+
+          closed.push(ticket.id);
+        });
+      }
+
+      // What it did, so an operator reading a cron log can tell a sweep that
+      // found nothing from one that failed. Most sweeps will close nothing.
+      return { closed: closed.length, at };
     },
 
     // A ticket in the shape a caller may see, by id, with no transaction and

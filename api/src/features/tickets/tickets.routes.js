@@ -18,8 +18,14 @@ import { createTicketsService } from './tickets.service.js';
 // would be a second, different answer to "is this ticket mine". The service is
 // where the one answer lives, and ticket-ownership.guarantee.test.js reads
 // these routes off the router so a new one cannot skip it.
-export function ticketsRouter({ db, now }) {
-  const service = createTicketsService({ db, now });
+// `service` may be handed in, and compose does hand it in. This router used to
+// build its own, which meant two tickets services existed — one for the routes
+// and one for the features that call across (conversation, identity,
+// customers). They behaved identically until one was given a collaborator the
+// other did not have: the notification written when a ticket becomes somebody's
+// went to the instance the routes never used, so assigning through the API told
+// nobody. Two objects for one thing agree until they do not.
+export function ticketsRouter({ db, now, service = createTicketsService({ db, now }) }) {
   const router = express.Router();
 
   // Any signed-in staff member raises a ticket for a customer. One queue —
@@ -106,6 +112,22 @@ export function ticketsRouter({ db, now }) {
   // different caller: the queue is the desk's and refuses a customer, and a
   // route whose meaning depended on who asked would make "what does GET
   // /tickets return" a question with two answers.
+  // The sweep T-6 needs, as a route rather than a timer.
+  //
+  // Under /tickets and not under a /maintenance prefix of its own, deliberately:
+  // it writes to tickets, and stale-write.guarantee.test.js reads every ticket
+  // write off the router. A path the census does not watch is a write nobody
+  // is holding to BR-5 — so this one is named there with the reason it carries
+  // no revision, which is the conversation worth having rather than avoiding.
+  //
+  // adminOnly because something has to authenticate, and an operator or a cron
+  // acting for the desk is the closest thing this product has to an operator.
+  // The audit row still carries no actor: the admin chose when it ran, not
+  // which tickets were due.
+  router.post('/tickets/sweep-auto-close', adminOnly, (req, res) => {
+    res.json(service.sweepAutoClose());
+  });
+
   router.get('/me/tickets', requireSubject(), (req, res) => {
     res.json(
       service.mine(req.subject, {

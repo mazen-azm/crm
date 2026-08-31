@@ -358,3 +358,92 @@ An agent's own tickets are one click away.
   keeps its filters there.
 - Given every string, then it came from a resource file, in both languages
   (BR-6).
+
+## TICKETS-13-API
+
+A write is refused if somebody edited the ticket while it was being read, on
+every path that writes.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given a ticket read at one revision, when a write carries that revision and
+  the ticket has since changed, then it is refused 409 REVISION_MISMATCH and
+  nothing is written (BR-5). The status move, the assignment and the category
+  change already do this; this story is about the word *every*.
+- Given every route that writes to a ticket, read off the router rather than
+  listed, then each either carries a revision or is named as not needing one,
+  with the reason. A rule enforced on three paths out of four protects nothing
+  — the same argument the ownership, audit, staff-only and note-leak censuses
+  already make, and the fourth census of that shape.
+- Given a write with no revision, then it is refused naming the field, not
+  accepted as "no opinion". A caller that forgot the revision is a caller whose
+  read was stale and does not know it.
+- Given a write carrying a revision that is not a number, or one from the
+  future, then it is refused the same way. A revision nobody issued cannot
+  match, and pretending it might is worse than saying so.
+- Given a successful write, then the answer carries the ticket at its new
+  revision, so the next write from the same screen is not refused by the
+  first.
+- Given a refusal, then the audit trail has no row for it. A refused write did
+  not happen.
+
+*Out of scope*
+- Applying BR-5 outside tickets. The rule names the writes it covers, and a
+  customer's contact details are not among them (CUSTOMERS-7-API says so).
+- Telling the caller what changed, or who changed it. The refusal says the
+  ticket moved; the history says the rest, and it is one request away.
+
+## TICKETS-13-WEB
+
+The same, on a screen.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given any control on the queue row that writes, when the write is refused as
+  stale, then the screen says the ticket changed while it was being read and
+  offers to look again — in the same words, whichever control it was. Three
+  controls with three sentences for one cause teach somebody that it is three
+  causes.
+- Given that refusal, then it is not reported as a failure. Nothing went wrong:
+  somebody else got there first, and the useful next action is to look.
+- Given a successful write, then the row carries the new revision, so an
+  agent's second change is not refused by their own first. This is already true
+  of each control; the story is that it stays true when a new one is added.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
+## TICKETS-14-API
+
+A resolved ticket closes itself once the window passes.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given a ticket resolved more than fourteen days ago, then it is closed (T-6)
+  — the same fourteen days after which a customer can no longer reopen it by
+  replying (T-5), read from the same rule rather than from a second constant.
+- Given a ticket resolved inside the window, then it is left alone, and a
+  customer replying still reopens it. The two rules meet exactly: there is no
+  day on which a ticket is too old to reopen and not yet closed, and none on
+  which it is closed and still reopenable.
+- Given the close, then it is audited with no human actor (BR-2) — the trail
+  already renders a null actor as the system, and a close attributed to
+  whichever admin happened to call the route would be a false record.
+- Given the close, then it obeys the state machine: only a resolved ticket
+  closes this way, and a ticket already closed is not closed twice.
+- Given this application has no scheduler, then how the sweep is triggered is
+  stated in the plan and not invented in a comment. The honest options are a
+  route an operator or a cron can call, and evaluating on read; the second
+  makes every read a write and is refused for that reason. Whichever is built,
+  a ticket that is never read must still close.
+- Given a sweep that closes nothing, then it is not an error and writes no
+  rows. Most sweeps will close nothing.
+
+*Out of scope*
+- Reopening a ticket the sweep closed. Closed is terminal — TICKETS-4-API's
+  argument, which this does not weaken. After fourteen days there was nothing
+  to reopen anyway.
+- Telling anybody it happened. Nothing in the backlog asks, and a notification
+  per auto-close would be one per resolved ticket a fortnight later.

@@ -273,8 +273,6 @@ export const en = {
     label: 'Assign to',
     submit: 'Assign',
     assigning: 'Assigning…',
-    staleTitle: 'This ticket changed while you were looking at it',
-    reload: 'Reload the queue',
     failedTitle: 'That assignment did not go through',
   },
   ticketReply: {
@@ -339,8 +337,15 @@ export const en = {
     none: 'No category',
     submit: 'Change the category',
     filing: 'Changing…',
-    staleTitle: 'This ticket changed while you were reading it',
     failedTitle: 'The category was not changed',
+  },
+  // One cause, one answer. Three controls on the queue row write to a ticket
+  // and all three can be refused because somebody else changed it first; they
+  // had three sentences between them, two alike and one drifted. Three
+  // sentences for one cause teach somebody there are three causes.
+  ticketStale: {
+    title: 'This ticket changed while you were looking at it',
+    reload: 'Look again',
   },
   ticketStatus: {
     label: 'Move to',
@@ -353,8 +358,6 @@ export const en = {
     noteRequired: 'Resolving needs a note. Say what was done.',
     resolvedNote: 'Resolution',
     failedTitle: 'That move did not go through',
-    staleTitle: 'This ticket changed while you were looking at it',
-    reload: 'Reload the queue',
   },
   ticketHistory: {
     heading: 'History',
@@ -384,6 +387,19 @@ export const en = {
   },
   customerScreen: {
     contacts: 'Contact',
+    nameLabel: 'Name',
+    emailLabel: 'Email address',
+    phoneLabel: 'Phone number',
+    contactsSave: 'Save the corrections',
+    contactsSaving: 'Saving…',
+    contactsFailed: 'The corrections were not saved',
+    deleteCustomer: 'Delete this customer',
+    deleteConfirm: 'Deleting takes this customer off every list and search. Their tickets and the record of what happened stay, and this screen cannot bring them back.',
+    deleteConfirmYes: 'Delete them',
+    deleteCancel: 'Keep them',
+    deleting: 'Deleting…',
+    deleteFailed: 'The customer was not deleted',
+    deleteNotAdmin: 'Only an administrator can delete a customer.',
     noEmail: 'No email address',
     noPhone: 'No phone number',
     openTickets: 'Open tickets',

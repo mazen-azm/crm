@@ -44,9 +44,13 @@ async function start() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: adminEmail, password: adminPassword }),
   });
-  const { token } = await res.json();
+  // A holder rather than a value: changing the admin's own password below ends
+  // every session issued before it, this one included, and the census adopts
+  // the token that answer carries. `call` reads through the holder so the
+  // steps that follow use the live one.
+  const session = { token: (await res.json()).token };
 
-  const call = (path, { method = 'GET', body, tok = token } = {}) =>
+  const call = (path, { method = 'GET', body, tok = session.token } = {}) =>
     fetch(`${url}${path}`, {
       method,
       headers: {
@@ -57,7 +61,7 @@ async function start() {
     });
 
   const auditCount = () => real.prepare('SELECT count(*) AS n FROM audit_events').get().n;
-  return { app, real, call, auditCount, adminPassword };
+  return { app, real, call, auditCount, adminPassword, session };
 }
 
 // Every mutating route this file drives. Compared against the router below.
@@ -69,6 +73,8 @@ const EXERCISED = new Set([
   'POST /api/v1/accounts/:id/set-password',
   'POST /api/v1/me/password',
   'POST /api/v1/customers',
+  'PATCH /api/v1/customers/:id',
+  'DELETE /api/v1/customers/:id',
   'POST /api/v1/customers/:id/notes',
   'POST /api/v1/customers/:id/sign-in',
   'POST /api/v1/tickets',
@@ -79,6 +85,8 @@ const EXERCISED = new Set([
   'PATCH /api/v1/ticket-categories/:id',
   'DELETE /api/v1/ticket-categories/:id',
   'POST /api/v1/tickets/:id/replies',
+  'POST /api/v1/me/notifications/:id/read',
+  'POST /api/v1/tickets/sweep-auto-close',
   'POST /api/v1/intake/:channel/tickets',
 ]);
 
@@ -101,7 +109,7 @@ test('every mutating route the router serves is exercised by this file', async (
 });
 
 test('each mutating route writes exactly one audit row', async () => {
-  const { call, auditCount, adminPassword } = await start();
+  const { call, auditCount, adminPassword, session, real } = await start();
 
   const steps = [
     ['POST /api/v1/accounts', () =>
@@ -133,6 +141,20 @@ test('each mutating route writes exactly one audit row', async () => {
     method: 'POST',
     body: { name: 'Granted A Sign In', email: 'granted@support-desk.local' },
   })).json();
+
+  // A customer of its own to delete. The seeded one the steps above act on
+  // cannot be the one deleted here: whichever order the steps run in, a
+  // deleted customer answers 404 to the note and the correction beside it.
+  const toDelete = await (await call('/api/v1/customers', {
+    method: 'POST',
+    body: { name: 'To Be Deleted', email: 'deleted@support-desk.local' },
+  })).json();
+
+  // Who the census is signed in as, so a notification can be written FOR them.
+  // One is needed because the read route below marks their own, and nothing
+  // the census does would produce one: a notification is written when somebody
+  // ELSE assigns you a ticket, and the census acts as one person throughout.
+  const me = await (await call('/api/v1/me')).json();
 
   // Raised outside the counted steps below: each of those asserts exactly one
   // new audit row, and raising a ticket writes one of its own. Driven for real
@@ -226,6 +248,27 @@ test('each mutating route writes exactly one audit row', async () => {
     // one per route, so the recognised case is the one that belongs in it; the
     // two-row case is pinned in the channels feature's own tests, where the
     // count is the thing being tested rather than the frame around it.
+    // Written straight into the table: the route that creates one is an
+    // assignment BY SOMEBODY ELSE, and this census is one person. The route
+    // being driven here is the read.
+    ['POST /api/v1/me/notifications/:id/read', () => {
+      real.prepare(`
+        INSERT INTO notifications (id, user_id, ticket_id, kind, created_at)
+        VALUES ('census-notification', ?, ?, 'ticket.assigned', '2026-08-31T00:00:00.000Z')
+      `).run(me.id, replied.id);
+      return call('/api/v1/me/notifications/census-notification/read', { method: 'POST' });
+    }],
+    // The sweep, with one ticket due. Its audit row carries no actor — the
+    // admin chose when it ran, not which tickets were due — and the census
+    // counts rows rather than reading actors, so it belongs here like any
+    // other mutation.
+    ['POST /api/v1/tickets/sweep-auto-close', () => {
+      real.prepare(`
+        UPDATE tickets SET status = 'resolved', resolved_at = '2020-01-01T00:00:00.000Z'
+         WHERE id = ?
+      `).run(replied.id);
+      return call('/api/v1/tickets/sweep-auto-close', { method: 'POST' });
+    }],
     ['POST /api/v1/intake/:channel/tickets', () =>
       call('/api/v1/intake/web/tickets', {
         method: 'POST',
@@ -240,6 +283,13 @@ test('each mutating route writes exactly one audit row', async () => {
     // customer is the walk-in counter and has none.
     ['POST /api/v1/customers/:id/sign-in', () =>
       call(`/api/v1/customers/${withEmail.id}/sign-in`, { method: 'POST' }), 2],
+    ['PATCH /api/v1/customers/:id', () =>
+      call(`/api/v1/customers/${customer.id}`, {
+        method: 'PATCH',
+        body: { phone: '+20 2 5555 0199' },
+      })],
+    ['DELETE /api/v1/customers/:id', () =>
+      call(`/api/v1/customers/${toDelete.id}`, { method: 'DELETE' })],
     ['POST /api/v1/customers/:id/notes', () =>
       call(`/api/v1/customers/${customer.id}/notes`, {
         method: 'POST',
@@ -252,16 +302,25 @@ test('each mutating route writes exactly one audit row', async () => {
     ['POST /api/v1/accounts/:id/re-enable', () =>
       call(`/api/v1/accounts/${created.id}/re-enable`, { method: 'POST' })],
     // The admin's own, through the route that asks for the current one. It
-    // runs last of the password steps because it changes the credential this
-    // whole file signed in with — anything after it would be using a token
-    // issued against a password that no longer exists. It still works, because
-    // ending other sessions is IDENTITY-8-API and has not shipped; when it
-    // does, this line is where that shows up.
-    ['POST /api/v1/me/password', () =>
-      call('/api/v1/me/password', {
+    // changes the credential this whole file signed in with, and IDENTITY-8-API
+    // has now shipped — so every token issued before this second, including the
+    // one this census is holding, stops being accepted.
+    //
+    // The comment that stood here predicted exactly that: "when it does, this
+    // line is where that shows up." It did, as a 401 on the very next step.
+    //
+    // So the census does what any client must now do: it takes the token the
+    // answer carries and keeps going. That is not a workaround — it is the
+    // contract, and a census that special-cased its way past it would be
+    // hiding the thing the story added.
+    ['POST /api/v1/me/password', async () => {
+      const res = await call('/api/v1/me/password', {
         method: 'POST',
         body: { currentPassword: adminPassword, newPassword: 'a-new-admin-password' },
-      })],
+      });
+      if (res.ok) session.token = (await res.clone().json()).token;
+      return res;
+    }],
     // Somebody else's account: an admin may not set their own password here.
     ['POST /api/v1/accounts/:id/set-password', () =>
       call(`/api/v1/accounts/${created.id}/set-password`, {

@@ -34,9 +34,49 @@ is why a plan may contain no "consider", no "might", and no invented path.
 ## What the tool does not know
 
 squad-kit models *unplanned* and *planned* and stops there. Nothing in it knows
-whether anybody built the thing. `scripts/plan-status.mjs` (planned) derives that from the
-`## Done Criteria` checklist in each plan, which is what an implementer ticks as
-they go.
+whether anybody built the thing. `scripts/verify-plan.mjs:182` derives that from
+the `## Done Criteria` checklist in each plan, which is what an implementer ticks
+as they go — a fully ticked plan describes work that shipped, and its findings
+are downgraded accordingly.
+
+## What the gates catch
+
+The method's value is not that a plan gets written. It is that two gates stand
+between a plan and the code, and both of them stop things.
+
+**GATE 1 — the intake.** A person writes what the work must do before an agent
+writes how. It is where the acceptance criteria are argued, and the arguing is
+the work: whether a resolved ticket outside its window should still show a reply
+box, whether a deleted customer can still be read, whether ending sessions can
+be decided by comparing times on a whole-second clock. None of those is a coding
+question, and a plan asked to answer them invents an answer.
+
+**GATE 2 — the plan review.** Every plan is read against the code before a line
+is written, and every plan so far has contained at least one thing that is not
+there. The recurring kinds, each now a rule in `.squad/plan-lessons.md`:
+
+- **A route, field or file that does not exist.** `nextCursor` has been invented
+  by four separate plans against an API that answers `{ items, total, limit,
+  offset }`; `GET /tickets/:id/thread` was named three times for a route called
+  `/messages`.
+- **Another engine's dialect.** A plan described a column as `timestamptz` in a
+  SQLite project. `verify-plan` failed it by name — the check exists because an
+  earlier plan arrived written for Postgres.
+- **An instruction that would break something argued elsewhere.** One plan said a
+  deleted customer should read as 404. The repository says the opposite in a
+  comment, and no test pinned it, so it would have changed silently.
+- **A layer declared out of scope that cannot be.** Four stories arrived with
+  their API half missing, each found by a screen that had nothing to call. The
+  pattern is stable enough to name: *the missing piece is in the layer the story
+  is not in*, because that is the layer the plan takes on trust.
+
+**After the build, a mutation pass.** Every new guard is broken deliberately to
+see whether a test fails. Three times the mutation passed, which is the useful
+result: a uniqueness check that could not tell a customer from themselves on a
+`COLLATE NOCASE` column, a repository allow-list nothing exercised because the
+service filtered first, and an `ORDER BY` tiebreak that no test on SQLite can
+fail. The first two became tests. The third is recorded as unpinned, because
+claiming coverage that does not exist is worse than the gap.
 
 ## Configuration
 

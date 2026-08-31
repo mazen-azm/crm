@@ -21,8 +21,16 @@ const encode = (value) => Buffer.from(JSON.stringify(value)).toString('base64url
 const sign = (encodedPayload, secret) =>
   createHmac(ALGORITHM, secret).update(encodedPayload).digest('base64url');
 
-export function signToken({ sub, role, exp }, secret) {
-  const payload = encode({ sub, role, exp });
+// `iat` — when this token was issued, in the same whole seconds as `exp`.
+//
+// It is what lets a password change end every OTHER session: the account
+// records when its password last changed, and a token issued before that is
+// refused. Deriving the issue time from `exp - TOKEN_TTL_SECONDS` would work
+// today and would be wrong the day somebody shortens the TTL — every token in
+// flight would silently report a different issue time — so it is carried
+// rather than computed.
+export function signToken({ sub, role, exp, iat }, secret) {
+  const payload = encode({ sub, role, exp, iat });
   return `${payload}.${sign(payload, secret)}`;
 }
 

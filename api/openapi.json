@@ -68,10 +68,10 @@
     },
     "/api/v1/me/password": {
       "post": {
-        "summary": "Change your own password, knowing the current one. One route for every role: an admin doing this uses it too, which is why the admin route for setting somebody else's password refuses a caller their own account — an admin who could skip the current-password check on themselves would turn a stolen session into a permanent one. Body: { currentPassword, newPassword }. Tokens issued before the change stay valid until they expire; ending them is IDENTITY-8-API, and that is a stated gap.",
+        "summary": "Change your own password, knowing the current one. One route for every role: an admin doing this uses it too, which is why the admin route for setting somebody else's password refuses a caller their own account — an admin who could skip the current-password check on themselves would turn a stolen session into a permanent one. Body: { currentPassword, newPassword }. Tokens issued before the change stay valid until they expire; ending them is IDENTITY-8-API, and that is a stated gap. Changing a password ends every OTHER session (IDENTITY-8-API): the account records when its password last changed, and the resolver refuses any token issued before that. The token that made THIS request was issued under the old password and is refused too, so the answer carries a fresh one — which is what keeps the session that made the change alive without a rule to tell it apart from the ones being ended. On a whole-second clock such a rule could not be written: a token minted in the same second as the change is accepted, and that window is stated rather than hidden.",
         "responses": {
           "200": {
-            "description": "{ id, updatedAt }. No password and no hash, here or in the audit row."
+            "description": "{ id, updatedAt, token }. The token replaces the session this change just ended — a client that ignores it is signed out on its next request. No password and no hash, here or in the audit row."
           },
           "401": {
             "description": "The current password is wrong. Sign-in gives one refusal for three causes so the response cannot be used to learn which addresses exist; that reasoning does not reach here, because this caller is already authenticated and already knows the account exists. Telling them which half they got wrong leaks nothing."
@@ -182,10 +182,10 @@
     },
     "/api/v1/accounts/{id}/disable": {
       "post": {
-        "summary": "Disable an account. Nothing is deleted; the row keeps its history.",
+        "summary": "Disable an account. Nothing is deleted; the row keeps its history. Disabling also hands back the tickets that account still has to work on — everything assigned to them that is not closed, unassigned in the SAME transaction as the disable. An account disabled with its queue still assigned to it is worse than either outcome alone: the work is invisible in every unassigned view and its owner cannot sign in to hand it over. A resolved ticket is included because a reply within its window reopens it, and then it is somebody's again; a closed one is not, because rewriting who finished it to tidy a queue would make the record wrong. Each move is audited as an ordinary assignment with the disabling admin as the actor, and each ticket's revision is bumped — so an agent who had one open is refused rather than allowed to write over it.",
         "responses": {
           "200": {
-            "description": "Body: { user }, with deletedAt set."
+            "description": "{ user, unassigned }. `unassigned` is how many tickets were handed back — zero is an answer, not an omission. An admin deciding whether to disable somebody is deciding what happens to their work, and a number they have to go and count is a number they will not count."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."
@@ -331,6 +331,49 @@
           },
           "500": {
             "description": "Internal."
+          }
+        }
+      },
+      "patch": {
+        "summary": "Correct a customer's contact details. Any subset of name, email and phone; a field not sent is left alone, because a correction is usually one field and a client that had to send all three to change one would overwrite the other two with whatever it last read. The WHOLE customer is validated rather than the fields that arrived — that a customer needs a name is a rule about a customer, and checking only what was sent would let a correction that clears the name pass because the name was not the field being corrected. No revision: BR-5 names the writes it covers and this is not one of them.",
+        "responses": {
+          "200": {
+            "description": "The customer as it now stands, in the shape every other customer route answers with."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "A customer asking. The desk’s records are the desk’s."
+          },
+          "404": {
+            "description": "No such customer, and the same answer for one that has been deleted — reading a deleted customer is allowed because their tickets and notes did not stop existing, and correcting one is not, because there is nobody to correct."
+          },
+          "422": {
+            "description": "`fields` names what was wrong: a value the shared validator refuses, an email another LIVE customer holds, `changes` when no field was sent at all, or the fields that were sent unchanged — a request that changes nothing is refused rather than written as an audit row saying nothing happened."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a customer. Soft, like every removal here (BR-1): `deleted_at` is set and the row stays, so the audit rows that name them keep naming them and their tickets are untouched — a support history is what the desk is for, and deleting the person it is about must not quietly delete what happened. The list, the search and the count already ask for live rows. Admin only, the way retiring a category is: it changes what everybody else sees and no screen can undo it. Their sign-in account is NOT touched — stated here rather than left for somebody to discover. Reading a known id still answers, deliberately: a retired customer is not a missing one.",
+        "responses": {
+          "200": {
+            "description": "{ id, deletedAt } — the moment it happened, so a caller need not read it back."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking. Deleting is an admin’s."
+          },
+          "404": {
+            "description": "No such customer, and the same answer for one already deleted — deleting twice is not two events, and no second audit row is written."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
           }
         }
       }
@@ -712,6 +755,69 @@
           },
           "500": {
             "description": "Unhandled, logged with the request id."
+          }
+        }
+      }
+    },
+    "/api/v1/me/notifications": {
+      "get": {
+        "summary": "The notifications belonging to whoever is asking, oldest first, paged with the window every list here obeys (BR-4). Under /me like /me/tickets and /me/password: a route that took a user id would be a route somebody could put another id into, and the ownership rule would have to be written rather than being true by construction. Staff only — nothing writes a notification for a customer, so there is nothing here for one to read, and saying so with a guard is clearer than an empty list that looks like a bug. Reading this list changes nothing: marking one read is a write of its own, or an agent who glanced at the screen would have dismissed everything on it.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. Each item carries the TICKET'S ID and not a copy of its subject — a subject copied when the notification was written is a subject that goes stale the first time somebody edits it. `readAt` is null until it is read, rather than a boolean, because when somebody read it is worth keeping."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "A customer asking."
+          },
+          "422": {
+            "description": "`limit` or `offset` outside what the window allows; the field is named (BR-4)."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
+    },
+    "/api/v1/me/notifications/{id}/read": {
+      "post": {
+        "summary": "Mark one of your own notifications read. Idempotent: marking one that is already read is not a second event — no audit row, and the moment it was first read does not move. Somebody else's notification is the same 404 a missing one gets, because the query is scoped to the reader rather than filtered afterwards.",
+        "responses": {
+          "200": {
+            "description": "The notification as it now stands, carrying `readAt`."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "A customer asking."
+          },
+          "404": {
+            "description": "No such notification, and the same answer for one belonging to somebody else."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/sweep-auto-close": {
+      "post": {
+        "summary": "Close every resolved ticket whose fourteen-day reopen window has passed (T-6). The SAME fourteen days as T-5, read from the same constant through the same function: two constants would leave a day on which a ticket is too old to reopen and not yet closed. This application has no scheduler and none was added, so the sweep is a route an operator or a cron calls. Evaluating on read was refused — it would make every read of a ticket a potential write, and a ticket nobody reads would never close, which is the one thing T-6 promises. Admin only, because something has to authenticate; the audit row still carries NO actor, because the admin chose when the sweep ran and not which tickets were due. Each ticket closes in its own transaction: one transaction around the whole sweep would let a single ticket that moved a moment earlier undo the rest. It is idempotent — a closed ticket is no longer resolved, so a second run finds nothing and writes nothing.",
+        "responses": {
+          "200": {
+            "description": "{ closed, at } — how many closed, so an operator reading a cron log can tell a sweep that found nothing from one that failed. Most sweeps close nothing."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
           }
         }
       }
