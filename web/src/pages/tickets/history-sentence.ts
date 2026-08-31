@@ -28,8 +28,17 @@ const fill = (template: string, slots: Record<string, string>) =>
     name in slots ? isolate(slots[name]) : '',
   );
 
-// The API writes three verbs today: ticket.create, ticket.assign and
-// ticket.status. An assignment is one verb covering three different sentences,
+// The API writes twenty-one verbs. Three of them are a ticket's own, and the
+// ticket history is where they were first read; the other eighteen reach a
+// reader through the audit screen, which shows the whole trail rather than one
+// ticket's slice of it.
+//
+// They live here, in one function, and that is the point rather than an
+// accident of where it was written first. A second mapping on the audit screen
+// would be two places that decide what a verb means, and the first verb whose
+// sentence changed would change on one screen only.
+//
+// The original three: An assignment is one verb covering three different sentences,
 // because what happened is in the diff rather than in the name: given to
 // somebody, taken off somebody, or moved between two people. Reading it off
 // before/after keeps the API's vocabulary as it is instead of asking it for
@@ -69,5 +78,62 @@ export function historySentence(
     return fill(h.reassigned, { actor, from: nameOf(from), to: nameOf(to) });
   }
 
+  // Everything else. Each of these is one sentence with one slot for the
+  // actor, because what the row means is in the verb rather than in the diff —
+  // and where the diff does carry the meaning, the branch is here for the same
+  // reason ticket.assign's is.
+  //
+  // The `name` slot reads the diff rather than a joined row: the trail stores
+  // what a thing WAS at the moment somebody changed it, and resolving an id to
+  // its current name would make an old row describe a new state. A customer
+  // renamed twice would have both rows saying the latest name.
+  const named = (fallback: string) =>
+    String(after.name ?? before.name ?? after.email ?? before.email ?? fallback);
+
+  const sentences: Record<string, () => string> = {
+    'customer.create': () => fill(h.customerCreated, { actor, name: named(h.someone) }),
+    'customer.update': () => fill(h.customerUpdated, { actor, name: named(h.someone) }),
+    'customer.delete': () => fill(h.customerDeleted, { actor, name: named(h.someone) }),
+    'customer.grant_sign_in': () => fill(h.customerGrantedSignIn, { actor, name: named(h.someone) }),
+    'customer_note.create': () => fill(h.customerNoteWritten, { actor }),
+
+    'user.create': () => fill(h.userCreated, { actor, name: named(h.someone) }),
+    'user.disable': () => fill(h.userDisabled, { actor }),
+    'user.re-enable': () => fill(h.userReEnabled, { actor }),
+    'user.role.change': () => fill(h.userRoleChanged, {
+      actor,
+      from: String(before.role ?? ''),
+      to: String(after.role ?? ''),
+    }),
+    // Neither of these says anything about the password, and neither should:
+    // the trail records that it changed, never what it became.
+    'user.change-own-password': () => fill(h.passwordChangedOwn, { actor }),
+    'user.set-password': () => fill(h.passwordSetForSomebody, { actor }),
+
+    'category.create': () => fill(h.categoryCreated, { actor, name: named(h.aCategory) }),
+    'category.rename': () => fill(h.categoryRenamed, {
+      actor,
+      from: String(before.name ?? ''),
+      to: String(after.name ?? ''),
+    }),
+    'category.retire': () => fill(h.categoryRetired, { actor, name: named(h.aCategory) }),
+
+    'ticket.category': () => fill(h.ticketFiled, { actor }),
+    'ticket.reply': () =>
+      // The one place the diff decides the sentence outside ticket.assign: a
+      // note and a reply are different acts, and the trail says which.
+      after.kind === 'internal' ? fill(h.noteWritten, { actor }) : fill(h.replySent, { actor }),
+
+    'notification.create': () => fill(h.notificationWritten, { actor }),
+    'notification.read': () => fill(h.notificationRead, { actor }),
+  };
+
+  const known = sentences[entry.verb];
+  if (known) return known();
+
+  // The trail is append-only and a future story will write a verb before it
+  // writes a sentence for it. That entry has to read as something rather than
+  // as a blank row — and naming the verb is more use to whoever is looking
+  // than a shrug.
   return fill(h.unknownVerb, { actor, verb: entry.verb });
 }

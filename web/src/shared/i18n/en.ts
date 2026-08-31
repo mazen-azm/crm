@@ -26,6 +26,7 @@ export const en = {
     navQueue: 'The queue',
     navRaiseTicket: 'Raise a ticket',
     navPassword: 'Your password',
+    navAudit: 'Audit log',
     navCategories: 'Ticket categories',
     navSetPassword: 'Set a password',
     navMyTickets: 'Your tickets',
@@ -343,6 +344,35 @@ export const en = {
   // and all three can be refused because somebody else changed it first; they
   // had three sentences between them, two alike and one drifted. Three
   // sentences for one cause teach somebody there are three causes.
+  // Its own group, one level deep like every other: the resource files are
+  // a flat map of groups to strings, and a third level is not something
+  // `Messages` can describe.
+  auditEntities: {
+    ticket: 'Ticket',
+    customer: 'Customer',
+    customer_note: 'Customer note',
+    user: 'Account',
+    category: 'Category',
+    notification: 'Notification',
+  },
+  auditLog: {
+    title: 'Audit log',
+    actorLabel: 'Who',
+    anyone: 'Anyone',
+    entityLabel: 'What',
+    anything: 'Anything',
+    entityIdLabel: 'Which one',
+    entityIdPlaceholder: 'Paste an id',
+    fromLabel: 'From',
+    toLabel: 'To',
+    newer: 'Newer',
+    older: 'Older',
+    errorTitle: 'The audit log did not load',
+    emptyTitle: 'Nothing matches',
+    emptyBody: 'Try a wider range, or clear a filter.',
+    adminOnlyTitle: 'This is an admin screen',
+    adminOnlyBody: 'The audit log says what everybody did, so only an administrator reads it.',
+  },
   ticketStale: {
     title: 'This ticket changed while you were looking at it',
     reload: 'Look again',
@@ -383,6 +413,27 @@ export const en = {
     reassigned: '{actor} moved this from {from} to {to}.',
     // A verb written before its sentence was. Legible, and it names the verb
     // so whoever added it can see what is missing.
+    someone: 'somebody',
+    aCategory: 'a category',
+    customerCreated: '{actor} added {name}.',
+    customerUpdated: '{actor} corrected {name}\u2019s details.',
+    customerDeleted: '{actor} removed {name}.',
+    customerGrantedSignIn: '{actor} gave {name} a way to sign in.',
+    customerNoteWritten: '{actor} wrote a note about this customer.',
+    userCreated: '{actor} created an account for {name}.',
+    userDisabled: '{actor} disabled this account.',
+    userReEnabled: '{actor} re-enabled this account.',
+    userRoleChanged: '{actor} changed this account from {from} to {to}.',
+    passwordChangedOwn: '{actor} changed their own password.',
+    passwordSetForSomebody: '{actor} set the password for this account.',
+    categoryCreated: '{actor} added the category {name}.',
+    categoryRenamed: '{actor} renamed {from} to {to}.',
+    categoryRetired: '{actor} retired the category {name}.',
+    ticketFiled: '{actor} changed what this ticket is filed under.',
+    replySent: '{actor} replied to the customer.',
+    noteWritten: '{actor} wrote an internal note.',
+    notificationWritten: '{actor} caused a notification to be sent.',
+    notificationRead: '{actor} read a notification.',
     unknownVerb: '{actor} did something recorded as {verb}.',
   },
   customerScreen: {
