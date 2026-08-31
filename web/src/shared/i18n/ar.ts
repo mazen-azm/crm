@@ -325,6 +325,12 @@ export const ar = defineLocale({
   },
   customerScreen: {
     contacts: 'بيانات التواصل',
+    nameLabel: 'الاسم',
+    emailLabel: 'البريد الإلكتروني',
+    phoneLabel: 'رقم الهاتف',
+    contactsSave: 'احفظ التصحيحات',
+    contactsSaving: 'جارٍ الحفظ…',
+    contactsFailed: 'لم تُحفَظ التصحيحات',
     noEmail: 'لا يوجد بريد إلكتروني',
     noPhone: 'لا يوجد رقم هاتف',
     openTickets: 'التذاكر المفتوحة',
