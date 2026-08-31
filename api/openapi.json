@@ -802,6 +802,25 @@
           }
         }
       }
+    },
+    "/api/v1/tickets/sweep-auto-close": {
+      "post": {
+        "summary": "Close every resolved ticket whose fourteen-day reopen window has passed (T-6). The SAME fourteen days as T-5, read from the same constant through the same function: two constants would leave a day on which a ticket is too old to reopen and not yet closed. This application has no scheduler and none was added, so the sweep is a route an operator or a cron calls. Evaluating on read was refused — it would make every read of a ticket a potential write, and a ticket nobody reads would never close, which is the one thing T-6 promises. Admin only, because something has to authenticate; the audit row still carries NO actor, because the admin chose when the sweep ran and not which tickets were due. Each ticket closes in its own transaction: one transaction around the whole sweep would let a single ticket that moved a moment earlier undo the rest. It is idempotent — a closed ticket is no longer resolved, so a second run finds nothing and writes nothing.",
+        "responses": {
+          "200": {
+            "description": "{ closed, at } — how many closed, so an operator reading a cron log can tell a sweep that found nothing from one that failed. Most sweeps close nothing."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
     }
   }
 }

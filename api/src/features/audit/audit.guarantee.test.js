@@ -86,6 +86,7 @@ const EXERCISED = new Set([
   'DELETE /api/v1/ticket-categories/:id',
   'POST /api/v1/tickets/:id/replies',
   'POST /api/v1/me/notifications/:id/read',
+  'POST /api/v1/tickets/sweep-auto-close',
   'POST /api/v1/intake/:channel/tickets',
 ]);
 
@@ -256,6 +257,17 @@ test('each mutating route writes exactly one audit row', async () => {
         VALUES ('census-notification', ?, ?, 'ticket.assigned', '2026-08-31T00:00:00.000Z')
       `).run(me.id, replied.id);
       return call('/api/v1/me/notifications/census-notification/read', { method: 'POST' });
+    }],
+    // The sweep, with one ticket due. Its audit row carries no actor — the
+    // admin chose when it ran, not which tickets were due — and the census
+    // counts rows rather than reading actors, so it belongs here like any
+    // other mutation.
+    ['POST /api/v1/tickets/sweep-auto-close', () => {
+      real.prepare(`
+        UPDATE tickets SET status = 'resolved', resolved_at = '2020-01-01T00:00:00.000Z'
+         WHERE id = ?
+      `).run(replied.id);
+      return call('/api/v1/tickets/sweep-auto-close', { method: 'POST' });
     }],
     ['POST /api/v1/intake/:channel/tickets', () =>
       call('/api/v1/intake/web/tickets', {

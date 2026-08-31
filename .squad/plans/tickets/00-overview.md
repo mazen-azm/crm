@@ -29,6 +29,7 @@ Entry point for the **tickets** feature. Stories execute in order by their `NN` 
 | 79 | `79-story-crm-88.md` | TICKETS-9-WEB admin — I add, rename and retire a category without touching the seed | CRM-88 | — |
 | 87 | `87-story-crm-94.md` | TICKETS-13-API agent — my change is refused if somebody edited it while I read | CRM-94 | — |
 | 88 | `88-story-crm-95.md` | TICKETS-13-WEB agent — my change is refused if somebody edited it while I read | CRM-95 | — |
+| 89 | `89-story-crm-96.md` | TICKETS-14-API system — a resolved ticket closes itself once the window passes | CRM-96 | — |
 
 ## Dependency notes
 

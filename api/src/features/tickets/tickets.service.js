@@ -13,6 +13,7 @@ import {
   validateAssignment,
   validateCategoryQuery,
   validateRaisedTicket,
+  dueForAutoClose,
   withinReopenWindow,
   normaliseCategoryName,
   validateCategoryName,
@@ -27,6 +28,7 @@ import {
   findLiveAssigneeId,
   findLiveCustomerId,
   findOpenTicketsAssignedTo,
+  findResolvedTickets,
   findTicketById,
   countCustomerTickets,
   insertTicket,
@@ -678,6 +680,63 @@ export function createTicketsService({ db, notifications, now = () => Math.floor
         at,
       });
       return true;
+    },
+
+    // T-6: close every resolved ticket whose fourteen days have passed.
+    //
+    // There is no scheduler in this application and none is added here. The
+    // sweep is a method something calls — a route an operator or a cron hits —
+    // and that choice is stated rather than hidden in a comment, because the
+    // alternative was worse: evaluating on read would make every read of a
+    // ticket a potential write, and a ticket nobody reads would never close,
+    // which is the one thing T-6 promises.
+    //
+    // Each ticket closes in its own transaction. One transaction around the
+    // whole sweep would mean a single ticket that could not be closed —
+    // because somebody moved it a millisecond earlier — undoing the others.
+    // The sweep is a series of independent facts, not one atomic act.
+    sweepAutoClose() {
+      const at = stamp();
+      const nowSeconds = now();
+      const closed = [];
+
+      for (const ticket of findResolvedTickets(db)) {
+        if (!dueForAutoClose({ resolvedAt: ticket.resolved_at, nowSeconds })) continue;
+
+        transact(db, () => {
+          const { changes } = updateTicketStatus(db, {
+            id: ticket.id,
+            status: 'closed',
+            // The revision read a moment ago. BR-5's guard stays on every
+            // write; the sweep is not an exception to it, and if somebody
+            // moved this ticket between the read and here, `changes` is 0 and
+            // this one is skipped rather than overwritten.
+            revision: ticket.revision,
+            at,
+            resolutionNote: null,
+          });
+          if (changes === 0) return;
+
+          // A null actor, which the trail renders as the system. Attributing
+          // it to whichever admin called the route would be a false record:
+          // they chose when the sweep ran, not which tickets were due. That is
+          // the rule's decision, and the rule has no name.
+          audit.record(null, {
+            entity: 'ticket',
+            entityId: ticket.id,
+            verb: 'ticket.status',
+            before: { status: 'resolved' },
+            after: { status: 'closed' },
+            at,
+          });
+
+          closed.push(ticket.id);
+        });
+      }
+
+      // What it did, so an operator reading a cron log can tell a sweep that
+      // found nothing from one that failed. Most sweeps will close nothing.
+      return { closed: closed.length, at };
     },
 
     // A ticket in the shape a caller may see, by id, with no transaction and
