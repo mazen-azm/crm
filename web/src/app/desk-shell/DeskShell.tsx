@@ -93,6 +93,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
           <Link to="/ticket-categories" className="desk-shell__nav-item">
             {t.shell.navCategories}
           </Link>
+          <Link to="/audit" className="desk-shell__nav-item">
+            {t.shell.navAudit}
+          </Link>
           <Link to="/accounts/set-password" className="desk-shell__nav-item">
             {t.shell.navSetPassword}
           </Link>

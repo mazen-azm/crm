@@ -1,0 +1,20 @@
+/* An ordered list, unnumbered — the numbers would count entries on this page
+   rather than events in the trail, and they restart every time somebody pages.
+   Logical properties throughout, so it reads from the right in Arabic with no
+   second rule. The ticket history says the same and does the same. */
+.audit-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.audit-log__entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid var(--color-border-subtle);
+}
