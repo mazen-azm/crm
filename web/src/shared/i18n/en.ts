@@ -384,6 +384,12 @@ export const en = {
   },
   customerScreen: {
     contacts: 'Contact',
+    nameLabel: 'Name',
+    emailLabel: 'Email address',
+    phoneLabel: 'Phone number',
+    contactsSave: 'Save the corrections',
+    contactsSaving: 'Saving…',
+    contactsFailed: 'The corrections were not saved',
     noEmail: 'No email address',
     noPhone: 'No phone number',
     openTickets: 'Open tickets',
