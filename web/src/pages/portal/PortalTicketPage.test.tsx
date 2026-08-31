@@ -1,9 +1,15 @@
-// Proves scripts/criteria/portal.md section PORTAL-3-WEB.
+// Proves scripts/criteria/portal.md section PORTAL-3-WEB, and
+// scripts/criteria/conversation.md section CONVERSATION-3-WEB — the reading
+// and the replying are one screen, because the intake for CONVERSATION-3-WEB
+// says they are: "This is a customer's screen and it belongs with the
+// portal's … the two are one screen unless there is an argument for two."
+// There was not one.
 import { afterEach, expect, test, vi } from 'vitest';
 
 import { renderWithProviders, screen, userEvent, waitFor } from '../../testing/render';
 import { AppRoutes } from '../../app/routes';
 import { en } from '../../shared/i18n/en';
+import { statusLabel } from '../tickets/ticket-labels';
 import { ar } from '../../shared/i18n/ar';
 
 const json = (body: unknown, status = 200) => () =>
@@ -257,3 +263,89 @@ test('every string comes from the resource file, in both languages', async () =>
   expect(screen.getByRole('button', { name: ar.portalTicket.send })).toBeInTheDocument();
   expect(ar.portalTicket.fromSupport).not.toBe(en.portalTicket.fromSupport);
 });
+
+test('a reply that reopens the ticket moves the status the reader can see', async () => {
+  // The API reopens a resolved ticket a customer replies to, inside the
+  // window (T-5). The screen re-reads the ticket rather than working the new
+  // status out, so the second answer is what the header shows.
+  let read = 0;
+  const one = () => {
+    read += 1;
+    return new Response(
+      JSON.stringify(
+        read === 1
+          ? ticket({ status: 'resolved', reopenWindowOpen: true })
+          : ticket({ status: 'reopened', reopenWindowOpen: false, revision: 2 }),
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  };
+  portal({ one });
+  open();
+
+  const box = await screen.findByLabelText(en.portalTicket.replyLabel);
+  expect(screen.getByText(new RegExp(statusLabel(en, 'resolved')))).toBeInTheDocument();
+
+  await userEvent.type(box, 'It came back.');
+  await userEvent.click(screen.getByRole('button', { name: en.portalTicket.send }));
+
+  // Reopened, in the word the desk uses for it — from the same label module,
+  // so the two screens cannot disagree about what a status is called.
+  await waitFor(() =>
+    expect(screen.getByText(new RegExp(statusLabel(en, 'reopened')))).toBeInTheDocument(),
+  );
+  // And the warning goes with it: replying again will not reopen what is
+  // already open, so saying it would be a promise about nothing.
+  expect(screen.queryByText(en.portalTicket.replyReopens)).not.toBeInTheDocument();
+});
+
+test('a closed ticket is refused in words that fit what the customer did', async () => {
+  portal({
+    one: json(ticket({ status: 'closed' })),
+    replied: json({ code: 'ILLEGAL_TRANSITION', allowed: [], requestId: 'r-1' }, 409),
+  });
+  open();
+
+  const box = await screen.findByLabelText(en.portalTicket.replyLabel);
+  await userEvent.type(box, 'One more thing.');
+  await userEvent.click(screen.getByRole('button', { name: en.portalTicket.send }));
+
+  // NOT the shared sentence. "That is not a move this ticket can make from
+  // where it is" is true of the desk's status control and nonsense to somebody
+  // who did not try to move anything — they wrote a message.
+  expect(await screen.findByText(en.portalTicket.replyClosedTicket)).toBeInTheDocument();
+  expect(screen.queryByText(en.errors.ILLEGAL_TRANSITION)).not.toBeInTheDocument();
+});
+
+test('a window that has closed keeps the shared sentence, which was written for this', async () => {
+  portal({
+    one: json(ticket({ status: 'resolved', reopenWindowOpen: false })),
+    replied: json({ code: 'REOPEN_WINDOW_CLOSED', requestId: 'r-1' }, 409),
+  });
+  open();
+
+  const box = await screen.findByLabelText(en.portalTicket.replyLabel);
+  await userEvent.type(box, 'It came back.');
+  await userEvent.click(screen.getByRole('button', { name: en.portalTicket.send }));
+
+  // Deliberately the shared one. It already says what happened and what to do
+  // instead, in a customer's words — and a screen-specific copy of a sentence
+  // that is right would be two places for one string, drifting the first time
+  // either changed.
+  expect(await screen.findByText(en.errors.REOPEN_WINDOW_CLOSED)).toBeInTheDocument();
+});
+
+test('a failed reply keeps what was typed', async () => {
+  portal({ replied: json({ code: 'INTERNAL', requestId: 'r-1' }, 500) });
+  open();
+
+  const box = await screen.findByLabelText(en.portalTicket.replyLabel);
+  await userEvent.type(box, 'Something I spent a while writing.');
+  await userEvent.click(screen.getByRole('button', { name: en.portalTicket.send }));
+
+  expect(await screen.findByText(en.portalTicket.replyFailedTitle)).toBeInTheDocument();
+  // Losing somebody's words because the server failed is a second failure on
+  // top of the first.
+  expect(box).toHaveValue('Something I spent a while writing.');
+});
+

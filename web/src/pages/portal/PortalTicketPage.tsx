@@ -221,7 +221,22 @@ export function PortalTicketPage() {
           {failed && !failed.fields?.length ? (
             <ErrorState
               title={t.portalTicket.replyFailedTitle}
-              body={t.errors[failed.code as keyof typeof t.errors] ?? t.errors.INTERNAL}
+              // The shared sentence for a code is a default, not a law, and
+              // this is the case that shows why. A customer replying to a
+              // CLOSED ticket gets ILLEGAL_TRANSITION, whose shared sentence
+              // is "that is not a move this ticket can make from where it is"
+              // — true of the desk's status control, and nonsense to somebody
+              // who did not try to move anything. They wrote a message.
+              //
+              // REOPEN_WINDOW_CLOSED keeps its shared sentence, which was
+              // written for a customer and already says what to do instead.
+              // Overriding a sentence that is right would be two places for
+              // one string.
+              body={
+                failed.code === 'ILLEGAL_TRANSITION'
+                  ? t.portalTicket.replyClosedTicket
+                  : (t.errors[failed.code as keyof typeof t.errors] ?? t.errors.INTERNAL)
+              }
             />
           ) : null}
         </Stack>
