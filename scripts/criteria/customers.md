@@ -234,3 +234,103 @@ The same, on a screen.
   this creates an account.
 - Given every string, then it came from a resource file, in both languages
   (BR-6).
+
+## CUSTOMERS-7-API
+
+An agent corrects a customer's contact details.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given a live customer, when an agent sends a name, an email or a phone
+  number, then the ones sent are changed and the ones not sent are left alone.
+  A correction is usually one field, and a screen that had to send all three
+  to change one would overwrite the other two with whatever it last read.
+- Given a value that is not acceptable, then it is refused naming the field —
+  the same rules CUSTOMERS-1-API applies when the customer is created, from the
+  same place. Two sets of rules for one field disagree the first time either
+  is edited.
+- Given an email another live customer already has, then it is refused naming
+  the field. The uniqueness that holds at creation holds here, and a partial
+  index that ignores the deleted keeps a removed customer's address available.
+- Given a request that changes nothing — the same values, or no fields at all
+  — then it is refused naming what was missing rather than writing an audit row
+  saying nothing happened.
+- Given the change, then an audit row records the before and the after (BR-2),
+  and carries only the fields that changed. A diff listing every field as
+  changed is a diff nobody can read.
+- Given a customer who has been deleted, then it is the same 404 a customer
+  who never existed gets.
+
+*Out of scope*
+- A revision on the write. BR-5 names the writes it applies to and this is not
+  one of them; adding one here would be a rule this story invented.
+- Changing which sign-in account a customer has. That is CUSTOMERS-6-API's,
+  and a contact correction is not a way to reach it.
+
+## CUSTOMERS-7-WEB
+
+The same, on a screen.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given the customer screen, when a detail is corrected, then the screen shows
+  the new one without a reload — the write answers with the customer, the way
+  every other write here answers with what it changed.
+- Given a field left untouched, then it is not sent. What the screen sends is
+  what somebody edited, which is also what makes the audit trail readable.
+- Given a refusal naming a field, then that field is marked and the sentence is
+  the shared one for the code.
+- Given no change made, then the control is not offered. A button that writes
+  nothing invites somebody to press it and wonder.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).
+
+## CUSTOMERS-8-API
+
+Deleting a customer hides them and keeps the trail.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given an admin and a live customer, when they delete them, then the customer
+  stops appearing in the list and in search, and the row is still there with
+  `deleted_at` set (BR-1). Nothing here is hard-deleted.
+- Given their tickets, then those are left exactly as they are. A support
+  history is what the desk is for, and deleting the person it is about must not
+  quietly delete what happened.
+- Given the audit trail, then every row that named them still names them, and
+  the delete is one more row on it (BR-2).
+- Given an agent rather than an admin, then it is refused and nothing is
+  written. Deleting is an admin's, the way retiring a category is.
+- Given a customer already deleted, then it is the same 404 a missing one gets,
+  and no second audit row is written.
+- Given the email a deleted customer held, then it can be used again by a new
+  one. The uniqueness is about live customers, the same way a retired
+  category's name goes back on the shelf.
+
+*Out of scope*
+- What happens to their sign-in account. Nothing in the backlog asks, and the
+  honest answer is that this story does not touch it: the account remains, and
+  says so here rather than being left for somebody to discover.
+- Restoring a deleted customer. The row survives, so it is possible; no story
+  asks for it and no route offers it.
+
+## CUSTOMERS-8-WEB
+
+The same, on a screen.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given an admin on the customer screen, when they delete the customer, then it
+  asks first. It is the one action there that changes what everybody else sees
+  and that the screen cannot undo.
+- Given the deletion, then the screen goes somewhere that still exists — the
+  customer list — rather than staying on a screen whose subject is gone.
+- Given a non-admin, then the control is not drawn and the screen says why.
+  Courtesy, not enforcement: the API refuses them whatever is drawn (SC-2).
+- Given a refusal, then the sentence is the shared one for the code.
+- Given every string, then it came from a resource file, in both languages
+  (BR-6).

@@ -189,3 +189,72 @@ The same, on a screen.
 - Given a submission in flight, then the control cannot be pressed twice.
 - Given every string, then it came from a resource file, in both languages
   (BR-6).
+
+## IDENTITY-8-API
+
+Changing a password ends every other session.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given a user signed in on two devices, when they change their password on
+  one, then the token the other holds stops being accepted. Until this ships a
+  changed password left old tokens working until they expired, which
+  IDENTITY-7-API named as a stated gap rather than an oversight.
+- Given the device that made the change, then it stays signed in. A password
+  change that signs somebody out of the screen they changed it on looks like a
+  failure, and they would change it again.
+- Given the answer to the change, then it carries a token that works. This is
+  what makes the previous criterion true without the two sessions having to be
+  told apart by the second they were issued in — the clock here is whole
+  seconds, and a token minted in the same second as the change is
+  indistinguishable from one minted just before it by any comparison of times.
+- Given a token issued before the change, then the refusal is 401
+  UNAUTHENTICATED — the same answer an expired or forged token gets. That a
+  token was once valid is not something the refusal should say.
+- Given a password set by an admin (IDENTITY-6-API), then it ends the user's
+  sessions too. The reason to end them is that the old password may be known
+  to somebody else, and that is more true here, not less.
+- Given the change, then the audit row is IDENTITY-7-API's and no second row is
+  written. Ending the sessions is part of changing the password, not a
+  separate act somebody performed.
+
+*Out of scope*
+- A list of active sessions, or ending one by name. Nothing in the backlog asks
+  for it, and it needs a session record this deliberately does not create.
+- Ending sessions when an account is disabled — already true, and by a
+  different mechanism: the resolver re-reads the user row on every request, so
+  a disabled account stops being a subject immediately.
+
+## IDENTITY-9-API
+
+Disabling somebody hands their queue back, and says how much of it there was.
+
+Written 2026-08-31, with the sprint 7 stories.
+
+*Acceptance criteria*
+- Given an agent with tickets assigned to them, when an admin disables the
+  account, then those tickets are unassigned and the answer says how many. An
+  admin deciding whether to disable somebody is deciding what happens to their
+  work, and a number they have to go and count is a number they will not
+  count.
+- Given the tickets that were unassigned, then each is audited as an
+  assignment change like any other (BR-2), with the disabling admin as the
+  actor. The trail must not show tickets that moved with nobody moving them.
+- Given a closed ticket of theirs, then it is left alone. Unassigning is about
+  work somebody still has to do, and rewriting who finished a closed ticket
+  would make the record wrong to tidy a queue.
+- Given the disable and the unassignments, then they happen together or not at
+  all. An account disabled with its queue still assigned to it is worse than
+  either outcome alone: the work is invisible and its owner cannot sign in.
+- Given an agent with no tickets, then the count is zero and the disable is
+  the same disable. Zero is an answer, not an error.
+- Given somebody already disabled, then the answer is the one IDENTITY-2-API
+  already gives, and no tickets move. Disabling twice is not two events.
+
+*Out of scope*
+- Choosing who the tickets go to instead. They go to nobody, which the queue
+  already renders and TICKETS-3-API already allows; assigning them onward is a
+  decision an admin makes afterwards with the screen that exists for it.
+- Telling the disabled person anything. NOTIFICATIONS-1-API tells an agent
+  when a ticket becomes theirs, and nothing tells anybody when one stops being.
