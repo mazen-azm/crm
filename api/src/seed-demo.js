@@ -1,3 +1,7 @@
+import { createConversationService } from './features/conversation/index.js';
+import { createIdentityService } from './features/identity/index.js';
+import { createNotificationsService } from './features/notifications/index.js';
+import { createServiceLevels } from './features/service-levels/index.js';
 import { createTicketsService } from './features/tickets/index.js';
 import { demoTickets } from './seed-demo.data.js';
 
@@ -20,7 +24,10 @@ import { demoTickets } from './seed-demo.data.js';
 // never wrote an audit row, and never proved the transition table allows the
 // path it claims to have taken. Seeding this way exercises T-4, BR-2 and BR-5
 // on every run, so a demo database that builds is also evidence the rules hold.
-export function seedDemo(db, { now = () => Math.floor(Date.now() / 1000), actor } = {}) {
+// `secret` only because identity's service asks for one to mint tokens; this
+// path mints none. Defaulted rather than made required, so the one caller that
+// does not care — every test — need not invent a credential to seed a queue.
+export function seedDemo(db, { now = () => Math.floor(Date.now() / 1000), actor, secret = 'seed-demo' } = {}) {
   // Idempotence, coarsely. Tickets have no natural unique key — two tickets
   // with the same subject are two tickets — so the conflict clause that makes
   // the reference seed safe to re-run does not transfer. A queue that already
@@ -70,7 +77,25 @@ export function seedDemo(db, { now = () => Math.floor(Date.now() / 1000), actor 
       const at = raisedAt + (fixture.walk.indexOf(step) + 1) * 900;
       const moving = createTicketsService({ db, now: () => at });
 
-      if (step.move === 'assign') {
+      if (step.move === 'reply') {
+        // A real reply through the real route, which is what stops the
+        // first-response clock (T-2). Without one, every demo ticket is late
+        // on its first reply however carefully it was walked — the sweep found
+        // six of seven, and a demo that says the desk never answered anybody
+        // misrepresents the product it is demonstrating.
+        const levels = createServiceLevels({ db, now: () => at });
+        const conversation = createConversationService({
+          db,
+          tickets: createTicketsService({ db, serviceLevels: levels, now: () => at }),
+          serviceLevels: levels,
+          now: () => at,
+        });
+        const author = staff.get(step.by) ?? missing('staff member', step.by);
+        conversation.reply({ id: author, role: 'agent' }, { ticketId: ticket.id, body: step.body });
+        // The reply moved the ticket (T-2 opens a `new` one) and bumped its
+        // revision; the walk continues from what the API now holds.
+        ticket = moving.read({ id: author, role: 'agent' }, { id: ticket.id });
+      } else if (step.move === 'assign') {
         const assigneeId = staff.get(step.to) ?? missing('staff member', step.to);
         ticket = moving.assign(actor, { id: ticket.id, assigneeId, revision: ticket.revision });
       } else {
@@ -86,5 +111,26 @@ export function seedDemo(db, { now = () => Math.floor(Date.now() / 1000), actor 
     seeded += 1;
   }
 
-  return { seeded, skipped: false };
+  // And then the promises are checked, exactly as an operator's cron would
+  // check them (SC-3).
+  //
+  // Through the real sweep and not by writing rows: a breach inserted straight
+  // into `sla_breaches` would prove the fixture and nothing else, and a demo
+  // that survived a bug the product would not is worse than no demo. This way
+  // a database that seeds is also evidence that S-4, S-5 and S-6 hold — the
+  // pause arithmetic, the recorded fact, the escalation and its notification
+  // all run.
+  //
+  // How many breach is whatever these fixtures honestly are: several were
+  // raised days ago and never resolved, and rigging them so exactly one is
+  // late would be the fixture-shaping this argument rejects.
+  const serviceLevels = createServiceLevels({ db, now });
+  serviceLevels.collaborators({
+    tickets: createTicketsService({ db, serviceLevels, now }),
+    identity: createIdentityService({ db, secret, now }),
+    notifications: createNotificationsService({ db, now }),
+  });
+  const { recorded } = serviceLevels.sweepBreaches();
+
+  return { seeded, breached: recorded, skipped: false };
 }
