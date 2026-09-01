@@ -164,6 +164,22 @@ export function findResolvedTickets(db) {
     .all();
 }
 
+// Raise a ticket's priority. Only ever upward, and only by the rule that
+// decides when — there is no route for this and no story asks for one.
+//
+// `revision = revision + 1` like every other write here: an agent holding this
+// ticket open is correctly refused afterwards, because what they were looking
+// at is no longer what it is.
+export function setTicketPriority(db, { id, priority, at }) {
+  return db
+    .prepare(`
+      UPDATE tickets
+         SET priority = ?, revision = revision + 1, updated_at = ?
+       WHERE id = ? AND deleted_at IS NULL
+    `)
+    .run(priority, at, id).changes;
+}
+
 export function findOpenTicketsAssignedTo(db, { assigneeId }) {
   return db
     .prepare(`

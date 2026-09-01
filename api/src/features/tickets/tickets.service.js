@@ -28,6 +28,7 @@ import {
   findLiveAssigneeId,
   findLiveCustomerId,
   findOpenTicketsAssignedTo,
+  setTicketPriority,
   findResolvedTickets,
   findTicketById,
   countCustomerTickets,
@@ -607,6 +608,35 @@ export function createTicketsService({ db, notifications, serviceLevels: given, 
         throw new HttpError(404, 'NOT_FOUND');
       }
       return ticket;
+    },
+
+    // Raise a ticket's priority because a rule said so.
+    //
+    // From inside the caller's transaction — SERVICE-LEVELS-4-API calls it
+    // while recording the breach that caused it, and the two commit together
+    // or the escalation is an escalation nothing explains.
+    //
+    // No revision from the caller: the rule read no ticket and named no
+    // version. The bump still happens, so an agent holding the old one is
+    // refused — BR-5 gains no exception, the same as the other two sweeps.
+    //
+    // A null actor in the trail. The rule decided it and the rule has no name;
+    // attributing it to whoever ran the sweep would be a false record.
+    raisePriority({ ticketId, to, at }) {
+      const before = findTicketById(db, { id: ticketId });
+      if (!before || before.priority === to) return false;
+
+      if (setTicketPriority(db, { id: ticketId, priority: to, at }) === 0) return false;
+
+      audit.record(null, {
+        entity: 'ticket',
+        entityId: ticketId,
+        verb: 'ticket.priority',
+        before: { priority: before.priority },
+        after: { priority: to },
+        at,
+      });
+      return true;
     },
 
     // Hand back everything an agent still has to work on, because their
