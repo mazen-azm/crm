@@ -1,0 +1,33 @@
+/* Two marks, told apart by more than a word.
+   Logical properties throughout, so the edge sits on the correct side in
+   Arabic without a second rule and without a transform — a mirrored transform
+   would flip the text with it. */
+.ticket-breaches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ticket-breaches__mark {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--color-danger);
+  background: var(--color-bg-surface);
+}
+
+/* A missed first response is the louder of the two: nobody has spoken to this
+   customer at all. Solid edge, and the surface carries the danger colour. */
+.ticket-breaches__mark--first_response {
+  border-inline-start-style: solid;
+}
+
+/* A missed resolution means somebody IS on it and it is not finished. Dashed,
+   so the difference survives a screenshot in greyscale as well as a glance. */
+.ticket-breaches__mark--resolution {
+  border-inline-start-style: dashed;
+}

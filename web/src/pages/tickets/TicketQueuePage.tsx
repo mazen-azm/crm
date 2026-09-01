@@ -22,6 +22,7 @@ import { TicketHistory } from './TicketHistory';
 import { ReplyBox } from './ReplyBox';
 import { TicketThread } from './TicketThread';
 import { StaleTicket } from './StaleTicket';
+import { TicketBreaches } from './TicketBreaches';
 import type { Message } from './useReply';
 import { useAssignTicket } from './useAssignTicket';
 import { useChangeStatus, isBlank } from './useChangeStatus';
@@ -295,6 +296,11 @@ function Row({
             ) : null}
           </Stack>
         )}
+
+        {/* Before the controls, because it changes what somebody does with
+            them. A row that mentions its missed promise underneath the reply
+            box has told the agent after they decided. */}
+        <TicketBreaches breaches={ticket.breaches ?? []} />
 
         {/* The trail belongs beside the controls that write to it. Closed by
             default and fetched on opening — a row that read its own history
