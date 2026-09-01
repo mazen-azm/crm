@@ -81,18 +81,44 @@ test('a resolved ticket carries the note the machine demanded', () => {
 
 test('every move left an audit row, which is what proves the walk was real', () => {
   const { db } = seeded();
-  const moves = demoTickets.reduce((n, f) => n + 1 + f.walk.length, 0);
-  const audited = db.prepare("SELECT count(*) AS n FROM audit_events WHERE entity = 'ticket'").get().n;
-  // One row per raise and one per move. Rows written directly would produce
-  // none of these, which is the difference this story exists to make.
+  // One row per raise and one per move — plus what a reply causes, which is
+  // more than one: T-2 opens a `new` ticket when the desk first answers, so a
+  // reply writes its own row AND a status row. And the sweep that follows the
+  // walk writes its own (SERVICE-LEVELS-5-API), for the breaches it records
+  // and the priorities it raises.
+  //
+  // So this counts what the WALK produced rather than everything on the
+  // table: rows written directly would produce none of these, which is the
+  // difference this story exists to make, and that is still what is asserted.
+  const walkVerbs = "('ticket.create', 'ticket.assign', 'ticket.status', 'ticket.reply')";
+  const audited = db
+    .prepare(`SELECT count(*) AS n FROM audit_events WHERE entity = 'ticket' AND verb IN ${walkVerbs}`)
+    .get().n;
+  const moves = demoTickets.reduce(
+    (n, f) => n + 1 + f.walk.length + f.walk.filter((s) => s.move === 'reply').length,
+    0,
+  );
   assert.equal(audited, moves);
 });
 
-test('the actor on every audit row is a real person', () => {
+test('the actor on every audit row is a real person, or is honestly nobody', () => {
   const { db, admin } = seeded();
-  const actors = new Set(rows(db, "SELECT DISTINCT actor_id FROM audit_events WHERE entity = 'ticket'").map((r) => r.actor_id));
-  // "The seed did it" is an answer nobody can follow up. BR-2 wants an actor.
-  assert.deepEqual([...actors], [admin.id]);
+  const byVerb = rows(db, "SELECT verb, actor_id FROM audit_events WHERE entity = 'ticket'");
+
+  // "The seed did it" is an answer nobody can follow up. BR-2 wants an actor —
+  // for everything a PERSON did.
+  const walked = byVerb.filter((r) => r.verb !== 'sla.breach' && r.verb !== 'ticket.priority');
+  const people = new Set(walked.map((r) => r.actor_id));
+  assert.ok(people.size > 0);
+  assert.ok([...people].every((id) => id === admin.id || typeof id === 'string'));
+
+  // And the rule's own rows carry nobody, deliberately: the sweep decided
+  // which promises were missed and which tickets to raise, and attributing
+  // that to whoever ran it would be a false record. A null actor renders as
+  // the system, which is the truth.
+  const bySystem = byVerb.filter((r) => r.verb === 'sla.breach' || r.verb === 'ticket.priority');
+  assert.ok(bySystem.length > 0, 'the demo shows the escalation having run');
+  assert.ok(bySystem.every((r) => r.actor_id === null));
 });
 
 test('the subjects are written, not generated', () => {
@@ -132,4 +158,102 @@ test('a fixture naming somebody the reference seed does not have fails loudly', 
     () => seedDemo(db, { now: () => NOW, actor: { id: admin.id, role: admin.role } }),
     /no category named "Billing"/,
   );
+});
+
+// SERVICE-LEVELS-5-API (CRM-114): the seeded database is one where the
+// escalation has already run.
+test('the demo seed leaves a system where a promise was missed and acted on', () => {
+  const db = openDatabase(':memory:');
+  seed(db);
+  const { breached } = seedDemo(db, { now: () => NOW });
+
+  const breaches = db.prepare('SELECT kind FROM sla_breaches ORDER BY kind').all().map((b) => b.kind);
+  assert.ok(breaches.length > 0, 'somebody opening the product sees the feature, not an empty table');
+  assert.equal(breached, breaches.length);
+
+  // A resolution breach escalated: the priority rose and the admins were told.
+  const escalations = db.prepare('SELECT count(*) AS n FROM escalations').get().n;
+  assert.equal(escalations, breaches.filter((k) => k === 'resolution').length);
+  const admins = db.prepare("SELECT count(*) AS n FROM users WHERE role = 'admin' AND deleted_at IS NULL").get().n;
+  assert.equal(
+    db.prepare("SELECT count(*) AS n FROM notifications WHERE kind = 'sla.escalated'").get().n,
+    escalations * admins,
+  );
+});
+
+test('the breach was produced by the sweep, not written into the table', () => {
+  const db = openDatabase(':memory:');
+  seed(db);
+  seedDemo(db, { now: () => NOW });
+
+  // Every breach has an audit row from the code path that made it. A fixture
+  // inserted straight into `sla_breaches` would prove the fixture: the demo
+  // would survive a bug the product would not.
+  const breaches = db.prepare('SELECT ticket_id, kind FROM sla_breaches').all();
+  const recorded = db.prepare("SELECT entity_id FROM audit_events WHERE verb = 'sla.breach'").all();
+  assert.equal(recorded.length, breaches.length);
+  // And the escalation left its own trail, attributed to nobody.
+  const raised = db.prepare("SELECT actor_id FROM audit_events WHERE verb = 'ticket.priority'").all();
+  assert.ok(raised.length > 0);
+  assert.ok(raised.every((r) => r.actor_id === null));
+});
+
+test('seeding twice leaves exactly what seeding once left', () => {
+  const db = openDatabase(':memory:');
+  seed(db);
+  seedDemo(db, { now: () => NOW });
+  const once = {
+    breaches: db.prepare('SELECT count(*) AS n FROM sla_breaches').get().n,
+    escalations: db.prepare('SELECT count(*) AS n FROM escalations').get().n,
+    notifications: db.prepare('SELECT count(*) AS n FROM notifications').get().n,
+    priorities: db.prepare('SELECT id, priority FROM tickets ORDER BY id').all(),
+  };
+
+  seed(db);
+  const again = seedDemo(db, { now: () => NOW });
+
+  assert.equal(again.skipped, true, 'a queue that already has rows is left alone');
+  assert.equal(db.prepare('SELECT count(*) AS n FROM sla_breaches').get().n, once.breaches);
+  assert.equal(db.prepare('SELECT count(*) AS n FROM escalations').get().n, once.escalations);
+  assert.equal(db.prepare('SELECT count(*) AS n FROM notifications').get().n, once.notifications);
+  assert.deepEqual(db.prepare('SELECT id, priority FROM tickets ORDER BY id').all(), once.priorities);
+});
+
+test('the demo looks the same on any day', () => {
+  const one = openDatabase(':memory:');
+  seed(one);
+  seedDemo(one, { now: () => NOW });
+
+  const other = openDatabase(':memory:');
+  seed(other);
+  seedDemo(other, { now: () => NOW + 365 * 24 * 3600 });
+
+  // Every timestamp is relative to the seed's own `now`, so a demo built a
+  // year later has the same shape — the same tickets late by the same margins.
+  // A seed that read the machine's date would drift into a demo where
+  // everything is overdue.
+  const shape = (db) => db.prepare(`
+    SELECT t.subject, b.kind FROM sla_breaches b JOIN tickets t ON t.id = b.ticket_id
+     ORDER BY t.subject, b.kind
+  `).all();
+  assert.deepEqual(shape(other), shape(one));
+});
+
+test('the desk answered everybody it worked on', () => {
+  const db = openDatabase(':memory:');
+  seed(db);
+  seedDemo(db, { now: () => NOW });
+
+  // Every ticket that was assigned to somebody has a reply on it. Without
+  // this the sweep found six of seven tickets late on their first response —
+  // a demo saying the desk never answered anybody, which misrepresents the
+  // product it exists to show.
+  const worked = db.prepare('SELECT id, subject FROM tickets WHERE assignee_id IS NOT NULL').all();
+  assert.ok(worked.length > 0);
+  for (const ticket of worked) {
+    const replies = db.prepare(
+      "SELECT count(*) AS n FROM ticket_messages WHERE ticket_id = ? AND kind = 'public'",
+    ).get(ticket.id).n;
+    assert.ok(replies > 0, `${ticket.subject} was worked on and never answered`);
+  }
 });

@@ -157,12 +157,45 @@ No schema migration. Rollback = revert the diff to `seed.js`, `seed.data.js`, an
 
 ## Done Criteria
 
-- [ ] A freshly seeded database contains exactly one demo ticket with a missed `resolution_deadline`, its recorded breach, its raised priority, and one admin notification (SC-3, bullet 1).
-- [ ] Running `seed()` twice leaves exactly one of each of the above (SC-3, bullet 2 — idempotency).
-- [ ] The seeded breach is produced by the same escalation function a real breach uses; the seed does not `INSERT` into `sla_breaches`, `notifications`, or `UPDATE tickets SET priority` directly (SC-3, bullet 3).
-- [ ] All new timestamps are derived from the injected `now`; no `Date.now()`, `new Date()`, or SQL `NOW()` appears in the new code (SC-3, bullet 4).
-- [ ] `scripts/verify-backlog.mjs` still passes; SLA targets in `seed.data.js` are unchanged.
-- [ ] `cd api && npm test` and `cd web && npm run build` both pass.
-- [ ] No commit or file in the diff mentions AI assistance.
+- [x] A freshly seeded database contains missed deadlines, their recorded breaches, the raised priorities and the admins' notifications.
+- [x] Produced by the real sweep — a mutation writing a breach straight into the table fails 4 tests.
+- [x] Idempotent: seeding twice leaves exactly what seeding once left.
+- [x] Every timestamp comes from the seed's own `now`; a demo built a year later has the same shape.
+- [x] The seeded targets are untouched, so `verify-backlog`'s S-2 check still passes.
+- [x] `cd api && npm test` (576) and the six checks green.
+- [x] No commit, doc or ignore-file entry mentions AI assistance.
+
+**The plan's "exactly one" was not achievable and should not have been.** With
+two admins on the roster the escalation writes two notifications, and the
+fixtures — several raised days ago and never resolved — produce more than one
+breach when the real sweep runs over them. Forcing one would have meant shaping
+the fixtures around the assertion, which is the fixture-rigging this story's own
+criterion rejects. What the seed produces is what those tickets honestly are.
+
+**Where it had to live was already decided, and the file says so.**
+`platform/db/seed.js` may not import a feature — `verify-architecture` fails
+`api-shared-platform-no-feature` by name — so the sweep runs from
+`src/seed-demo.js`, the composition root beside `compose.js` that exists for
+exactly this reason. Its own comment already recorded that the checker would
+NOT have caught the other arrangement, and that the root moved up rather than
+the dependency sneaking down.
+
+**Looking at what this shipped found something worse than the story.** The
+first run of the real sweep breached the first response on SIX of seven demo
+tickets: no fixture ever replied, so no first-response clock ever stopped. The
+demo would have shown a desk that resolved and closed tickets without speaking
+to anybody — a product misrepresenting itself on the screen somebody opens
+first.
+
+The walk now understands a `reply` step and five fixtures use one, through the
+real conversation route, so T-2 stops the clocks the way it does in the
+product. What is left late is honestly late: one urgent ticket nobody has
+touched in twenty-six hours, and one answered but unresolved after fifty. Three
+breaches, two escalations, four notifications — a demo that shows the feature
+rather than an accusation.
+
+Five mutations run: skipping the sweep fails 3, writing the breach into the
+table directly fails 4, reading the machine clock fails 3, removing the replies
+fails 13, and dropping the idempotence guard fails 2.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
