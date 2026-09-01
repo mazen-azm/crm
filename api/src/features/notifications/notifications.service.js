@@ -14,6 +14,11 @@ import {
 // call site, so the vocabulary is somewhere a reader can find it — and so the
 // second kind, whenever a story asks for one, is added beside it.
 export const TICKET_ASSIGNED = 'ticket.assigned';
+// A resolution deadline was missed and the ticket was escalated. The second
+// kind, which the column takes without a migration — 0014 left the vocabulary
+// open on purpose, because a CHECK naming one value is a migration for the
+// second story.
+export const SLA_ESCALATED = 'sla.escalated';
 
 // What the list may be narrowed to. `all` is the default and is spelled out
 // rather than left as an absence, so a screen can say what it means and a
@@ -60,6 +65,35 @@ export function createNotificationsService({ db, now = () => Math.floor(Date.now
         at: at ?? stamp(),
       });
 
+      return written;
+    },
+
+    // Everybody who has to know that a promise was missed.
+    //
+    // One row each, because a notification belongs to a person: `read` is a
+    // fact about a reader, and a shared row could only be read once by
+    // whoever got there first.
+    //
+    // No actor comparison here, unlike ticketAssigned. Nobody caused this —
+    // the rule did — so there is nobody to leave out, and an admin who happens
+    // to have run the sweep still needs telling.
+    //
+    // From inside the caller's transaction: the escalation, the notifications
+    // and the audit row commit together or not at all.
+    escalated(actor, { ticketId, userIds, at }) {
+      const written = [];
+      for (const userId of userIds) {
+        const id = randomUUID();
+        written.push(insertNotification(db, { id, userId, ticketId, kind: SLA_ESCALATED, at }));
+        audit.record(actor, {
+          entity: 'notification',
+          entityId: id,
+          verb: 'notification.create',
+          before: null,
+          after: { userId, ticketId, kind: SLA_ESCALATED },
+          at,
+        });
+      }
       return written;
     },
 

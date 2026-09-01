@@ -66,6 +66,28 @@ export function insertBreach(db, { id, ticketId, kind, breachedAt, at }) {
     .run(id, ticketId, kind, breachedAt, at, at).changes;
 }
 
+// Claim the escalation for a breach.
+//
+// `UNIQUE (breach_id)` (0003) is what makes S-6's "exactly once" true, and
+// `INSERT OR IGNORE` is how a second attempt becomes silent. The row is
+// written FIRST and everything else follows from whether it was written: two
+// sweeps racing both see no escalation, both try, and the database picks one.
+// A check before the work would let both through.
+export function claimEscalation(db, { id, breachId, at }) {
+  return db
+    .prepare(`
+      INSERT OR IGNORE INTO escalations (id, breach_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?)
+    `)
+    .run(id, breachId, at, at).changes;
+}
+
+export function findBreach(db, { ticketId, kind }) {
+  return db
+    .prepare('SELECT id, breached_at FROM sla_breaches WHERE ticket_id = ? AND kind = ? AND deleted_at IS NULL')
+    .get(ticketId, kind) ?? null;
+}
+
 // The breaches on one ticket, for a read that must not recompute them (S-5).
 export function findBreachesByTicket(db, { ticketId }) {
   return db

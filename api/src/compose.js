@@ -35,8 +35,18 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // conversation feature and the status change all read the same object.
       // Two would be identical until one of them was given something the other
       // was not, which is L-62 and has happened here once already.
+      // A knot, and the shape of it is deliberate. Tickets holds service-levels
+      // because a status change stops and pauses clocks; service-levels holds
+      // tickets because an escalation raises a priority, and identity and
+      // notifications because it has to know who the admins are and tell them.
+      //
+      // Built in two steps rather than with a circular import: the object is
+      // created first and its collaborators handed to it after, which is the
+      // one place a cycle is honest — the alternative is a feature reaching
+      // into another's tables, which verify-architecture fails by name.
       const serviceLevels = createServiceLevels({ db, now });
       const tickets = createTicketsService({ db, notifications, serviceLevels, now });
+
       // What a ticket says. It owns one table and calls two features for what
       // they own — tickets moves a status, service-levels stops a clock — and
       // does all of it in one transaction, which is why neither of the methods
@@ -52,6 +62,14 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // The same shape customers already uses for identity below.
       const identityService = createIdentityService({ ...identity, tickets });
       const customers = createCustomersService({ db, now, tickets, identity: identityService });
+
+      // Now that identity exists. Service-levels needs three things it cannot
+      // reach for itself: tickets to raise a priority, identity to say who the
+      // admins are, and notifications to tell them. Handed over after the fact
+      // rather than through a circular import — a cycle of modules is a
+      // different thing from a cycle of objects, and only one of them is
+      // honest.
+      serviceLevels.collaborators({ tickets, identity: identityService, notifications });
 
       v1.use(identityRouter({ service: identityService }));
       v1.use(customersRouter({ customers }));

@@ -69,6 +69,18 @@ export function findPasswordHashById(db, id) {
   );
 }
 
+// Every admin still on the roster.
+//
+// Live only: an escalation notifying a disabled account is a notification
+// nobody will read, and the roster is the answer to "who is answerable now"
+// rather than "who ever was".
+export function listLiveAdminIds(db) {
+  return db
+    .prepare("SELECT id FROM users WHERE role = 'admin' AND deleted_at IS NULL ORDER BY created_at ASC, rowid ASC")
+    .all()
+    .map((row) => row.id);
+}
+
 export function listLiveUsers(db, { limit, offset }) {
   return db
     .prepare(`

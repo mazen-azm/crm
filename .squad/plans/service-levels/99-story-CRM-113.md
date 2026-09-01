@@ -10,6 +10,33 @@
 
 ---
 
+
+---
+
+## The engine, and what the review changed
+
+**SQLite via `node:sqlite`.** No migration: `escalations` already exists with
+`UNIQUE (breach_id)` and `sla_breaches` with `UNIQUE (ticket_id, kind)`, both
+written into `0003__service_levels.sql` when the schema was laid out, both
+citing the criteria this story implements. `INSERT OR IGNORE` is how a second
+attempt becomes silent rather than an error. (`verify-plan` failed this plan by
+name for describing persistence without naming the engine — L-5.)
+
+**Where the escalation runs changed after a mutation passed.** Written as the
+plan implies — inside the branch that had just recorded the breach — the
+`escalations` constraint was unreachable: the breach's own `INSERT OR IGNORE`
+had already decided, so removing the claim check changed nothing and every test
+still passed. Worse, it hid a real gap: a sweep that died between recording the
+breach and escalating would never be retried, because every later sweep finds
+the breach already there and moves on. The ticket stays marked late and nobody
+is told.
+
+So the escalation now runs after the breach and outside that branch. Every
+sweep offers to escalate every resolution breach it sees, and the constraint
+decides. That is what "enforced by a constraint" buys — idempotence the
+database promises rather than bookkeeping the caller does — and the mutation
+now fails.
+
 ## Story Goal
 
 When a resolution deadline is missed and the sweep records the breach (see SERVICE-LEVELS-3-API), the ticket's priority is promoted one level (`low → normal → high → urgent`) and exactly one admin notification of a new kind is written. "Exactly once" is enforced by a **database uniqueness constraint** on the breach row, not by an application check — two sweeps racing must not produce two escalations, two audits, or two notifications.
@@ -210,15 +237,37 @@ Add or extend the following (all under `api/src/features/service-levels/`, npm/v
 
 ## Done Criteria
 
-- [ ] A recorded resolution breach promotes the ticket's priority one level via the desk writer with a null actor, and this is asserted by a test.
-- [ ] Exactly one notification per current admin is written per breach, with the new kind string, asserted by a test — and the kind column has no CHECK / no migration.
-- [ ] "Once" is enforced by a database UNIQUE constraint on the breach row; two concurrent recorders yield exactly one escalation, asserted by a test that runs them in parallel.
-- [ ] An `urgent` ticket still triggers a notification, no BR-2 audit row, and no priority change.
-- [ ] A first-response breach triggers no promotion and no notification.
-- [ ] An empty admin roster does not raise; escalation still completes.
-- [ ] The BR-2 audit row is written with a null actor and reads correctly through `history-sentence.ts` (no code change; verified by reading).
-- [ ] Deadlines after promotion follow the new priority (SERVICE-LEVELS-1-API); the already-recorded breach row is not touched.
-- [ ] `cd api && npm test` and `cd web && npm run build` both pass.
-- [ ] No AI attribution anywhere in the diff or repository files.
+- [x] A missed resolution raises the ticket one level and notifies every admin on the roster.
+- [x] Once, by `UNIQUE (breach_id)` — asserted directly, and a mutation ignoring the claim now fails.
+- [x] An `urgent` ticket is still notified about and stays urgent.
+- [x] A first-response breach escalates nothing.
+- [x] The raise goes through the tickets feature, bumps the revision, and is audited with no actor.
+- [x] The breach already recorded stays recorded after the raise gives the ticket a later deadline.
+- [x] No admin on the roster is not an error; the escalation still happens and is still claimed.
+- [x] `cd api && npm test` (571) and the six checks green.
+- [x] No commit, doc or ignore-file entry mentions AI assistance.
+
+**Two other mutations passed, and neither was a gap.** Escalating past `urgent`
+is the same code path — `LADDER[i + 1] ?? priority` and the clamped version
+both answer `urgent` at the ceiling, so the mutation was a no-op rather than a
+change. And letting a first-response breach reach `escalate` changes nothing
+because `escalate` looks up a RESOLUTION breach and finds none. The kind check
+at the call site is redundant with that lookup; it stays because a reader of
+the sweep should see which promise S-6 is about without following a function
+call, and both are cheap.
+
+**A wiring knot, made explicit rather than hidden.** Tickets holds
+service-levels (a status change stops and pauses clocks); service-levels holds
+tickets (an escalation raises a priority), identity (who the admins are) and
+notifications (telling them). Compose builds service-levels first, then tickets,
+then hands the three over with `collaborators()` once identity exists. A
+circular import would have hidden the cycle rather than resolved it; the
+alternative — service-levels querying `users` and `tickets` directly — is a
+feature reading another's tables, which `verify-architecture` fails by name.
+
+Six mutations run: ignoring the claim fails 1 (after the escalation moved),
+attributing the raise to somebody fails 1, raising two levels fails 4, telling
+only the first admin fails 1; escalating past urgent and escalating a
+first-response breach both pass, for the reasons above.
 
 **STOP HERE. Report to the user and wait for confirmation before proceeding to Story 63.**

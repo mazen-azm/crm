@@ -7,6 +7,8 @@ import {
   findTargetByPriority,
   findTicketPriority,
   insertClock,
+  claimEscalation,
+  findBreach,
   findBreachesByTicket,
   findBreachesForTickets,
   findRunningClocks,
@@ -53,11 +55,63 @@ export function deadlineMsFor(clock, minutes, nowMs) {
   return { deadlineMs: Date.parse(clock.started_at) + minutes * 60_000 + pausedMs, pausedMs };
 }
 
+// One level up, and no further. `urgent` has nothing above it — the criteria
+// say the notification still goes, because a rule that silently did nothing
+// for the most urgent tickets would be worst exactly where it matters most.
+const LADDER = ['low', 'normal', 'high', 'urgent'];
+export const nextPriorityUp = (priority) =>
+  LADDER[Math.min(LADDER.indexOf(priority) + 1, LADDER.length - 1)] ?? priority;
+
 export function createServiceLevels({ db, now = () => Math.floor(Date.now() / 1000) }) {
+  // Handed over by compose once the features this one needs exist. Not
+  // constructor arguments, because tickets holds THIS service and cannot also
+  // be constructed before it — a knot that a circular import would hide rather
+  // than solve.
+  //
+  // Undefined until compose says otherwise, and every use is optional: the
+  // clocks work without any of them, which is what SERVICE-LEVELS-1-API and -2
+  // already relied on and what keeps their tests constructing this with a db
+  // alone.
+  let tickets;
+  let identity;
+  let notifications;
   const stamp = () => new Date(now() * 1000).toISOString();
   const audit = createAuditWriter({ db });
 
+  // Raise it, tell them, once.
+  //
+  // The claim comes first and decides everything after it. `escalations` has
+  // UNIQUE (breach_id), so two sweeps racing both find no escalation, both
+  // attempt the insert, and the database picks one — which is what "enforced
+  // by a constraint" means and what a SELECT-then-INSERT could not promise.
+  const collaborators = (given) => {
+    tickets = given.tickets;
+    identity = given.identity;
+    notifications = given.notifications;
+  };
+
+  const escalate = (ticketId, at) => {
+    const breach = findBreach(db, { ticketId, kind: 'resolution' });
+    if (!breach) return false;
+    if (claimEscalation(db, { id: randomUUID(), breachId: breach.id, at }) === 0) return false;
+
+    // Through the tickets feature, not by writing the column here: the
+    // priority is its table's, the deadlines follow the new priority because
+    // SERVICE-LEVELS-1-API reads it live, and BR-2 gets its row from the
+    // writer that already knows how to record one.
+    tickets?.raisePriority?.({ ticketId, to: nextPriorityUp(currentPriority(ticketId)), at });
+
+    // Every admin on the roster. None is not an error: notifying nobody is a
+    // fact about the roster, not a failure of the rule.
+    notifications?.escalated?.(null, { ticketId, userIds: identity?.adminIds?.() ?? [], at });
+    return true;
+  };
+
+  const currentPriority = (ticketId) => findTicketPriority(db, { ticketId })?.priority ?? 'low';
+
   return {
+    collaborators,
+
     // Called by the tickets feature inside the same transaction that creates
     // the ticket. A second call for one ticket throws, and is meant to: the
     // unique constraint on (ticket_id, kind) is the guarantee that exactly one
@@ -146,6 +200,21 @@ export function createServiceLevels({ db, now = () => Math.floor(Date.now() / 10
 
           recorded.push({ ticketId: clock.ticket_id, kind: clock.kind });
         });
+
+        // S-6: a missed RESOLUTION deadline raises the ticket and tells the
+        // admins, once.
+        //
+        // After the breach and OUTSIDE the branch that asks whether this sweep
+        // recorded it, deliberately. A breach recorded by an earlier sweep
+        // that died before escalating would otherwise never be escalated by
+        // any later one — the next sweep finds the breach already there and
+        // moves on, and the ticket stays marked late with nobody told.
+        //
+        // So every sweep offers to escalate every resolution breach it sees,
+        // and the unique constraint on `escalations.breach_id` decides. That
+        // is what "enforced by a constraint" buys: the work is idempotent
+        // because the database says so, not because the caller kept count.
+        if (clock.kind === 'resolution') transact(db, () => escalate(clock.ticket_id, at));
       }
 
       return { recorded: recorded.length, at };
