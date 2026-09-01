@@ -87,6 +87,7 @@ const EXERCISED = new Set([
   'POST /api/v1/tickets/:id/replies',
   'POST /api/v1/me/notifications/:id/read',
   'POST /api/v1/tickets/sweep-auto-close',
+  'POST /api/v1/tickets/sweep-breaches',
   'POST /api/v1/intake/:channel/tickets',
 ]);
 
@@ -269,6 +270,25 @@ test('each mutating route writes exactly one audit row', async () => {
       `).run(replied.id);
       return call('/api/v1/tickets/sweep-auto-close', { method: 'POST' });
     }],
+    // One ticket whose RESOLUTION promise has fallen due, so the sweep does
+    // everything S-6 asks: four rows, and the number is stated rather than
+    // the assertion relaxed.
+    //
+    //   sla.breach          the fact, attributed to nobody
+    //   ticket.priority     raised one level, attributed to nobody
+    //   notification.create one per admin — the seed rosters two
+    //
+    // Four, because the seed has two admins. If the seed's roster changes this number
+    // changes with it, and that is the census noticing rather than a
+    // brittleness — a rule that tells every admin should fail loudly when
+    // nobody notices it stopped.
+    ['POST /api/v1/tickets/sweep-breaches', () => {
+      real.prepare(`
+        UPDATE sla_clocks SET started_at = '2020-01-01T00:00:00.000Z', stopped_at = NULL
+         WHERE ticket_id = ? AND kind = 'resolution'
+      `).run(replied.id);
+      return call('/api/v1/tickets/sweep-breaches', { method: 'POST' });
+    }, 4],
     ['POST /api/v1/intake/:channel/tickets', () =>
       call('/api/v1/intake/web/tickets', {
         method: 'POST',

@@ -35,6 +35,11 @@ export type Ticket = {
   // days for itself would be the product rule in two places — and
   // allowedTransitions cannot answer it, being derived from the status alone.
   reopenWindowOpen: boolean;
+  // The deadlines this ticket has already missed, as the API recorded them
+  // (S-5). Empty for a ticket that has missed none — the screen draws what it
+  // was given and works nothing out: a second place deciding what "late" means
+  // is a second answer to it, and this one would be a clock in a browser.
+  breaches: Array<{ kind: string; breachedAt: string }>;
   // The moves that are legal from where this ticket is, sent with the ticket
   // and derived server-side from the same table a refusal reads. The screen
   // offers these and no others, which is what keeps the 409 a backstop rather

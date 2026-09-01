@@ -32,6 +32,10 @@ const NO_REVISION = new Map([
    'creating a ticket: there is no earlier version of it to overwrite'],
   [`POST ${API_V1_PREFIX}/intake/:channel/tickets`,
    'the public intake creates one too, and the caller is a stranger with nothing to have read'],
+  [`POST ${API_V1_PREFIX}/tickets/sweep-breaches`,
+   'S-5\'s sweep records a missed deadline as a fact. It writes to sla_breaches and touches no ticket row at all, '
+   + 'so there is no revision it could carry and nothing for one to protect — the caller named no ticket either; '
+   + 'it asks which promises have fallen due'],
   [`POST ${API_V1_PREFIX}/tickets/sweep-auto-close`,
    'T-6\'s sweep closes every resolved ticket whose fourteen days have passed. The caller read no ticket and '
    + 'named none — it asks the rule which are due — so there is no revision it could carry. It is not exempt from '

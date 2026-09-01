@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { HttpError } from '../../platform/http/errors.js';
+import { HttpError, unprocessable } from '../../platform/http/errors.js';
 import { createAuditWriter } from '../audit/index.js';
 import {
   countNotifications,
@@ -14,6 +14,16 @@ import {
 // call site, so the vocabulary is somewhere a reader can find it — and so the
 // second kind, whenever a story asks for one, is added beside it.
 export const TICKET_ASSIGNED = 'ticket.assigned';
+// A resolution deadline was missed and the ticket was escalated. The second
+// kind, which the column takes without a migration — 0014 left the vocabulary
+// open on purpose, because a CHECK naming one value is a migration for the
+// second story.
+export const SLA_ESCALATED = 'sla.escalated';
+
+// What the list may be narrowed to. `all` is the default and is spelled out
+// rather than left as an absence, so a screen can say what it means and a
+// reader of the document can see there are two.
+export const FILTERS = ['all', 'unread'];
 
 export function createNotificationsService({ db, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
@@ -58,14 +68,56 @@ export function createNotificationsService({ db, now = () => Math.floor(Date.now
       return written;
     },
 
+    // Everybody who has to know that a promise was missed.
+    //
+    // One row each, because a notification belongs to a person: `read` is a
+    // fact about a reader, and a shared row could only be read once by
+    // whoever got there first.
+    //
+    // No actor comparison here, unlike ticketAssigned. Nobody caused this —
+    // the rule did — so there is nobody to leave out, and an admin who happens
+    // to have run the sweep still needs telling.
+    //
+    // From inside the caller's transaction: the escalation, the notifications
+    // and the audit row commit together or not at all.
+    escalated(actor, { ticketId, userIds, at }) {
+      const written = [];
+      for (const userId of userIds) {
+        const id = randomUUID();
+        written.push(insertNotification(db, { id, userId, ticketId, kind: SLA_ESCALATED, at }));
+        audit.record(actor, {
+          entity: 'notification',
+          entityId: id,
+          verb: 'notification.create',
+          before: null,
+          after: { userId, ticketId, kind: SLA_ESCALATED },
+          at,
+        });
+      }
+      return written;
+    },
+
     // Mine, and only mine. There is no route that reads anybody else's, and
     // the query is scoped rather than filtered afterwards — filtering after
     // the fact means the rows were fetched and are one mistake from the
     // response.
-    mine(actor, { limit, offset }) {
+    mine(actor, { filter, limit, offset }) {
+      // Refused rather than treated as `all`. A screen sending a filter it
+      // invented is a screen whose author believed it did something, and
+      // answering with everything would let that belief survive.
+      if (filter !== undefined && !FILTERS.includes(filter)) throw unprocessable(['filter']);
+      const unreadOnly = filter === 'unread';
+
       return {
-        items: listNotifications(db, { userId: actor.id, limit, offset }),
-        total: countNotifications(db, { userId: actor.id }),
+        items: listNotifications(db, { userId: actor.id, unreadOnly, limit, offset }),
+        // What matches the query — so it equals `unread` below when the query
+        // is the unread one, and that is not a coincidence worth hiding.
+        total: countNotifications(db, { userId: actor.id, unreadOnly }),
+        // And what is unread, whatever was asked for. A badge is about the
+        // person, not about the window: one derived from the page in hand is
+        // wrong on every page but the first, and changes when somebody turns
+        // a page without reading anything.
+        unread: countNotifications(db, { userId: actor.id, unreadOnly: true }),
         limit,
         offset,
       };

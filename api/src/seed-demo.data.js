@@ -42,7 +42,14 @@ export const demoTickets = [
       + 'Our IT says the domain accepts everything from you. I can still sign in on my phone, so it is only the email.',
     walk: [
       { move: 'assign', to: 'Omar Reilly' },
-      { move: 'status', to: 'open' },
+      {
+        move: 'reply',
+        by: 'Omar Reilly',
+        body:
+          'Thanks for the detail — the phone sign-in is the useful part. Our mail logs show four attempts '
+          + 'accepted by your domain and none delivered, so it is almost certainly a filter above the mailbox. '
+          + 'Could you ask IT to check the quarantine for our sending address?',
+      },
       { move: 'status', to: 'pending' },
     ],
   },
@@ -57,7 +64,13 @@ export const demoTickets = [
       + 'I would rather have a replacement lid than send the whole unit back, if that is possible.',
     walk: [
       { move: 'assign', to: 'Sofía Martínez' },
-      { move: 'status', to: 'open' },
+      {
+        move: 'reply',
+        by: 'Sofía Martínez',
+        body:
+          'A replacement lid is fine — we keep them. I have ordered one to the address on your account; '
+          + 'it should be two working days. Keep using it closed in the meantime, it will not hurt the hinge further.',
+      },
     ],
   },
   {
@@ -71,7 +84,13 @@ export const demoTickets = [
       + 'The two who cannot are on the same plan as the rest as far as I can tell.',
     walk: [
       { move: 'assign', to: 'Kenji Watanabe' },
-      { move: 'status', to: 'open' },
+      {
+        move: 'reply',
+        by: 'Kenji Watanabe',
+        body:
+          'Found it — both accounts were created before the shared inbox existed, so they never picked up '
+          + 'its permission. I have added them. Could one of them confirm they can see it now?',
+      },
       { move: 'status', to: 'resolved', note: 'Both accounts were missing the inbox permission. Added, and they confirmed access.' },
     ],
   },
@@ -86,7 +105,14 @@ export const demoTickets = [
       + 'Staying inside one month works. It is reproducible and I can send the exact ranges.',
     walk: [
       { move: 'assign', to: 'Amina Diallo' },
-      { move: 'status', to: 'open' },
+      {
+        move: 'reply',
+        by: 'Amina Diallo',
+        body:
+          'Reproduced it on the first try with 28 August to 3 September. The range check was comparing the '
+          + 'month and the day separately, so anything crossing a boundary came back empty. Fix is written; '
+          + 'it goes out with this week\u2019s release.',
+      },
       { move: 'status', to: 'resolved', note: 'The range filter compared month and day separately. Fixed and released.' },
       { move: 'status', to: 'closed' },
     ],
@@ -102,7 +128,13 @@ export const demoTickets = [
       + 'Today that means opening each one. It would save the morning stand-up ten minutes.',
     walk: [
       { move: 'assign', to: 'Tomáš Novák' },
-      { move: 'status', to: 'open' },
+      {
+        move: 'reply',
+        by: 'Tomáš Novák',
+        body:
+          'This is a good idea and it is not in the queue filters today. I have written it up for the next '
+          + 'planning round rather than leaving it here, so it does not get lost when this ticket closes.',
+      },
       { move: 'status', to: 'resolved', note: 'Shipped in the queue filters. Told Ingrid where it is.' },
       { move: 'status', to: 'reopened' },
     ],

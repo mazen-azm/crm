@@ -1,4 +1,5 @@
 import { createApp } from './app.js';
+import { auditRouter, createTrailReader } from './features/audit/index.js';
 import { channelsRouter } from './features/channels/index.js';
 import { conversationRouter, createConversationService } from './features/conversation/index.js';
 import { createCustomersService, customersRouter } from './features/customers/index.js';
@@ -30,12 +31,26 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // reaching across — the same shape identity/tickets and
       // customers/identity already use.
       const notifications = createNotificationsService({ db, now });
-      const tickets = createTicketsService({ db, notifications, now });
+      // Before tickets, which holds it: one instance, so the sweep route, the
+      // conversation feature and the status change all read the same object.
+      // Two would be identical until one of them was given something the other
+      // was not, which is L-62 and has happened here once already.
+      // A knot, and the shape of it is deliberate. Tickets holds service-levels
+      // because a status change stops and pauses clocks; service-levels holds
+      // tickets because an escalation raises a priority, and identity and
+      // notifications because it has to know who the admins are and tell them.
+      //
+      // Built in two steps rather than with a circular import: the object is
+      // created first and its collaborators handed to it after, which is the
+      // one place a cycle is honest — the alternative is a feature reaching
+      // into another's tables, which verify-architecture fails by name.
+      const serviceLevels = createServiceLevels({ db, now });
+      const tickets = createTicketsService({ db, notifications, serviceLevels, now });
+
       // What a ticket says. It owns one table and calls two features for what
       // they own — tickets moves a status, service-levels stops a clock — and
       // does all of it in one transaction, which is why neither of the methods
       // it calls opens one.
-      const serviceLevels = createServiceLevels({ db, now });
       const conversation = createConversationService({ db, tickets, serviceLevels, now });
       // Customers holds identity because granting a customer a sign-in writes
       // a user row and the customers.user_id link in one transaction, and
@@ -48,11 +63,20 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       const identityService = createIdentityService({ ...identity, tickets });
       const customers = createCustomersService({ db, now, tickets, identity: identityService });
 
+      // Now that identity exists. Service-levels needs three things it cannot
+      // reach for itself: tickets to raise a priority, identity to say who the
+      // admins are, and notifications to tell them. Handed over after the fact
+      // rather than through a circular import — a cycle of modules is a
+      // different thing from a cycle of objects, and only one of them is
+      // honest.
+      serviceLevels.collaborators({ tickets, identity: identityService, notifications });
+
       v1.use(identityRouter({ service: identityService }));
       v1.use(customersRouter({ customers }));
       // The same tickets service the other features hold, not a second one.
-      v1.use(ticketsRouter({ db, now, service: tickets }));
+      v1.use(ticketsRouter({ db, now, service: tickets, serviceLevels }));
       v1.use(notificationsRouter({ service: notifications }));
+      v1.use(auditRouter({ reader: createTrailReader({ db }) }));
       // One throttle per composed app, the way sign-in's is built inside its
       // own service: every test then starts with empty counters and cannot
       // inherit another test's.

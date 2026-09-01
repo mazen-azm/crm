@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth-context';
 import { useTheme } from '../theme-context';
 import { useTranslation } from '../../shared/i18n';
+import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useMe } from '../../shared/session/use-me';
+import { useUnread } from '../../shared/session/unread-context';
 import { Button, Heading, Stack } from '../../shared/ui';
 import './DeskShell.css';
 
@@ -18,7 +20,10 @@ import './DeskShell.css';
 // layout without a second copy of it.
 export function DeskShell({ children }: { children: ReactNode }) {
   const { t, language, toggleLanguage } = useTranslation();
+  // Digits in the reader's locale (BR-3): Arabic renders its own numerals.
+  const { formatNumber } = useFormatters();
   const { isAdmin, isStaff } = useMe();
+  const unread = useUnread();
   const { signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const themeLabel = theme === 'dark' ? t.shell.switchToLight : t.shell.switchToDark;
@@ -68,6 +73,17 @@ export function DeskShell({ children }: { children: ReactNode }) {
             <Link to="/tickets/new" className="desk-shell__nav-item">
               {t.shell.navRaiseTicket}
             </Link>
+            {/* The count, from wherever they are. A notification nobody can
+                see from the screen they are on is a notification that waits
+                until somebody goes looking for it.
+
+                No badge at zero rather than a badge saying 0: a zero is a
+                thing to read and dismiss, every time, forever. */}
+            <Link to="/notifications" className="desk-shell__nav-item">
+              {unread.count > 0
+                ? `${t.shell.navNotifications} (${formatNumber(unread.count)})`
+                : t.shell.navNotifications}
+            </Link>
           </>
         ) : null}
         {isStaff === false ? (
@@ -92,6 +108,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
           <>
           <Link to="/ticket-categories" className="desk-shell__nav-item">
             {t.shell.navCategories}
+          </Link>
+          <Link to="/audit" className="desk-shell__nav-item">
+            {t.shell.navAudit}
           </Link>
           <Link to="/accounts/set-password" className="desk-shell__nav-item">
             {t.shell.navSetPassword}

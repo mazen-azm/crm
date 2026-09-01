@@ -28,6 +28,7 @@ import {
   findLiveAssigneeId,
   findLiveCustomerId,
   findOpenTicketsAssignedTo,
+  setTicketPriority,
   findResolvedTickets,
   findTicketById,
   countCustomerTickets,
@@ -110,10 +111,14 @@ const publicShape = (row, nowSeconds) => ({
   updatedAt: row.updated_at,
 });
 
-export function createTicketsService({ db, notifications, now = () => Math.floor(Date.now() / 1000) }) {
+export function createTicketsService({ db, notifications, serviceLevels: given, now = () => Math.floor(Date.now() / 1000) }) {
   const stamp = () => new Date(now() * 1000).toISOString();
   const audit = createAuditWriter({ db });
-  const serviceLevels = createServiceLevels({ db, now });
+  // Handed in by compose, which holds the one the conversation feature and the
+  // sweep route also use. The default keeps every existing caller working —
+  // and building one here unconditionally is how two objects for one thing
+  // start, which is L-62 and has already cost this codebase an afternoon.
+  const serviceLevels = given ?? createServiceLevels({ db, now });
 
   return {
     raise(actor, input) {
@@ -213,8 +218,18 @@ export function createTicketsService({ db, notifications, now = () => Math.floor
       if (assigneeId !== undefined) filters.assigneeId = assigneeId === UNASSIGNED ? null : assigneeId;
       if (scope.customerId !== undefined) filters.customerId = scope.customerId;
 
+      const rows = listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset });
+      // One query for the whole page rather than one per row. The breaches are
+      // read from the stored rows and never recomputed (S-5) — a queue that
+      // worked them out would be a second answer to "is this late", and it
+      // would change while nobody changed anything.
+      const breaches = serviceLevels.breachesForMany({ ticketIds: rows.map((r) => r.id) });
+
       return {
-        items: listTickets(db, { filters, sort: sort ?? DEFAULT_SORT, limit, offset }).map((row) => publicShape(row, now())),
+        items: rows.map((row) => ({
+          ...publicShape(row, now()),
+          breaches: breaches.get(row.id) ?? [],
+        })),
         // The matches, not the page.
         total: countTickets(db, { filters }),
         limit,
@@ -578,7 +593,12 @@ export function createTicketsService({ db, notifications, now = () => Math.floor
     // a screen that read a ticket differently depending on which route it came
     // from would be two descriptions of one thing.
     read(actor, { id }) {
-      return publicShape(this.readForActor(actor, { id }), now());
+      const ticket = this.readForActor(actor, { id });
+      return {
+        ...publicShape(ticket, now()),
+        // From the stored rows, like the queue's (S-5).
+        breaches: serviceLevels.breachesFor({ ticketId: id }),
+      };
     },
 
     readForActor(actor, { id }) {
@@ -588,6 +608,35 @@ export function createTicketsService({ db, notifications, now = () => Math.floor
         throw new HttpError(404, 'NOT_FOUND');
       }
       return ticket;
+    },
+
+    // Raise a ticket's priority because a rule said so.
+    //
+    // From inside the caller's transaction — SERVICE-LEVELS-4-API calls it
+    // while recording the breach that caused it, and the two commit together
+    // or the escalation is an escalation nothing explains.
+    //
+    // No revision from the caller: the rule read no ticket and named no
+    // version. The bump still happens, so an agent holding the old one is
+    // refused — BR-5 gains no exception, the same as the other two sweeps.
+    //
+    // A null actor in the trail. The rule decided it and the rule has no name;
+    // attributing it to whoever ran the sweep would be a false record.
+    raisePriority({ ticketId, to, at }) {
+      const before = findTicketById(db, { id: ticketId });
+      if (!before || before.priority === to) return false;
+
+      if (setTicketPriority(db, { id: ticketId, priority: to, at }) === 0) return false;
+
+      audit.record(null, {
+        entity: 'ticket',
+        entityId: ticketId,
+        verb: 'ticket.priority',
+        before: { priority: before.priority },
+        after: { priority: to },
+        at,
+      });
+      return true;
     },
 
     // Hand back everything an agent still has to work on, because their
@@ -886,6 +935,36 @@ export function createTicketsService({ db, notifications, now = () => Math.floor
           // legal. Nothing the caller could have asked for instead would have
           // helped, so the question T-7 answers does not arise.
           throw new HttpError(409, 'REVISION_MISMATCH');
+        }
+
+        // S-4, on both edges of `pending`, inside this transaction.
+        //
+        // Entering pauses the resolution clock; leaving closes the pause and
+        // adds what it cost — including on the way to `resolved`, where the
+        // pause has to be counted before the clock stops or the resolution
+        // would be recorded as slower than it was.
+        //
+        // Keyed off the move rather than the destination alone, because
+        // `pending → pending` is not a move the state machine allows and a
+        // check on the destination would pause a clock that is already paused.
+        if (before.status !== 'pending' && status === 'pending') {
+          serviceLevels.pause({ ticketId: id, at });
+        } else if (before.status === 'pending' && status !== 'pending') {
+          serviceLevels.resume({ ticketId: id, at });
+        }
+
+        // And resolving stops the resolution clock. Until now nothing did, on
+        // any path: `stopClock` was called for `first_response` when the desk
+        // first replied and for nothing else, so a resolved ticket's promise
+        // kept running and would eventually report itself overdue. A breach
+        // sweep built on that would have recorded one against every ticket the
+        // desk resolved on time.
+        //
+        // Found while building SERVICE-LEVELS-2-API and handed to this story,
+        // whose own criterion — "a clock that stopped before its deadline
+        // records nothing" — needs it to be true.
+        if (status === 'resolved') {
+          serviceLevels.stopClock({ ticketId: id, kind: 'resolution', at });
         }
 
         audit.record(actor, {

@@ -761,10 +761,10 @@
     },
     "/api/v1/me/notifications": {
       "get": {
-        "summary": "The notifications belonging to whoever is asking, oldest first, paged with the window every list here obeys (BR-4). Under /me like /me/tickets and /me/password: a route that took a user id would be a route somebody could put another id into, and the ownership rule would have to be written rather than being true by construction. Staff only — nothing writes a notification for a customer, so there is nothing here for one to read, and saying so with a guard is clearer than an empty list that looks like a bug. Reading this list changes nothing: marking one read is a write of its own, or an agent who glanced at the screen would have dismissed everything on it.",
+        "summary": "The notifications belonging to whoever is asking, oldest first, paged with the window every list here obeys (BR-4). Under /me like /me/tickets and /me/password: a route that took a user id would be a route somebody could put another id into, and the ownership rule would have to be written rather than being true by construction. Staff only — nothing writes a notification for a customer, so there is nothing here for one to read, and saying so with a guard is clearer than an empty list that looks like a bug. Reading this list changes nothing: marking one read is a write of its own, or an agent who glanced at the screen would have dismissed everything on it. `?filter=unread` narrows it to the ones not yet read; `all` is the default and is spelled out so a screen can say what it means. Any other value is refused 422 naming the field — a screen sending a filter it invented is a screen whose author believed it did something, and answering with everything would let that belief survive. The unread view keeps the same oldest-first order: somebody clearing a backlog works from the oldest.",
         "responses": {
           "200": {
-            "description": "{ items, total, limit, offset }. Each item carries the TICKET'S ID and not a copy of its subject — a subject copied when the notification was written is a subject that goes stale the first time somebody edits it. `readAt` is null until it is read, rather than a boolean, because when somebody read it is worth keeping."
+            "description": "{ items, total, unread, limit, offset }. `total` is what matches the query — so it equals `unread` when the query IS the unread one. `unread` is the caller's unread count whatever was asked for and whatever page came back: a badge is about the person, not the window, and one derived from the page in hand is wrong on every page but the first and changes when somebody turns a page without reading anything. { items, total, limit, offset }. Each item carries the TICKET'S ID and not a copy of its subject — a subject copied when the notification was written is a subject that goes stale the first time somebody edits it. `readAt` is null until it is read, rather than a boolean, because when somebody read it is worth keeping."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."
@@ -773,7 +773,7 @@
             "description": "A customer asking."
           },
           "422": {
-            "description": "`limit` or `offset` outside what the window allows; the field is named (BR-4)."
+            "description": "`limit` or `offset` outside what the window allows, or a `filter` that is not `all` or `unread`; the field is named (BR-4)."
           },
           "500": {
             "description": "Unhandled — the shape every error here has, with a requestId."
@@ -809,6 +809,47 @@
         "responses": {
           "200": {
             "description": "{ closed, at } — how many closed, so an operator reading a cron log can tell a sweep that found nothing from one that failed. Most sweeps close nothing."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
+    },
+    "/api/v1/audit-events": {
+      "get": {
+        "summary": "Read the audit trail, filtered by person, thing or date. Admin only: the trail says what everybody did, which is not something one agent should be able to read about another, and BR-2's promise is to the person answerable for the desk rather than to everybody on it. Filters combine with AND. `actorId` accepts the sentinel `system`, which matches rows with NO actor — the system genuinely does things here (an auto-close, an escalation), and a filter that could not express it would hide exactly the rows nobody else can explain. `entityId` requires `entity` beside it: the id column is not unique on its own, and which thing is half of what identifies a row. `from` and `to` are ISO-8601 and inclusive at both ends — the stamps are whole seconds, so an exclusive upper bound would silently drop everything in the last second of the range. Ordered oldest first with the rowid as a tiebreak, because a second-resolution stamp is not an order.",
+        "responses": {
+          "200": {
+            "description": "{ items, total, limit, offset }. `total` is what MATCHES the filters, not what this page holds. Each item carries `actorId` as null for the system rather than the sentinel: the sentinel is a word for asking, the answer says plainly that nobody did it. `before` and `after` are the parsed diff."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "422": {
+            "description": "`fields` names what was wrong: a filter present but empty, an `entityId` with no `entity`, a date that is not an instant, a range whose start is after its end, or a window BR-4 does not allow."
+          },
+          "500": {
+            "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
+    },
+    "/api/v1/tickets/sweep-breaches": {
+      "post": {
+        "summary": "Record every deadline that has passed as a stored fact (S-5). A breach is written, never recomputed on read: a number worked out each time somebody looks is a number that changes when nobody changed anything. Once is enforced by a unique constraint on (ticket_id, kind), not by a SELECT running first — a check is a race and a constraint is not, and two sweeps overlapping is an operational normality rather than an error. The paused time counts (S-4): a ticket that spent a week waiting on the customer is not late for that week, and the sweep computes the deadline with the SAME expression the queue reads it with, so the two cannot disagree about what late means. A clock that stopped before its deadline records nothing — the desk answered in time. No scheduler was added; this is a route an operator or a cron calls, as TICKETS-14-API established. Admin only, and the audit row carries no actor: the rule decided which promises were missed, not whoever ran the sweep.",
+        "responses": {
+          "200": {
+            "description": "{ recorded, at } — how many breaches were written. A sweep that finds nothing writes nothing and is not an error; most sweeps find nothing."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."

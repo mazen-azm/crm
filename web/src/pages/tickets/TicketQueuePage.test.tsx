@@ -18,6 +18,7 @@ const ticket = (id: string, extra: Record<string, unknown> = {}) => ({
   categoryId: null,
   revision: 1,
   reopenWindowOpen: false,
+  breaches: [],
   allowedTransitions: ['open', 'pending', 'resolved'],
   resolutionNote: null,
   createdAt: '2026-08-01T00:00:00.000Z',

@@ -1293,3 +1293,63 @@ graph". Nothing here asserts that compose builds one of each service, and
 nothing yet does — but the failure looked like a broken feature for ten minutes
 and was a duplicated object.
 
+---
+
+## L-63 — A screen that may not read must not ask before it knows
+
+**Rule:** when a screen is gated on who is asking, the hook that fetches needs
+an `enabled` flag, and the flag must be false while the answer is still
+unknown. A hook cannot be called conditionally, so the condition lives inside
+it — putting the early `return` above the hook is not an option React allows.
+
+**Where it came from:** twice in one sprint, both caught by a test rather than
+by a plan.
+
+`AUDIT-2-WEB` draws a sentence for a non-admin instead of the log, and fired
+its request anyway: a 403 in the log for somebody who did nothing wrong. Worse,
+`useMe()` answers `undefined` before it answers at all, so even an admin's
+first request went out before anybody knew who was asking.
+
+`NOTIFICATIONS-2-WEB` repeated it a day later, in a page written with the first
+one in view. The provider behind the badge was correctly gated; the page's own
+list hook was not.
+
+Both plans were silent about it, and would be: the guard is invisible in the
+rendered output, and a test that only reads the screen cannot see it. What
+found it both times was asserting on the STUB — that nothing was asked — which
+is worth writing for any screen with a role gate:
+
+    const asks = fetch.mock.calls.filter(([i]) => String(i).includes('/the-route'));
+    expect(asks).toEqual([]);
+
+The rule is not about tidiness. A refusal in a log is a thing somebody has to
+explain, and a screen that generates them for its own reader is manufacturing
+false evidence of a problem.
+
+---
+
+## L-64 — A retried planning run leaves the first attempt behind
+
+**Rule:** after a planning run that failed, hit a ceiling, or was retried, list
+the feature's plan folder before doing anything else. A rerun writes a NEW
+numbered file; it does not replace or remove the one the failed attempt left.
+Two plans for one story is a defect no check catches, because every check asks
+whether a story HAS a plan.
+
+**Where it came from:** twice in two days. `AUDIT-2-WEB (CRM-135)` — the first
+run hit the turn ceiling and wrote `91-story-crm-135.md`, lowercase, which
+`plan-order`'s filename pattern does not even recognise as planned; the retry
+wrote `92-story-CRM-135.md`. `SERVICE-LEVELS-3-WEB (CRM-111)` — `97` at 19:20
+and `98` five minutes later, both complete, both ending in the same STOP HERE.
+
+Both times the second file was shorter. Both times the first was the one with
+the fuller context section. Neither is reliably "the good one", so the rule is
+not "keep the longer": it is to notice there are two, read both, keep one, and
+say in the survivor's own text that there was another. A story whose plan folder
+holds two files is a story where somebody will later read the wrong one.
+
+`verify-plan` could catch this — one plan per tracker key is a checkable
+property of the folder. It does not today, and that is worth more than the
+deletions: the checks in this repository exist because a defect was found by
+hand first.
+

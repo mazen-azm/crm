@@ -13,6 +13,7 @@ import {
   findPasswordHashById,
   findLiveUserByEmail,
   insertUser,
+  listLiveAdminIds,
   listLiveUsers,
   reEnableUser,
   updateUserPassword,
@@ -116,6 +117,14 @@ export function createIdentityService({ db, secret, tickets, now = () => Math.fl
     );
 
   return {
+    // Not a route either. SERVICE-LEVELS-4-API notifies every admin when a
+    // resolution deadline is missed, and who is an admin is this feature's
+    // question — a service-levels query against `users` would be one feature
+    // reading another's table, which verify-architecture fails by name.
+    adminIds() {
+      return listLiveAdminIds(db);
+    },
+
     // Not a route. CUSTOMERS-6-API grants a customer a sign-in, which is one
     // user row and one customers.user_id written together — so it calls this
     // from inside its own transaction. Exposed on the service rather than
