@@ -336,6 +336,11 @@ export const ar = defineLocale({
     adminOnlyTitle: 'هذه شاشة للمسؤول',
     adminOnlyBody: 'سجل التدقيق يوضّح ما فعله الجميع، لذا يقرأه المسؤول وحده.',
   },
+  ticketBreach: {
+    firstResponse: 'تأخر الرد الأول',
+    resolution: 'تأخر الحل',
+    missedAt: 'فات موعده',
+  },
   ticketStale: {
     title: 'تغيّرت هذه التذكرة أثناء نظرك إليها',
     reload: 'انظر مرة أخرى',

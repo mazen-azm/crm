@@ -1,37 +1,34 @@
 {
-  "runId": "0mtg7dmf0-ffaa2f96c45da8b6",
+  "runId": "0mthmbcn8-a9494789564fe741",
   "provider": "anthropic",
   "model": "claude-opus-4-7",
-  "feature": "tickets",
-  "storyId": "CRM-88",
-  "startedAt": "2026-08-30T19:29:09.564Z",
-  "completedAt": "2026-08-30T19:34:07.378Z",
+  "feature": "service-levels",
+  "storyId": "CRM-111",
+  "startedAt": "2026-08-31T19:15:04.004Z",
+  "completedAt": "2026-08-31T19:20:48.597Z",
   "success": true,
   "partial": false,
-  "planFile": ".squad/plans/tickets/79-story-crm-88.md",
+  "planFile": ".squad/plans/service-levels/97-story-crm-111.md",
   "stats": {
-    "turns": 39,
-    "inputTokens": 38,
-    "outputTokens": 23831,
-    "cacheCreationTokens": 55578,
-    "cacheReadTokens": 374074,
+    "turns": 51,
+    "inputTokens": 32,
+    "outputTokens": 13517,
+    "cacheCreationTokens": 75837,
+    "cacheReadTokens": 1082926,
     "cacheHitRatio": 1,
-    "durationMs": 173127
+    "durationMs": 250920
   },
   "cacheEnabled": true,
-  "durationMs": 297812,
+  "durationMs": 344584,
   "scout": {
-    "enabled": true,
-    "selectedCount": 21,
-    "tokensUsed": 12594,
-    "durationMs": 124600
+    "enabled": true
   },
   "validation": {
     "enabled": true,
-    "issuesCount": 17,
+    "issuesCount": 29,
     "issuesByKind": {
-      "missing_path": 5,
-      "symbol_not_found": 12
+      "missing_path": 2,
+      "symbol_not_found": 27
     },
     "durationMs": 68
   },

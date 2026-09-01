@@ -24,6 +24,7 @@ const ticket = (over = {}) => ({
   categoryId: null,
   revision: 1,
   reopenWindowOpen: false,
+  breaches: [],
   allowedTransitions: ['open', 'pending', 'resolved'],
   resolutionNote: null,
   channel: 'desk',

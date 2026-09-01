@@ -390,6 +390,11 @@ export const en = {
     adminOnlyTitle: 'This is an admin screen',
     adminOnlyBody: 'The audit log says what everybody did, so only an administrator reads it.',
   },
+  ticketBreach: {
+    firstResponse: 'The first reply was late',
+    resolution: 'The resolution was late',
+    missedAt: 'Missed',
+  },
   ticketStale: {
     title: 'This ticket changed while you were looking at it',
     reload: 'Look again',
