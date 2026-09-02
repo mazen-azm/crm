@@ -16,6 +16,7 @@ import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 import { TicketCategoriesPage } from '../pages/tickets/TicketCategoriesPage';
 import { AuditLogPage } from '../pages/audit/AuditLogPage';
+import { QueueByStatusPage } from '../pages/reports/QueueByStatusPage';
 import { NotificationsPage } from '../pages/notifications/NotificationsPage';
 
 // Routes import pages; nothing imports routes. The direction is
@@ -191,6 +192,20 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <NotificationsPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Admin-only in the API, and the screen says so for anybody else who
+          arrives — the same arrangement every other admin screen here uses,
+          and for the same reason: a router-level role gate would be a second
+          place deciding one rule. */}
+      <Route
+        path="/reports/queue-by-status"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <QueueByStatusPage />
             </DeskShell>
           </RequireAuth>
         }

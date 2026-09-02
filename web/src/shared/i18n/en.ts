@@ -30,6 +30,7 @@ export const en = {
     navAudit: 'Audit log',
     navCategories: 'Ticket categories',
     navAccounts: 'Accounts',
+    navQueueReport: 'Queue report',
     navSetPassword: 'Set a password',
     navMyTickets: 'Your tickets',
     navHome: 'Home',
@@ -574,6 +575,22 @@ export const en = {
     adminOnlyBody: 'Accounts are created and disabled by an admin.',
     newer: 'Newer',
     older: 'Older',
+  },
+  queueReport: {
+    title: 'The queue by status',
+    statusNew: 'New',
+    statusOpen: 'Open',
+    statusPending: 'Waiting on the customer',
+    statusResolved: 'Resolved',
+    statusClosed: 'Closed',
+    statusReopened: 'Reopened',
+    totalLabel: 'Tickets in the queue:',
+    // Said above the zeros, never instead of them. Six zeros is the answer to
+    // "how is the desk doing"; an empty screen is not.
+    nothingInTheQueue: 'Nothing is in the queue at all.',
+    errorTitle: 'The report did not load',
+    adminOnlyTitle: 'This is an admin screen',
+    adminOnlyBody: 'The reports are for the person answerable for the desk.',
   },
   states: {
     loading: 'Loading',
