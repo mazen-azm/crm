@@ -118,6 +118,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
           <Link to="/reports/promise-share" className="desk-shell__nav-item">
             {t.shell.navPromiseReport}
           </Link>
+          <Link to="/reports/agent-load" className="desk-shell__nav-item">
+            {t.shell.navAgentLoad}
+          </Link>
           <Link to="/audit" className="desk-shell__nav-item">
             {t.shell.navAudit}
           </Link>

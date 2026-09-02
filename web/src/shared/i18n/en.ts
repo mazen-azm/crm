@@ -32,6 +32,7 @@ export const en = {
     navAccounts: 'Accounts',
     navQueueReport: 'Queue report',
     navPromiseReport: 'Promises kept',
+    navAgentLoad: 'Agent load',
     navSetPassword: 'Set a password',
     navMyTickets: 'Your tickets',
     navHome: 'Home',
@@ -604,6 +605,21 @@ export const en = {
     // of two tickets and 100% of two hundred are different facts.
     result: '{share} — {met} of {settled}',
     noData: 'Nothing has finished yet, so there is nothing to report.',
+    errorTitle: 'The report did not load',
+    adminOnlyTitle: 'This is an admin screen',
+    adminOnlyBody: 'The reports are for the person answerable for the desk.',
+  },
+  agentLoadReport: {
+    title: 'Who is holding what',
+    unassignedLabel: 'Waiting for somebody to take it',
+    openLabel: 'Open altogether:',
+    // Shown only when it is not zero. A figure that appears when something is
+    // wrong gets read; one that always says nought does not.
+    unaccountedLabel: 'Held by somebody not on this list:',
+    roleAdmin: 'Admin',
+    roleAgent: 'Agent',
+    noAgentsTitle: 'Nobody is on the desk',
+    noAgentsBody: 'Create an account, and it appears here.',
     errorTitle: 'The report did not load',
     adminOnlyTitle: 'This is an admin screen',
     adminOnlyBody: 'The reports are for the person answerable for the desk.',

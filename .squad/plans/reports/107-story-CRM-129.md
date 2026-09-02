@@ -266,14 +266,30 @@ Create file: `web/src/pages/reports/AgentLoadPage.test.tsx` — mirror the struc
 
 ## Done Criteria
 
-- [ ] Idle agents render with `0` in the same list as busy agents; sort-by-load-desc keeps them visible.
-- [ ] Unassigned work renders as a distinct figure, not as an agent row.
-- [ ] A one-agent desk renders the report without error.
-- [ ] Agent names render verbatim in both `en` and `ar`; surrounding labels come from resource files.
-- [ ] All counts pass through `useFormatters().formatNumber`.
-- [ ] The page follows the `web/src/pages/audit/` shape (page + hook + css) and the `/audit` admin-route treatment.
-- [ ] The hook does not fetch until `isAdmin === true` (L-63).
-- [ ] `parity.test.ts` and `no-hardcoded-strings.test.ts` pass; `npm run build` and `npm test` are green in `web/`.
-- [ ] No commit, doc, or ignore-file entry mentions AI assistance.
+- [x] Every agent has a row, and the idle ones are in the same list in the same shape as the busiest. The list is never cut to a top few and is never filtered — dropping the zeros fails three tests.
+- [x] The API's order is kept (review item 2). It is already ordered by name with the id as a tiebreak, so two people sharing a name do not swap between reads, and re-sorting by load would be the ranking `REPORTS-3-API` put out of scope.
+- [x] Unassigned work is a figure in its own card, never a row among the people. Turning it into a row fails three tests.
+- [x] **`open` and `unaccounted` are shown** (review item 1). `unaccounted` appears only when it is not zero — a figure that always reads nought is a figure nobody reads, and one that appears when something is wrong gets read. Both branches are tested.
+- [x] A one-agent desk renders the report, not an error.
+- [x] A name is the person's own, rendered as stored — asserted with an Arabic name in an English interface — and only the label around it comes from the resource file.
+- [x] Every count goes through `useFormatters().formatNumber`; ar-EG digits asserted as ٥.
+- [x] The hook gates on `isAdmin === true` and fires nothing before the answer arrives (L-63); its shape matches both siblings in the folder, and the response type matches what `REPORTS-3-API` actually sends.
+- [x] A missing `unassigned` is not coerced to zero (review item 7). The field always arrives; a response without it is not the one this screen was written for.
+- [x] Route added the way every other admin screen here is added — static import, no lazy loading, no router-level role gate (review items 4 and 5).
+- [x] `cd web && npm run build` clean; `npm test` — 380 pass. Six guards green.
+- [x] No AI-attribution strings in the diff, checked with a pattern that matches attribution rather than the letters `AI` (review item 8).
 
-**STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+## What the mutation pass proved
+
+| # | what was broken | result |
+| --- | --- | --- |
+| T1 | the idle agents are dropped | 3 fail |
+| T2 | the gap is never mentioned | 1 fail |
+| T3 | the numbers bypass the formatter | 1 fail |
+| T4 | unassigned becomes a person in the list | 3 fail |
+| T5 | the screen asks before it knows who is asking | 1 fail |
+
+T4 is the one that would have looked like a tidy-up: folding the unassigned
+figure into the list as a row makes the layout simpler and puts a number that is
+not a person among the people.
+
