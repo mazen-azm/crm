@@ -5,7 +5,7 @@ import { conversationRouter, createConversationService } from './features/conver
 import { createCustomersService, customersRouter } from './features/customers/index.js';
 import { createIdentityService, identityRouter, identitySubjectResolver } from './features/identity/index.js';
 import { createNotificationsService, notificationsRouter } from './features/notifications/index.js';
-import { createQueueByStatusReader, reportsRouter } from './features/reports/index.js';
+import { createPromiseShareReader, createQueueByStatusReader, reportsRouter } from './features/reports/index.js';
 import { createServiceLevels } from './features/service-levels/index.js';
 import { createTicketsService, ticketsRouter, validateTicketFields } from './features/tickets/index.js';
 import { createKeyedThrottle } from './platform/http/throttle.js';
@@ -81,7 +81,10 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       // Reports owns no table and writes nothing; it reads what the other
       // features already store. Built here like every other feature so there
       // is one answer to what the application serves.
-      v1.use(reportsRouter({ queueByStatus: createQueueByStatusReader({ db }) }));
+      v1.use(reportsRouter({
+        queueByStatus: createQueueByStatusReader({ db }),
+        promiseShare: createPromiseShareReader({ db }),
+      }));
       // One throttle per composed app, the way sign-in's is built inside its
       // own service: every test then starts with empty counters and cannot
       // inherit another test's.

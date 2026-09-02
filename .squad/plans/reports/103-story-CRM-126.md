@@ -321,20 +321,39 @@ No schema change. Rollback = revert the code diff. Half-applied state is safe: t
 
 ## Done Criteria
 
-- [ ] `GET /reports/promise-share` returns `{ kinds: { first_response, resolution } }` with `met`, `breached`, `settled`, `share` per kind.
-- [ ] `share` is `null` when `settled === 0` for that kind (no-data ≠ zero per cent).
-- [ ] Counts are computed from `sla_clocks` (met) and `sla_breaches` (breached); no code path calls `deadlineMsFor` or the sweep.
-- [ ] Running clocks (`stopped_at IS NULL` with no breach row) are excluded from both numerator and denominator.
-- [ ] Admin-only, enforced by middleware; non-admin → 403 before service.
-- [ ] Documented in `api/openapi.json`; `openapi-contract.test.js` passes.
-- [ ] `staff-only.guarantee.test.js` covers the new route.
-- [ ] New `promise-share.test.js` covers empty, mixed, breach-only, per-kind-independence, 403, no-write-on-GET, and breach-row-wins cases.
-- [ ] No AI-attribution strings anywhere in the diff.
-- [ ] All SQL for the new endpoint lives in `reports.repository.js` only.
+- [x] `GET /api/v1/reports/promise-share` returns `{ kinds: { first_response, resolution } }`, each with `met`, `breached`, `settled` and `share`.
+- [x] `share` is `null` when nothing settled — no data is not the same fact as nothing met, and the two look identical once a percentage is rounded onto a screen. A desk that missed everything says 0, which is a different answer.
+- [x] Breaches are counted from `sla_breaches`; nothing in `reports/` imports `deadlineMsFor`, references a deadline, or mentions the sweep.
+- [x] A clock still running is on neither side of the fraction — proved by a ticket raised and left inside its deadline, where `met = total − breached` would have said 2 of 2.
+- [x] A clock that stopped **after** a breach was recorded counts as broken, not kept. Driven through the real routes: the reply lands after the sweep.
+- [x] Rows belonging to a soft-deleted ticket, clock or breach are in no count. The ticket half is the one no existing query had to do, and it is the one that would score the desk on tickets that no longer exist.
+- [x] The two kinds are counted apart. Proved with two tickets answered and one of them resolved, where one averaged number would have said the desk resolved everything it answered.
+- [x] Reading the report writes nothing — breach rows counted before and after two reads.
+- [x] Admin-only via middleware; an agent gets 403 before the reader runs. **`staff-only.guarantee.test.js` was not touched** (review item 1): it reads routes off the router, and an entry in its list would have exempted this route rather than proved it.
+- [x] Documented in `api/openapi.json`, prose like the rest of the file. The contract test failed until it was.
+- [x] All SQL for this endpoint is in `reports.repository.js`; `verify-architecture` passes.
+- [x] `cd api && npm test` — 598 pass, 0 fail.
+- [x] No AI-attribution strings in the diff.
 
-**STOP HERE. Report to the user and wait for confirmation before proceeding to Story 02.**
+## What the mutation pass proved
 
----
+Six mutations, each reverted immediately. Every state in the tests is produced
+by driving the real routes and the real sweep, so these are mutations against a
+desk that behaved, not against a fixture of this test's own opinion.
+
+| # | what was broken | result |
+| --- | --- | --- |
+| P1 | no-data becomes zero per cent | 2 fail |
+| P2 | a running clock counts as met | 4 fail |
+| P3 | a stopped clock is met even though it breached | 1 fail |
+| P4 | a soft-deleted ticket is still scored | 1 fail |
+| P5 | the admin gate is dropped | 2 fail — one of them the census the plan wanted disabled |
+| P6 | the report writes a row while reading | 4 fail |
+
+P5 is worth reading twice. The plan's Test Plan would have added this route to
+`staff-only.guarantee.test.js`'s exemption list "so the admin-only contract is
+proven"; had it, this mutation would have passed and the report would have been
+readable by every agent on the desk. See L-68.
 
 # Feature overview
 
