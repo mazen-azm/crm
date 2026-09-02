@@ -61,6 +61,80 @@ An admin creates, disables and re-enables accounts, and sets roles.
 - Given an address that already belongs to a live account, when it is used
   again, then the answer is 409.
 
+## IDENTITY-2-WEB
+
+The screen an admin manages accounts from.
+
+### The API this screen needs, and the half of it that is missing
+
+Written 2026-09-02 by reading `identity.routes.js` and `identity.service.js`
+before planning the screen, which is the check that keeps finding this:
+
+**`GET /accounts` returns live accounts only.** `listAccounts` calls
+`listLiveUsers` (`identity.repository.js:84`), whose `WHERE deleted_at IS NULL`
+is the whole query. So a disabled account appears in no listing anywhere in
+this API — and `POST /accounts/:id/re-enable` takes an id that no client has
+any way to learn. The route is served, documented and tested, and nothing that
+is not a test can call it.
+
+`IDENTITY-2-API`'s own criterion — "a disabled account, re-enabled, is the same
+row" — passed because the service test already held the id from creating the
+account. That is the fourth time a story's missing unit has turned out to be in
+the layer the story was not in, and the first time the gap was in a route
+rather than a screen.
+
+**So this story includes the listing change**, small and stated rather than
+discovered: `GET /accounts` gains a way to ask for disabled accounts, or for
+all of them. It is API work inside a WEB story, and it is here because the
+alternative is a screen that cannot do half of what the feature promises.
+
+*Acceptance criteria*
+- Given a disabled account, when an admin asks the API for accounts including
+  disabled ones, then it is returned, with its state visible on the row —
+  without this, `/accounts/:id/re-enable` is unreachable from any client.
+- Given the default listing, when nothing is asked for, then it answers what it
+  answers today: live accounts only. Existing callers do not change behaviour
+  because a screen needed something new.
+- Given an admin, when they open the screen, then they see the live and the
+  disabled accounts, each with its role and its state, and can re-enable a
+  disabled one from there.
+- Given the roles an admin may hand out, when the form offers them, then it
+  offers `admin` and `agent` and not `customer` — the API refuses a customer
+  here on purpose (`identity.rules.js:116`), and a screen offering a choice the
+  API refuses teaches the reader a rule that is not true.
+- Given a new account, when it is created, then the initial password the API
+  returns is shown to the admin once, plainly, with the fact that it will not
+  be shown again. `createAccount` mints it and returns it
+  (`identity.service.js:200-203`); an admin who never sees it has created an
+  account nobody can sign in to.
+- Given that same password, when the screen is done with it, then it is never
+  put anywhere it will be read again — not in the URL, not in storage, not in
+  a log. It is audited nowhere by design (`identity.service.js:99-101`), and
+  the screen must not undo that.
+- Given a disable, when it succeeds, then the number of tickets it unassigned
+  is shown to the admin. The API returns that count beside the user precisely
+  so it can be seen (`identity.service.js:293-295`); dropping it on the screen
+  is where that care is lost, and zero is an answer worth showing.
+- Given the last admin, when disabling them or changing their role is refused
+  with 409, then the screen says which rule refused it. "Something went wrong"
+  is what sends an admin to the database.
+- Given an address that already belongs to an account, when it is used again,
+  then the screen says the address is taken and points at re-enabling, because
+  a taken address is often a disabled colleague rather than a mistake.
+- Given the list, when there are more accounts than a page, then it is paged
+  the way every other list here is paged (BR-4) — the API's `/accounts` takes
+  limit and offset already.
+- Given a reader who is not an admin, when they reach the address directly,
+  then they do not see the screen, and the navigation never offered it.
+- Given setting a password for somebody else, when an admin wants that, then it
+  stays where it already is (`/accounts/set-password`): this screen shows the
+  one password creation produces and sets none. Two ways to set a password are
+  two sets of rules.
+- Given both languages, when the screen renders, then every label, role name
+  and state comes from the resource file (BR-6) and none is a raw `agent`.
+- Given loading, empty and failed, when each happens, then it is a designed
+  state (D-2) and not an accident.
+
 ## IDENTITY-3-WEB
 
 An expired token returns me to sign-in, not a broken screen.

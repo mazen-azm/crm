@@ -41,8 +41,14 @@ export function identityRouter({ service }) {
     res.status(201).json(service.createAccount(req.subject, req.body ?? {}));
   });
 
+  // `state` is forwarded as it arrives, unvalidated here: the service owns
+  // which values are legal and answers 422 naming the field, the same way
+  // every other input on this router is decided one layer in.
   router.get('/accounts', adminOnly, (req, res) => {
-    res.json(service.listAccounts(req.subject, readPagination(req)));
+    res.json(service.listAccounts(req.subject, {
+      ...readPagination(req),
+      state: req.query.state,
+    }));
   });
 
   router.patch('/accounts/:id/role', adminOnly, (req, res) => {

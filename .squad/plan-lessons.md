@@ -1353,3 +1353,152 @@ property of the folder. It does not today, and that is worth more than the
 deletions: the checks in this repository exist because a defect was found by
 hand first.
 
+
+## L-65 — A page of results is not the results, and a check that fetches the same page cannot see the difference
+
+Ask a paged API for more than it will give and it answers with what it will
+give, not with an error. `scripts/story-keys.mjs` asked Jira for
+`maxResults=200`; Jira's ceiling is 100 and it applied it silently. The file
+that tells every planner which key holds which story therefore held the first
+hundred issues and nothing after them — **85 of 138 stories**, missing every
+service-levels, notifications, portal and reports story.
+
+**Why nobody noticed for eight sprints:** `--check` refetched, compared, and
+reported "the file agrees with the tracker" every single time. It did agree.
+Both sides were truncated at the same place by the same call, so the comparison
+was the file against itself with extra steps. This is the same shape as the
+existing rule about verifying a plan against two independent statements of one
+fact — and it turns out the rule applies to the tooling, not only to the plans.
+
+**The tell was in the output and went unread:** "wrote 85 stories" next to a
+backlog the same repository elsewhere counts as 138. A generator that prints a
+number and a source that knows the expected number are two statements nobody
+compared.
+
+**The rule:** when reading a list from an API, page it — `nextPageToken` until
+it is absent — and never trust a `maxResults` you did not see honoured. When
+the number of things fetched is knowable from somewhere else in the repository,
+compare the two and fail on a mismatch, rather than printing the count and
+hoping a person does the subtraction.
+
+## L-66 — A route reachable only with an id no client can obtain is a route nothing can call
+
+`POST /accounts/:id/re-enable` has been served, documented and tested since
+`IDENTITY-2-API`. Nothing outside a test can reach it: `GET /accounts` returns
+live accounts only (`identity.repository.js:84`, `WHERE deleted_at IS NULL`),
+so a disabled account appears in no listing this API has, and its id is
+knowable only to whoever already had it.
+
+The story's own criterion — "a disabled account, re-enabled, is the same row" —
+passed honestly. The service test created the account, disabled it, and still
+held the id from the first call. Every layer was right on its own terms and the
+feature did not work.
+
+**Why the usual checks miss it:** the route census finds routes that exist, the
+contract test finds routes that are undocumented, and the audit census finds
+mutations that write no row. None of them asks *how a caller would come to have
+this parameter*. That question has no census because the answer is a path
+through the product, not a property of a file.
+
+**Swept the other 38 routes the same day** by asking each id-taking route where
+its id comes from. Every other one is answered by a listing the product already
+serves, and `re-enable` is the only verb in the backlog that needs a row a
+listing excludes — so this is one instance, found, not a pattern still hiding.
+The sweep took ten minutes and is the reason that sentence can be written at
+all.
+
+**The rule:** for any route taking an id, name the screen or the earlier
+response that hands the caller that id. If the answer is "the test already had
+it", the reachable half of the feature is missing and it is in a different
+layer from the story that will be blamed for it. Ask it at planning time — it
+costs one sentence, and it has now caught the same class of defect four times
+(L-56, L-59, L-61, and this).
+
+## L-67 — Assert on the effect, not on the method you think produces it
+
+The test that proves a one-time password is never persisted spied on
+`Storage.prototype.setItem` and asserted it was never called with the value. A
+mutation that wrote the password to `localStorage` on every render **passed
+it**.
+
+This suite replaces `localStorage` with its own `MemoryStorage`
+(`web/src/testing/setup.ts`) — Node 26's global throws and jsdom's returns
+undefined, so neither is usable. That instance is not a `Storage`, so
+`Storage.prototype.setItem` is a method nothing in the suite ever calls. The
+spy watched an empty room and reported no intruders.
+
+The assertion that works reads **what is in the stores afterwards** — every key
+and value in `localStorage` and `sessionStorage`, joined, checked for the
+secret. It caught the mutation, and it also caught a second one that used
+`sessionStorage`, which the spy could never have seen however it was written.
+
+**The rule:** when the property is "this value is not readable anywhere", assert
+that it is not readable — do not assert that one particular way of putting it
+there was not used. A spy asks "did you call this?"; the requirement asks "is it
+there?". Those are the same question only until somebody finds a second door,
+and a harness that substitutes a global has already opened one.
+
+## L-68 — A census has a list of exemptions, and a plan will try to add your route to it
+
+`staff-only.guarantee.test.js` reads every route off the mounted router and
+requires each to refuse a customer. It carries one list, `OPEN_TO_A_CUSTOMER`:
+the routes that may be reached by one, each with a written reason.
+
+REPORTS-2-API's plan said, under "Test Plan": *extend
+`staff-only.guarantee.test.js` — add `/reports/promise-share` to the endpoint
+list so the admin-only contract is proven.* Following that would have **exempted
+the route from the only test that would catch a missing gate**, while the plan,
+the commit and the Done Criteria all said the gate was proven.
+
+It is an easy mistake to make and a hard one to see afterwards, because the
+diff looks like a test being extended.
+
+**Two rules from it.**
+
+A census that reads its subjects off the running system needs **nothing added**
+when a route appears — that is the whole point of reading them off the system.
+If a plan tells you to register a new route with a census, the plan has
+misunderstood which direction that file works in. The only lists such a file
+holds are exemptions.
+
+And an exemption list must be **hard to add to by accident**: this one is named
+for what it permits, and its header says that an entry without a defensible
+reason "satisfies the census with a claim, which is the failure a census exists
+to prevent arriving through its own front door." That header is why the review
+caught it. Name these lists for what they let through, never for what they
+cover.
+
+## L-69 — The bug you just wrote the review about is the one you are about to write
+
+`REPORTS-4-API`'s plan review said, in item 6, that deriving midnight has to be
+offset-aware and re-checked, "because the offset at midnight UTC on a date is
+not necessarily the offset at midnight local on that date". The helper was then
+written with a careful two-pass `startOfLocalDay`, a comment explaining why the
+second pass is not superstition — and this line:
+
+```js
+const end = startOfLocalDay(to, timeZone) + DAY_MS;
+```
+
+The same defect, at the other end, in the same function, minutes after writing
+the paragraph warning about it. A local day is not always 24 hours long. The
+test caught it; the review had not.
+
+It also dismissed an argument from the plan it deleted. That plan said not to
+rely on `Intl.supportedValuesOf('timeZone')` and to use a `try/catch` on
+`Intl.DateTimeFormat` instead, "the more portable check". The review kept the
+`Set` as "cleaner", and the Set does not contain **`UTC`** — nor `Etc/UTC` —
+while `Intl.DateTimeFormat` accepts it happily. `supportedValuesOf` returns
+canonical IANA names and the fixed-offset aliases are not among them. So the
+most obvious input anybody would send answered 422.
+
+**Two rules.**
+
+Having written down why a mistake happens does not stop you making it. The
+paragraph is a note to a reader, not a check on the author — so when a review
+names a hazard, the same pass should ask **where else in this change that
+hazard lives**. Both instances here were in one function, ten lines apart.
+
+And when the plan you are discarding disagrees with the one you are keeping,
+the disagreement is the most valuable thing in it. It is the only place two
+independent attempts saw the same question differently, and it was right.

@@ -8,6 +8,7 @@ import { CustomersPage } from '../pages/customers/CustomersPage';
 import { CustomerScreenPage } from '../pages/customers/CustomerScreenPage';
 import { AddCustomerPage } from '../pages/customers/AddCustomerPage';
 import { ChangeOwnPasswordPage } from '../pages/account/ChangeOwnPasswordPage';
+import { AccountsPage } from '../pages/accounts/AccountsPage';
 import { SetUserPasswordPage } from '../pages/accounts/SetUserPasswordPage';
 import { PublicRaiseTicketPage } from '../pages/portal/PublicRaiseTicketPage';
 import { PortalTicketPage } from '../pages/portal/PortalTicketPage';
@@ -15,6 +16,9 @@ import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 import { TicketCategoriesPage } from '../pages/tickets/TicketCategoriesPage';
 import { AuditLogPage } from '../pages/audit/AuditLogPage';
+import { AgentLoadPage } from '../pages/reports/AgentLoadPage';
+import { PromiseSharePage } from '../pages/reports/PromiseSharePage';
+import { QueueByStatusPage } from '../pages/reports/QueueByStatusPage';
 import { NotificationsPage } from '../pages/notifications/NotificationsPage';
 
 // Routes import pages; nothing imports routes. The direction is
@@ -154,6 +158,20 @@ export function AppRoutes() {
         }
       />
       {/* Admin-only in the API, and the screen says so for anybody else who
+          arrives — the same arrangement the two screens above use, and for the
+          same reason: a router-level role gate would be a second place
+          deciding one rule. */}
+      <Route
+        path="/accounts"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <AccountsPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Admin-only in the API, and the screen says so for anybody else who
           arrives — the same arrangement /ticket-categories and
           /accounts/set-password use, and for the same reason: a router-level
           role gate would be a second place deciding one rule. */}
@@ -176,6 +194,40 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <NotificationsPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Admin-only in the API, and the screen says so for anybody else who
+          arrives — the same arrangement every other admin screen here uses,
+          and for the same reason: a router-level role gate would be a second
+          place deciding one rule. */}
+      <Route
+        path="/reports/queue-by-status"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <QueueByStatusPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/reports/promise-share"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <PromiseSharePage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/reports/agent-load"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <AgentLoadPage />
             </DeskShell>
           </RequireAuth>
         }

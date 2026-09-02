@@ -81,19 +81,61 @@ export function listLiveAdminIds(db) {
     .map((row) => row.id);
 }
 
-export function listLiveUsers(db, { limit, offset }) {
+// `deleted_at` is in the projection deliberately, and it was not always.
+//
+// `publicShape` maps `row.deleted_at ?? null` to `deletedAt`. While this query
+// returned only live rows, leaving the column out was accidentally correct —
+// every row was live, so null was the truth. The moment the listing could
+// return a disabled account, every disabled row would have reported itself
+// live, and nothing would have failed: `undefined ?? null` is a plausible
+// answer, so no assertion sees it. `findLiveUserById` had exactly this defect
+// and it took a mutation to find.
+const USER_COLUMNS = 'id, email, name, role, created_at, updated_at, deleted_at';
+
+// Which rows a listing means, as SQL, named once.
+//
+// An allow-list in the repository rather than a string from the caller: this
+// is where the SQL is built, so this is where the set of legal values has to
+// be closed. The customers repository closed its correctable-columns list the
+// same way and for the same reason.
+const STATE_WHERE = Object.freeze({
+  live: 'WHERE deleted_at IS NULL',
+  disabled: 'WHERE deleted_at IS NOT NULL',
+  all: '',
+});
+
+export function listUsers(db, { limit, offset, state = 'live' }) {
+  const where = STATE_WHERE[state];
+  // The service validates and refuses first; this is the second wall. An
+  // unknown state must not fall through to `all`, which is the one answer a
+  // mistake here would silently widen.
+  if (where === undefined) throw new RangeError(`listUsers: unknown state ${state}`);
   return db
     .prepare(`
-      SELECT id, email, name, role, created_at, updated_at
-      FROM users WHERE deleted_at IS NULL
+      SELECT ${USER_COLUMNS}
+      FROM users ${where}
       ORDER BY created_at ASC, id ASC
       LIMIT ? OFFSET ?
     `)
     .all(limit, offset);
 }
 
+// The count takes the same filter as the listing, because the pager is built
+// from it. A listing of disabled accounts beside a count of live ones is a
+// pager that is wrong on every page but the first, and both numbers look
+// reasonable on their own.
+export function countUsers(db, { state = 'live' } = {}) {
+  const where = STATE_WHERE[state];
+  if (where === undefined) throw new RangeError(`countUsers: unknown state ${state}`);
+  return db.prepare(`SELECT count(*) AS n FROM users ${where}`).get().n;
+}
+
+export function listLiveUsers(db, { limit, offset }) {
+  return listUsers(db, { limit, offset, state: 'live' });
+}
+
 export function countLiveUsers(db) {
-  return db.prepare('SELECT count(*) AS n FROM users WHERE deleted_at IS NULL').get().n;
+  return countUsers(db, { state: 'live' });
 }
 
 export function countLiveAdmins(db) {

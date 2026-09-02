@@ -133,6 +133,30 @@ const probes = [
     expect: null,
   },
   {
+    lesson: 'L-68',
+    what: 'registering a route with a census, claiming that proves the guarantee',
+    body: 'Update `api/src/platform/http/staff-only.guarantee.test.js` — add `GET /reports/agent-load` to the list so the admin-only contract is proven.',
+    expect: /guarantee census/,
+  },
+  {
+    lesson: 'L-68',
+    what: 'writing a NEW census file — legitimate, must stay silent',
+    body: 'Add `api/src/features/tickets/auto-close.guarantee.test.js`, following the shape of `stale-write.guarantee.test.js`.',
+    expect: null,
+  },
+  {
+    lesson: 'L-68',
+    what: 'extending what a census asserts — legitimate, must stay silent',
+    body: 'Extend `api/src/features/tickets/ticket-ownership.guarantee.test.js` so it also asserts the 404 body matches a stranger\'s.',
+    expect: null,
+  },
+  {
+    lesson: 'L-68',
+    what: 'the corrected wording, negated — must stay silent',
+    body: 'Do not add this route to `api/src/platform/http/staff-only.guarantee.test.js`; it reads every route off the router.',
+    expect: null,
+  },
+  {
     lesson: '(control)',
     what: 'a plan with no defect at all',
     body: 'Edit `api/src/platform/db/seed.js` to walk the tickets through.',

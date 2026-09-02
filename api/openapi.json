@@ -124,7 +124,7 @@
             "description": "Internal."
           },
           "409": {
-            "description": "The address already belongs to an account, live or disabled."
+            "description": "EMAIL_TAKEN — the address already belongs to an account, live or disabled. A domain code rather than a bare CONFLICT: this route and the others below refuse for different reasons, and a screen has to tell them apart."
           },
           "422": {
             "description": "The body was the wrong shape. It names the fields and never their values."
@@ -132,10 +132,10 @@
         }
       },
       "get": {
-        "summary": "The live staff accounts, paginated.",
+        "summary": "The staff accounts, paginated. `state` chooses which: `live` (the default, and what this route answered before the parameter existed), `disabled`, or `all`. It takes one because nothing here listed a disabled account, so POST /accounts/{id}/re-enable took an id no client had any way to learn — the route was served, documented, tested, and callable by nothing. An unrecognised value is refused rather than treated as one of the three: a listing that quietly answered about everybody when it was asked about the disabled would be worse than one that refuses.",
         "responses": {
           "200": {
-            "description": "Body: { items, total, limit, offset }."
+            "description": "Body: { items, total, limit, offset, state }. `total` counts what the requested `state` matches, not what is live — a disabled listing beside the live total is a pager wrong on every page but the first. `state` is echoed so a reader of the response knows which question it answers. Every item carries `deletedAt`: null while the account is live, and the moment it was disabled otherwise."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."
@@ -147,7 +147,7 @@
             "description": "Internal."
           },
           "422": {
-            "description": "A limit above the ceiling, or a malformed window. Refused, not clamped."
+            "description": "A limit above the ceiling, a malformed window, or a `state` that is not live, disabled or all. Named in `fields`. Refused, not clamped."
           }
         }
       }
@@ -172,7 +172,7 @@
             "description": "No live account with that id."
           },
           "409": {
-            "description": "It would leave the system with no administrator."
+            "description": "LAST_ADMIN — the change would leave the desk with nobody who can administer it. Nothing is refused for a role that is simply unchanged; that answers 200 with `changed: false`."
           },
           "422": {
             "description": "The role is not one this system has."
@@ -200,7 +200,7 @@
             "description": "No account with that id."
           },
           "409": {
-            "description": "Already disabled, or it would leave the system with no administrator."
+            "description": "ALREADY_DISABLED when the account is already disabled — two admins pressing the same button, which is not a refusal so much as news. LAST_ADMIN when it would leave the desk with nobody who can administer it."
           }
         }
       }
@@ -225,7 +225,7 @@
             "description": "No account with that id."
           },
           "409": {
-            "description": "Already live, or the address was taken by a live account while this one was disabled."
+            "description": "ALREADY_LIVE when the account was never disabled. EMAIL_TAKEN when a live account has taken the address since — the partial unique index frees it while a row is disabled, so the collision is real and the row stays disabled."
           }
         }
       }
@@ -247,7 +247,7 @@
             "description": "No user with that id."
           },
           "409": {
-            "description": "The account is disabled. Bringing somebody back is re-enable, with its own route and its own audit row; setting a password through this door would leave the account's state saying one thing and its access saying another."
+            "description": "ALREADY_DISABLED — the account is disabled. Bringing somebody back is re-enable, with its own route and its own audit row."
           },
           "422": {
             "description": "The password is missing or shorter than the floor; `fields` names it."
@@ -859,6 +859,69 @@
           },
           "500": {
             "description": "Unhandled — the shape every error here has, with a requestId."
+          }
+        }
+      }
+    },
+    "/api/v1/reports/queue-by-status": {
+      "get": {
+        "summary": "How many live tickets are in each status. Admin only: a report is about how the whole desk is doing, which is not something one agent should be able to read about the others. All six statuses are always present, including the ones nobody is in — a query grouped over tickets can only return rows for statuses that HAVE tickets, and `pending: 0` is the number that says the desk is not stalling anybody. Soft-deleted tickets are in no count, which is what keeps this report agreeing with the queue (BR-1). An aggregate and not a list: its body is six numbers whose size does not grow with the desk, so BR-4's page ceiling does not apply to it. Without a window it is a snapshot: how many tickets are in each status right now. With one it counts the tickets RAISED in it — a different question, so the answer echoes the window it used. A window is optional. `timeZone` is an IANA identifier and the day boundary is computed in it, so a reader at UTC+3 asking at 01:30 local gets the ticket stored 22:30Z on the previous UTC day — which `date(created_at)` would put in yesterday. `from` and `to` are YYYY-MM-DD calendar dates read in that zone and default to today there; the range is inclusive of both days and at most 92 of them. Storage stays UTC: the zone moves the boundary, it never rewrites a row. An unknown zone is 422 naming `timeZone` and never a quiet fall back to UTC — a report confidently answering about the wrong day is worse than one that refuses. A range without a zone is refused for the same reason. With no window at all the report answers exactly what it answered before this parameter existed.",
+        "responses": {
+          "200": {
+            "description": "{ counts, total }. `counts` holds all six statuses with a number each, zero included. `total` counts every live ticket — not only the ones inside the six — so a status this API could not have written makes the report visibly short rather than quietly wrong. `window` is what was asked for — the zone, the two calendar dates, and the two UTC instants they resolved to — or null for the snapshot. Numbers whose period is knowable only from the request that produced them cannot be quoted or checked."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "422": {
+            "description": "An unknown time zone, a malformed date, an inverted range, a range longer than 92 days, or a range with no zone to read it in. Named in `fields`. Both edges are named for a span that is too long: neither `from` nor `to` is at fault on its own."
+          }
+        }
+      }
+    },
+    "/api/v1/reports/promise-share": {
+      "get": {
+        "summary": "What share of promises the desk kept, per clock kind. Admin only. A promise is counted only once it has FINISHED, and there are two ways to finish: the clock stopped, or a breach was recorded against it. A ticket whose deadline has not passed has not kept its promise — it has not broken it yet — so it is on neither side of the fraction. `met = total - breached` would put it on the flattering side, and would read best on the day the desk opened. Breaches are counted from the stored rows and never recomputed from a deadline (S-5): a report doing its own arithmetic would disagree with the queue whenever the sweep was behind, with nothing to say which was lying. This is a read and stays one — it never runs the sweep so its own number looks current. Rows belonging to a soft-deleted ticket, clock or breach are in no count. With a window it counts the promises that FINISHED in it — a clock that stopped or a breach that was recorded — not the tickets raised in it. A window is optional. `timeZone` is an IANA identifier and the day boundary is computed in it, so a reader at UTC+3 asking at 01:30 local gets the ticket stored 22:30Z on the previous UTC day — which `date(created_at)` would put in yesterday. `from` and `to` are YYYY-MM-DD calendar dates read in that zone and default to today there; the range is inclusive of both days and at most 92 of them. Storage stays UTC: the zone moves the boundary, it never rewrites a row. An unknown zone is 422 naming `timeZone` and never a quiet fall back to UTC — a report confidently answering about the wrong day is worse than one that refuses. A range without a zone is refused for the same reason. With no window at all the report answers exactly what it answered before this parameter existed.",
+        "responses": {
+          "200": {
+            "description": "{ kinds }, with first_response and resolution always present. Each carries `met`, `breached`, `settled` (their sum) and `share` — the unrounded ratio, so a reader can check it against the counts beside it. `share` is null when nothing settled: no data is not the same fact as nothing met, and the two look identical once a percentage has been rounded onto a screen. `window` echoes what was asked for, or is null."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Internal."
+          },
+          "422": {
+            "description": "An unknown time zone, a malformed date, an inverted range, a range longer than 92 days, or a range with no zone to read it in. Named in `fields`. Both edges are named for a span that is too long: neither `from` nor `to` is at fault on its own."
+          }
+        }
+      }
+    },
+    "/api/v1/reports/agent-load": {
+      "get": {
+        "summary": "What is still on each person, and what is on nobody. Admin only. Every live staff member has a row, including the ones holding nothing — a query grouped over tickets can only return people who hold something, and the person an admin opens this report to find is exactly the one who does not. A disabled account has no row: the question is who can take work now. Load means work still on the person — assigned, and neither resolved nor closed — not everything they have ever touched, which is a career total. Unassigned work is its own figure and never a row among the people: a name among the names is a person, and it is the number an admin most needs to see. This report takes NO window, deliberately. Load is what is on somebody now; filtered to a day, an agent holding five week-old tickets would report zero, which is not a narrower answer but a false one. A `timeZone` sent here is ignored rather than refused — it asks a question this report does not answer.",
+        "responses": {
+          "200": {
+            "description": "{ agents, unassigned, open, unaccounted }. Each agent carries id, name, role and load — no email, for the reason the assignee picker omits it. `open` is every live ticket not resolved or closed, so the parts can be checked against the whole; `unaccounted` is what the rows and the unassigned figure do not reach, which is a ticket assigned to an account this report does not list. It should always be zero, and a report that says so is one whose numbers an admin can add up."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Internal."
           }
         }
       }

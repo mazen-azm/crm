@@ -29,6 +29,10 @@ export const en = {
     navNotifications: 'Notifications',
     navAudit: 'Audit log',
     navCategories: 'Ticket categories',
+    navAccounts: 'Accounts',
+    navQueueReport: 'Queue report',
+    navPromiseReport: 'Promises kept',
+    navAgentLoad: 'Agent load',
     navSetPassword: 'Set a password',
     navMyTickets: 'Your tickets',
     navHome: 'Home',
@@ -163,6 +167,10 @@ export const en = {
     ILLEGAL_TRANSITION: 'That is not a move this ticket can make from where it is.',
     STATUS_UNCHANGED: 'The ticket already has that status.',
     REOPEN_WINDOW_CLOSED: 'This was resolved more than two weeks ago. Send us a new request instead.',
+    EMAIL_TAKEN: 'That email address already belongs to an account. If it is a colleague who was disabled, re-enable them instead of creating a second account.',
+    LAST_ADMIN: 'This is the last admin. Give somebody else the admin role first, or the desk is left with nobody who can manage it.',
+    ALREADY_DISABLED: 'That account is already disabled. Somebody may have got there first.',
+    ALREADY_LIVE: 'That account is already active. Somebody may have got there first.',
   } satisfies Record<ApiErrorCode, string>,
   customers: {
     title: 'Customers',
@@ -504,6 +512,130 @@ export const en = {
     signInReady: 'Read this out now. It is not shown again.',
     signInEmail: 'They sign in with',
     signInPassword: 'First password',
+  },
+  accounts: {
+    title: 'Accounts',
+    // The filter is a question about which accounts, so its labels are the
+    // three answers rather than "filter" and a dropdown of jargon.
+    showLabel: 'Show',
+    showLive: 'Active',
+    showDisabled: 'Disabled',
+    showAll: 'Everyone',
+    roleAdmin: 'Admin',
+    roleAgent: 'Agent',
+    stateLive: 'Active',
+    stateDisabled: 'Disabled',
+    nameColumn: 'Name',
+    emailColumn: 'Email address',
+    roleColumn: 'Role',
+    stateColumn: 'State',
+    addTitle: 'Add an account',
+    addName: 'Their name',
+    addEmail: 'Their email address',
+    addRole: 'Their role',
+    add: 'Create the account',
+    adding: 'Creating…',
+    addFailed: 'That account was not created',
+    disable: 'Disable',
+    disabling: 'Disabling…',
+    disableFailed: 'That account was not disabled',
+    reEnable: 'Re-enable',
+    reEnabling: 'Re-enabling…',
+    reEnableFailed: 'That account was not re-enabled',
+    // The password exists once. The wording follows the set-password screen,
+    // which has been saying the same thing since it shipped — one act, one
+    // voice.
+    passwordTitle: 'The account is ready',
+    passwordFor: 'For the account',
+    passwordLabel: 'Their first password',
+    passwordRead: 'Read it out to them, or copy it. Nothing here can show it again.',
+    passwordLost: 'If it is lost, set a new one from the set-password screen.',
+    passwordCopy: 'Copy',
+    passwordCopied: 'Copied',
+    passwordCopyFailed: 'Copying is blocked here. Read the password off the screen instead.',
+    passwordDone: 'Done',
+    // Said after a disable, always — including when it is none. An admin who
+    // has to go and count is an admin who will not count.
+    //
+    // Named resultCount* because that is the shape CountKeys takes
+    // (shared/i18n/format.ts:76). The leaf is the whole tail of the sentence,
+    // so countOf() puts the number in the reader's digits in front of it and
+    // picks the form Arabic's six categories need — this group has one count
+    // and it is this one.
+    unassignedNone: 'They had no tickets open, so nothing was handed back.',
+    resultCountOne: 'ticket was handed back to the queue.',
+    resultCountTwo: 'tickets were handed back to the queue.',
+    resultCountFew: 'tickets were handed back to the queue.',
+    resultCountMany: 'tickets were handed back to the queue.',
+    resultCount: 'tickets were handed back to the queue.',
+    errorTitle: 'The accounts did not load',
+    emptyLiveTitle: 'No active accounts',
+    emptyLiveBody: 'Add one, and it appears here.',
+    emptyDisabledTitle: 'Nobody is disabled',
+    emptyDisabledBody: 'Every account on this desk is active.',
+    adminOnlyTitle: 'This is an admin screen',
+    adminOnlyBody: 'Accounts are created and disabled by an admin.',
+    newer: 'Newer',
+    older: 'Older',
+  },
+  queueReport: {
+    title: 'The queue by status',
+    statusNew: 'New',
+    statusOpen: 'Open',
+    statusPending: 'Waiting on the customer',
+    statusResolved: 'Resolved',
+    statusClosed: 'Closed',
+    statusReopened: 'Reopened',
+    totalLabel: 'Tickets in the queue:',
+    // Said above the zeros, never instead of them. Six zeros is the answer to
+    // "how is the desk doing"; an empty screen is not.
+    nothingInTheQueue: 'Nothing is in the queue at all.',
+    errorTitle: 'The report did not load',
+    adminOnlyTitle: 'This is an admin screen',
+    adminOnlyBody: 'The reports are for the person answerable for the desk.',
+  },
+  promiseReport: {
+    title: 'Promises kept',
+    // Not "SLA". The reader is being told whether the desk answered people and
+    // whether it fixed their problem — two questions, in the words somebody
+    // would use to ask them.
+    firstResponseLabel: 'Answered in time',
+    resolutionLabel: 'Fixed in time',
+    // One template, three slots. The counts travel with the share because 100%
+    // of two tickets and 100% of two hundred are different facts.
+    result: '{share} — {met} of {settled}',
+    noData: 'Nothing has finished yet, so there is nothing to report.',
+    errorTitle: 'The report did not load',
+    adminOnlyTitle: 'This is an admin screen',
+    adminOnlyBody: 'The reports are for the person answerable for the desk.',
+  },
+  agentLoadReport: {
+    title: 'Who is holding what',
+    unassignedLabel: 'Waiting for somebody to take it',
+    openLabel: 'Open altogether:',
+    // Shown only when it is not zero. A figure that appears when something is
+    // wrong gets read; one that always says nought does not.
+    unaccountedLabel: 'Held by somebody not on this list:',
+    roleAdmin: 'Admin',
+    roleAgent: 'Agent',
+    noAgentsTitle: 'Nobody is on the desk',
+    noAgentsBody: 'Create an account, and it appears here.',
+    errorTitle: 'The report did not load',
+    adminOnlyTitle: 'This is an admin screen',
+    adminOnlyBody: 'The reports are for the person answerable for the desk.',
+  },
+  reportPeriod: {
+    all: 'Everything',
+    oneDay: 'For',
+    fromLabel: 'From',
+    toLabel: 'to',
+    zoneLabel: 'Times read in',
+    today: 'Today',
+    last7: 'Last 7 days',
+    last30: 'Last 30 days',
+    // Said on the report that has no period, so an admin who sees a period
+    // control on the other two does not wonder whether this one is broken.
+    rightNow: 'This is what is on the desk right now.',
   },
   states: {
     loading: 'Loading',

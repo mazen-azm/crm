@@ -1,0 +1,28 @@
+/* A definition list, not a table: each row is a name and its number, which is
+   what a dl is for. No colour literal here — every value is a token (D-1). */
+.queue-report {
+  margin: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.queue-report__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-1);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.queue-report__row dt {
+  color: var(--color-text-muted);
+}
+
+/* dd carries a browser default margin-left, which in an RTL layout is the
+   wrong side. margin-inline-start is the same rule written so it follows the
+   direction instead of the page. */
+.queue-report__row dd {
+  margin: 0;
+  margin-inline-start: 0;
+  font-variant-numeric: tabular-nums;
+}

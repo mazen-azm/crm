@@ -106,8 +106,20 @@ export function DeskShell({ children }: { children: ReactNode }) {
             not this link is here. */}
         {isAdmin === true ? (
           <>
+          <Link to="/accounts" className="desk-shell__nav-item">
+            {t.shell.navAccounts}
+          </Link>
           <Link to="/ticket-categories" className="desk-shell__nav-item">
             {t.shell.navCategories}
+          </Link>
+          <Link to="/reports/queue-by-status" className="desk-shell__nav-item">
+            {t.shell.navQueueReport}
+          </Link>
+          <Link to="/reports/promise-share" className="desk-shell__nav-item">
+            {t.shell.navPromiseReport}
+          </Link>
+          <Link to="/reports/agent-load" className="desk-shell__nav-item">
+            {t.shell.navAgentLoad}
           </Link>
           <Link to="/audit" className="desk-shell__nav-item">
             {t.shell.navAudit}
