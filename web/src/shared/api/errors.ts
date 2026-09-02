@@ -31,7 +31,18 @@ export type ApiErrorCode =
   // older than that (T-5). Distinct from ILLEGAL_TRANSITION because the move
   // is legal and the moment is not — a screen that said 'you cannot do that'
   // would be telling somebody the wrong thing about why.
-  | 'REOPEN_WINDOW_CLOSED';
+  | 'REOPEN_WINDOW_CLOSED'
+  // 409, from identity. All four used to be a bare CONFLICT, which reads as
+  // "somebody changed this while you were working" — and three of them are
+  // nothing of the kind. LAST_ADMIN is a rule refusing; EMAIL_TAKEN is an
+  // address that belongs to somebody; ALREADY_DISABLED and ALREADY_LIVE are
+  // news rather than a refusal, and usually mean a colleague pressed the same
+  // button. Telling an admin the wrong one of those four is what sends them to
+  // the database.
+  | 'EMAIL_TAKEN'
+  | 'LAST_ADMIN'
+  | 'ALREADY_DISABLED'
+  | 'ALREADY_LIVE';
 
 // The client surfaces the code. It does not translate it into a sentence —
 // that is the translations story's job, and a generic "something went wrong"

@@ -488,17 +488,39 @@ Match the existing test style of `web/src/pages/audit/AuditLogPage.test.tsx` (re
 
 ## Done Criteria
 
-- [ ] `GET /accounts?state=disabled` and `?state=all` return the expected rows; each row carries `state`; default (`state=live`) is byte-identical to today.
-- [ ] `api/openapi.json` documents `state`; contract test green.
-- [ ] Admin visiting `/accounts` sees live and disabled rows with role and state, paged (BR-4).
-- [ ] Non-admin visiting `/accounts` sees "not for you" and no fetch is made; navigation never shows the link for them.
-- [ ] Create form offers only `admin` and `agent`; submits successfully; the resulting one-time password is shown once with the "not shown again" sentence, and is provably absent from storage, URL, history, and console.
-- [ ] Disable shows the `unassigned` count (including zero) after success.
-- [ ] Re-enable action is present on every disabled row and works.
-- [ ] `LAST_ADMIN`, `EMAIL_TAKEN` and `ALREADY_DISABLED`/`ALREADY_LIVE` are distinct codes on the wire, named in `ApiErrorCode`, and each renders its own sentence from `t.errors` in both languages.
-- [ ] `total` matches the requested `state` for all three values, and a disabled row's `deletedAt` is set rather than null.
-- [ ] All labels, roles, and states come from `en.ts` and `ar.ts`; `parity.test.ts` and `no-hardcoded-strings.test.ts` pass.
-- [ ] `cd api && npm test` and `cd web && npm run build && npm test` both green.
-- [ ] No commit, doc, or ignore-file line mentions AI assistance.
+- [x] `GET /accounts?state=disabled` and `?state=all` return the expected rows; default (`state=live`) answers exactly what it answered before the parameter existed. **Amended:** no per-row `state` field was added. The row carries `deletedAt`, which the projection now selects and which says the same thing, and the page echoes the `state` it answered for. A computed column duplicating a stamp already on the row is a second thing to keep true.
+- [x] `api/openapi.json` documents `state`, and each 409's own code; contract test green. The document is prose per operation — it has no `parameters` blocks anywhere and none were invented for this route.
+- [x] Admin visiting `/accounts` sees live and disabled rows with role and state, paged (BR-4). The pager is exercised by a test with a total larger than its page.
+- [x] Non-admin visiting `/accounts` sees the admin-only sentence and **no** request for accounts is made. The navigation entry sits inside the shell's existing `isAdmin === true` block.
+- [x] Create form offers only `admin` and `agent`; the one-time password is shown once with the "nothing here can show it again" sentence, and is provably absent from every browser store and from the console. **The first version of that proof was worthless** — it spied on `Storage.prototype.setItem`, which this suite never calls, and a mutation that stored the password walked past it. It now reads the stores' contents, which also catches `sessionStorage`. That is L-67.
+- [x] Disable shows the `unassigned` count, and a different sentence when it is none — "0 tickets were handed back" is a thing nobody says.
+- [x] Re-enable is offered on every disabled row, sends the id the listing gave, and the list is re-read afterwards.
+- [x] `LAST_ADMIN`, `EMAIL_TAKEN`, `ALREADY_DISABLED` and `ALREADY_LIVE` are distinct codes on the wire, named in `ApiErrorCode`, and each has a sentence in both dictionaries. `t.errors` is `satisfies Record<ApiErrorCode, string>`, so a code without one is a compile error rather than a blank screen. Two of the four are additionally exercised through the screen; the other two are the same code path with a different string.
+- [x] `total` takes the same filter as the listing for all three states, and a disabled row's `deletedAt` is the moment it was disabled rather than null.
+- [x] All labels, roles and states come from `en.ts` and `ar.ts`; `parity.test.ts` and `no-hardcoded-strings.test.ts` pass, and the screen is asserted in Arabic.
+- [x] `cd api && npm test` — 583 pass. `cd web && npm run build && npm test` — 355 pass, build clean.
+- [x] No commit, doc, or ignore-file line mentions AI assistance.
 
-**STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+## What the mutation pass proved, and what it found
+
+Eleven mutations, each reverted immediately.
+
+| # | what was broken | result |
+| --- | --- | --- |
+| M1 | `deleted_at` dropped from the projection | 2 fail |
+| M2 | the count ignores the state filter | 3 fail |
+| M3 | `disabled` selects the live rows | 3 fail |
+| M4 | every state string is legal | 1 fail |
+| M5 | `EMAIL_TAKEN` back to a bare `CONFLICT` | 1 fail |
+| W1 | the screen asks before it knows who is asking | 2 fail |
+| W2 | the raw role string is rendered | 2 fail |
+| W3 | the unassigned count is never said | 1 fail |
+| W4 | one sentence for every refusal | 2 fail |
+| W5 | the password panel never lets go | 1 fail |
+| W6 | the chosen state never reaches the API | 2 fail |
+| W7 | the password is written to `localStorage` | **passed, then fixed** |
+| W8 | the password is written to `sessionStorage` | fails, after the fix |
+
+W7 is the one worth keeping. The assertion it defeated was the strongest-looking
+one in the file, and it was watching a method this suite's own harness makes
+unreachable. See L-67.

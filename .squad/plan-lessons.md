@@ -1413,3 +1413,27 @@ it", the reachable half of the feature is missing and it is in a different
 layer from the story that will be blamed for it. Ask it at planning time — it
 costs one sentence, and it has now caught the same class of defect four times
 (L-56, L-59, L-61, and this).
+
+## L-67 — Assert on the effect, not on the method you think produces it
+
+The test that proves a one-time password is never persisted spied on
+`Storage.prototype.setItem` and asserted it was never called with the value. A
+mutation that wrote the password to `localStorage` on every render **passed
+it**.
+
+This suite replaces `localStorage` with its own `MemoryStorage`
+(`web/src/testing/setup.ts`) — Node 26's global throws and jsdom's returns
+undefined, so neither is usable. That instance is not a `Storage`, so
+`Storage.prototype.setItem` is a method nothing in the suite ever calls. The
+spy watched an empty room and reported no intruders.
+
+The assertion that works reads **what is in the stores afterwards** — every key
+and value in `localStorage` and `sessionStorage`, joined, checked for the
+secret. It caught the mutation, and it also caught a second one that used
+`sessionStorage`, which the spy could never have seen however it was written.
+
+**The rule:** when the property is "this value is not readable anywhere", assert
+that it is not readable — do not assert that one particular way of putting it
+there was not used. A spy asks "did you call this?"; the requirement asks "is it
+there?". Those are the same question only until somebody finds a second door,
+and a harness that substitutes a global has already opened one.

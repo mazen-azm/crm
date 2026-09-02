@@ -8,6 +8,7 @@ import { CustomersPage } from '../pages/customers/CustomersPage';
 import { CustomerScreenPage } from '../pages/customers/CustomerScreenPage';
 import { AddCustomerPage } from '../pages/customers/AddCustomerPage';
 import { ChangeOwnPasswordPage } from '../pages/account/ChangeOwnPasswordPage';
+import { AccountsPage } from '../pages/accounts/AccountsPage';
 import { SetUserPasswordPage } from '../pages/accounts/SetUserPasswordPage';
 import { PublicRaiseTicketPage } from '../pages/portal/PublicRaiseTicketPage';
 import { PortalTicketPage } from '../pages/portal/PortalTicketPage';
@@ -149,6 +150,20 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <TicketCategoriesPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      {/* Admin-only in the API, and the screen says so for anybody else who
+          arrives — the same arrangement the two screens above use, and for the
+          same reason: a router-level role gate would be a second place
+          deciding one rule. */}
+      <Route
+        path="/accounts"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <AccountsPage />
             </DeskShell>
           </RequireAuth>
         }

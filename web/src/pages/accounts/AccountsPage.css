@@ -1,0 +1,28 @@
+/* The table, in the same restrained way the audit feed lists its rows. No
+   colour literal here — every value is a token (D-1). */
+.accounts {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: start;
+}
+
+.accounts th,
+.accounts td {
+  padding: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.accounts th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* A password is a token, not prose: monospaced so an O and a 0 can be told
+   apart by whoever is reading it out. */
+.accounts__password {
+  font-family: var(--font-mono, monospace);
+  font-size: 1.05em;
+  word-break: break-all;
+}

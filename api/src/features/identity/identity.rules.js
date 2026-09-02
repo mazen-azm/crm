@@ -117,6 +117,23 @@ export function validateNewAccount({ email, name, role }) {
   return wrong;
 }
 
+// Which accounts a listing is asking for. Three values and no more: an admin
+// managing accounts needs the live ones (the default, and what every caller
+// before this story got), the disabled ones — without which
+// POST /accounts/:id/re-enable takes an id nothing can supply — and both at
+// once.
+//
+// Frozen and exported so the OpenAPI enum and the client's own union have one
+// place to agree with rather than three lists that drift.
+export const ACCOUNT_STATES = Object.freeze(['live', 'disabled', 'all']);
+
+// `undefined` is legal and means `live`: the parameter is optional, and every
+// caller written before it existed keeps the answer it already had.
+export function validateAccountsState(state) {
+  if (state === undefined) return [];
+  return ACCOUNT_STATES.includes(state) ? [] : ['state'];
+}
+
 export function validateRoleChange({ role }) {
   // Same reasoning: an admin may move somebody between admin and agent, and
   // may not turn a staff account into a customer. That is not a role change,

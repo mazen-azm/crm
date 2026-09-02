@@ -13,8 +13,10 @@ import {
   findPasswordHashById,
   findLiveUserByEmail,
   insertUser,
+  countUsers,
   listLiveAdminIds,
   listLiveUsers,
+  listUsers,
   reEnableUser,
   updateUserPassword,
   updateUserRole,
@@ -26,6 +28,7 @@ import {
   signToken,
   validateCredentials,
   validateNewPassword,
+  validateAccountsState,
   validateNewAccount,
   validateRoleChange,
 } from './identity.rules.js';
@@ -185,7 +188,13 @@ export function createIdentityService({ db, secret, tickets, now = () => Math.fl
       // Taken is taken, whether the holder is live or disabled. Re-enabling is
       // a different verb with its own route; creating over a disabled row
       // would quietly discard whatever that person's history says.
-      if (existing) throw new HttpError(409, 'CONFLICT');
+      // EMAIL_TAKEN rather than a bare CONFLICT. errors.js allows a domain
+      // code at a documented status — "409 CONFLICT and 409 REVISION_MISMATCH
+      // are both honest answers" — and the screen has three different 409s to
+      // tell apart. A code the client can name is a sentence it can show; a
+      // bare CONFLICT is "something went wrong", which is what sends an admin
+      // to the database.
+      if (existing) throw new HttpError(409, 'EMAIL_TAKEN');
 
       db.exec('BEGIN');
       let made;
@@ -203,11 +212,25 @@ export function createIdentityService({ db, secret, tickets, now = () => Math.fl
       };
     },
 
-    listAccounts(actor, { limit, offset }) {
+    // `state` defaults to 'live', which is what this route answered before it
+    // took the parameter at all — an existing caller sees no change.
+    //
+    // It takes one because POST /accounts/:id/re-enable was unreachable
+    // without it: nothing in this API listed a disabled account, so its id was
+    // knowable only to whoever already had it, and the route was served,
+    // documented, tested and callable by nothing (L-66).
+    listAccounts(actor, { limit, offset, state }) {
+      const wrong = validateAccountsState(state);
+      if (wrong.length > 0) throw unprocessable(wrong);
+      const which = state ?? 'live';
+
       // A read is not a mutation, so it writes no audit row.
       return {
-        items: listLiveUsers(db, { limit, offset }).map(publicShape),
-        total: countLiveUsers(db),
+        items: listUsers(db, { limit, offset, state: which }).map(publicShape),
+        // The same filter the listing used. A disabled listing beside a live
+        // total is a pager that is wrong on every page but the first.
+        total: countUsers(db, { state: which }),
+        state: which,
         limit,
         offset,
       };
@@ -241,7 +264,10 @@ export function createIdentityService({ db, secret, tickets, now = () => Math.fl
       // A no-op is not a mutation, and an audit row for one is noise that
       // makes the real entries harder to find.
       if (before.role === role) return { user: publicShape(before), changed: false };
-      if (wouldRemoveLastAdmin(before, role)) throw new HttpError(409, 'CONFLICT');
+      // LAST_ADMIN: a refusal an admin can act on. It is not a conflicting
+      // edit and it is not a mistake in the request — it is the one rule that
+      // says a desk cannot be left with nobody who can administer it.
+      if (wouldRemoveLastAdmin(before, role)) throw new HttpError(409, 'LAST_ADMIN');
 
       const at = stamp();
       db.exec('BEGIN');
@@ -263,8 +289,11 @@ export function createIdentityService({ db, secret, tickets, now = () => Math.fl
     disableAccount(actor, { id }) {
       const before = findAnyUserById(db, id);
       if (!before) throw new HttpError(404, 'NOT_FOUND');
-      if (before.deleted_at != null) throw new HttpError(409, 'CONFLICT');
-      if (wouldRemoveLastAdmin(before, null)) throw new HttpError(409, 'CONFLICT');
+      // Two admins pressing disable on the same row: the second is told the
+      // account is already disabled, which is a different thing from being
+      // refused, and the screen says so and reloads.
+      if (before.deleted_at != null) throw new HttpError(409, 'ALREADY_DISABLED');
+      if (wouldRemoveLastAdmin(before, null)) throw new HttpError(409, 'LAST_ADMIN');
 
       const at = stamp();
       let unassigned = 0;
@@ -383,7 +412,7 @@ export function createIdentityService({ db, secret, tickets, now = () => Math.fl
       // with its own route and its own audit row; setting a password through
       // this door would leave the account's state saying one thing and its
       // access saying another.
-      if (target.deleted_at != null) throw new HttpError(409, 'CONFLICT');
+      if (target.deleted_at != null) throw new HttpError(409, 'ALREADY_DISABLED');
 
       // Not on yourself, and this is the decision most likely to be missed.
       // Setting somebody else's is for a person who is locked out; changing
@@ -428,13 +457,16 @@ export function createIdentityService({ db, secret, tickets, now = () => Math.fl
     reEnableAccount(actor, { id }) {
       const before = findAnyUserById(db, id);
       if (!before) throw new HttpError(404, 'NOT_FOUND');
-      if (before.deleted_at == null) throw new HttpError(409, 'CONFLICT');
+      if (before.deleted_at == null) throw new HttpError(409, 'ALREADY_LIVE');
 
       // The partial unique index freed this address while the row was
       // disabled, so somebody may have taken it since.
       const holder = findAnyUserByEmail(db, before.email);
       if (holder && holder.id !== before.id && holder.deleted_at == null) {
-        throw new HttpError(409, 'CONFLICT');
+        // The same code create sends, because it is the same fact: this
+        // address belongs to a live account. The screen's sentence for it
+        // covers both doors.
+        throw new HttpError(409, 'EMAIL_TAKEN');
       }
 
       const at = stamp();

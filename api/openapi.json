@@ -124,7 +124,7 @@
             "description": "Internal."
           },
           "409": {
-            "description": "The address already belongs to an account, live or disabled."
+            "description": "EMAIL_TAKEN — the address already belongs to an account, live or disabled. A domain code rather than a bare CONFLICT: this route and the others below refuse for different reasons, and a screen has to tell them apart."
           },
           "422": {
             "description": "The body was the wrong shape. It names the fields and never their values."
@@ -132,10 +132,10 @@
         }
       },
       "get": {
-        "summary": "The live staff accounts, paginated.",
+        "summary": "The staff accounts, paginated. `state` chooses which: `live` (the default, and what this route answered before the parameter existed), `disabled`, or `all`. It takes one because nothing here listed a disabled account, so POST /accounts/{id}/re-enable took an id no client had any way to learn — the route was served, documented, tested, and callable by nothing. An unrecognised value is refused rather than treated as one of the three: a listing that quietly answered about everybody when it was asked about the disabled would be worse than one that refuses.",
         "responses": {
           "200": {
-            "description": "Body: { items, total, limit, offset }."
+            "description": "Body: { items, total, limit, offset, state }. `total` counts what the requested `state` matches, not what is live — a disabled listing beside the live total is a pager wrong on every page but the first. `state` is echoed so a reader of the response knows which question it answers. Every item carries `deletedAt`: null while the account is live, and the moment it was disabled otherwise."
           },
           "401": {
             "description": "No token, or one that does not resolve to a live account."
@@ -147,7 +147,7 @@
             "description": "Internal."
           },
           "422": {
-            "description": "A limit above the ceiling, or a malformed window. Refused, not clamped."
+            "description": "A limit above the ceiling, a malformed window, or a `state` that is not live, disabled or all. Named in `fields`. Refused, not clamped."
           }
         }
       }
@@ -172,7 +172,7 @@
             "description": "No live account with that id."
           },
           "409": {
-            "description": "It would leave the system with no administrator."
+            "description": "LAST_ADMIN — the change would leave the desk with nobody who can administer it. Nothing is refused for a role that is simply unchanged; that answers 200 with `changed: false`."
           },
           "422": {
             "description": "The role is not one this system has."
@@ -200,7 +200,7 @@
             "description": "No account with that id."
           },
           "409": {
-            "description": "Already disabled, or it would leave the system with no administrator."
+            "description": "ALREADY_DISABLED when the account is already disabled — two admins pressing the same button, which is not a refusal so much as news. LAST_ADMIN when it would leave the desk with nobody who can administer it."
           }
         }
       }
@@ -225,7 +225,7 @@
             "description": "No account with that id."
           },
           "409": {
-            "description": "Already live, or the address was taken by a live account while this one was disabled."
+            "description": "ALREADY_LIVE when the account was never disabled. EMAIL_TAKEN when a live account has taken the address since — the partial unique index frees it while a row is disabled, so the collision is real and the row stays disabled."
           }
         }
       }
@@ -247,7 +247,7 @@
             "description": "No user with that id."
           },
           "409": {
-            "description": "The account is disabled. Bringing somebody back is re-enable, with its own route and its own audit row; setting a password through this door would leave the account's state saying one thing and its access saying another."
+            "description": "ALREADY_DISABLED — the account is disabled. Bringing somebody back is re-enable, with its own route and its own audit row."
           },
           "422": {
             "description": "The password is missing or shorter than the floor; `fields` names it."
