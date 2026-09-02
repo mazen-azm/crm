@@ -22,7 +22,7 @@ import {
 // second place deciding one rule.
 export function createQueueByStatusReader({ db }) {
   return {
-    read(_actor) {
+    read(_actor, { window = null } = {}) {
       // The shape comes from the known set, and the numbers are filled into
       // it. A query grouped over tickets can only produce rows for statuses
       // that have tickets, so building the answer the other way round would
@@ -33,7 +33,7 @@ export function createQueueByStatusReader({ db }) {
       const counts = Object.fromEntries(STATUSES.map((status) => [status, 0]));
       let total = 0;
 
-      for (const { status, count } of countLiveTicketsByStatus(db)) {
+      for (const { status, count } of countLiveTicketsByStatus(db, { window })) {
         // Every live ticket counts towards the total, in the known set or not.
         //
         // Adding inside the branch below would make "the counts add up to the
@@ -46,7 +46,12 @@ export function createQueueByStatusReader({ db }) {
         if (Object.hasOwn(counts, status)) counts[status] = count;
       }
 
-      return { counts, total };
+      // The window travels back with the answer. Without it these six numbers
+      // mean one of two different things — everything in the queue, or
+      // everything raised in a period — and which one is knowable only from
+      // the request that produced them. A number nobody can quote is a number
+      // nobody can check.
+      return { counts, total, window };
     },
   };
 }
@@ -64,7 +69,7 @@ export function createQueueByStatusReader({ db }) {
 // scripts/rules.txt line 24). Everything else is still in progress.
 export function createPromiseShareReader({ db }) {
   return {
-    read(_actor) {
+    read(_actor, { window = null } = {}) {
       const met = Object.fromEntries(CLOCK_KINDS.map((kind) => [kind, 0]));
       const breached = Object.fromEntries(CLOCK_KINDS.map((kind) => [kind, 0]));
 
@@ -72,10 +77,10 @@ export function createPromiseShareReader({ db }) {
       // them — the same reason queue-by-status names every status. And the
       // names are read from the service-levels feature rather than retyped, so
       // there is one place that says what a clock can be.
-      for (const row of countMetByKind(db)) {
+      for (const row of countMetByKind(db, { window })) {
         if (Object.hasOwn(met, row.kind)) met[row.kind] = row.count;
       }
-      for (const row of countBreachedByKind(db)) {
+      for (const row of countBreachedByKind(db, { window })) {
         if (Object.hasOwn(breached, row.kind)) breached[row.kind] = row.count;
       }
 
@@ -96,7 +101,7 @@ export function createPromiseShareReader({ db }) {
         }];
       }));
 
-      return { kinds };
+      return { kinds, window };
     },
   };
 }

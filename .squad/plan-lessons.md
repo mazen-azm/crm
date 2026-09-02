@@ -1467,3 +1467,38 @@ reason "satisfies the census with a claim, which is the failure a census exists
 to prevent arriving through its own front door." That header is why the review
 caught it. Name these lists for what they let through, never for what they
 cover.
+
+## L-69 — The bug you just wrote the review about is the one you are about to write
+
+`REPORTS-4-API`'s plan review said, in item 6, that deriving midnight has to be
+offset-aware and re-checked, "because the offset at midnight UTC on a date is
+not necessarily the offset at midnight local on that date". The helper was then
+written with a careful two-pass `startOfLocalDay`, a comment explaining why the
+second pass is not superstition — and this line:
+
+```js
+const end = startOfLocalDay(to, timeZone) + DAY_MS;
+```
+
+The same defect, at the other end, in the same function, minutes after writing
+the paragraph warning about it. A local day is not always 24 hours long. The
+test caught it; the review had not.
+
+It also dismissed an argument from the plan it deleted. That plan said not to
+rely on `Intl.supportedValuesOf('timeZone')` and to use a `try/catch` on
+`Intl.DateTimeFormat` instead, "the more portable check". The review kept the
+`Set` as "cleaner", and the Set does not contain **`UTC`** — nor `Etc/UTC` —
+while `Intl.DateTimeFormat` accepts it happily. `supportedValuesOf` returns
+canonical IANA names and the fixed-offset aliases are not among them. So the
+most obvious input anybody would send answered 422.
+
+**Two rules.**
+
+Having written down why a mistake happens does not stop you making it. The
+paragraph is a note to a reader, not a check on the author — so when a review
+names a hazard, the same pass should ask **where else in this change that
+hazard lives**. Both instances here were in one function, ten lines apart.
+
+And when the plan you are discarding disagrees with the one you are keeping,
+the disagreement is the most valuable thing in it. It is the only place two
+independent attempts saw the same question differently, and it was right.

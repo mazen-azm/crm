@@ -90,6 +90,8 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
         queueByStatus: createQueueByStatusReader({ db }),
         promiseShare: createPromiseShareReader({ db }),
         agentLoad: createAgentLoadReader({ db }),
+        // One clock, so "today" is the same instant for every report.
+        now,
       }));
       // One throttle per composed app, the way sign-in's is built inside its
       // own service: every test then starts with empty counters and cannot

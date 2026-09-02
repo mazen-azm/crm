@@ -185,8 +185,25 @@ starts being about which rows are counted.
 - Given a reader in a zone behind UTC, when they ask for today, then a ticket
   stored at 02:00 UTC is **not** in their today if it is still yesterday
   evening where they are.
-- Given the window, when it is computed, then it is computed once and used by
-  every report — one boundary, not one per endpoint.
+- Given the window, when it is computed, then it is computed once — one module,
+  one refusal path, one place that says what a day is.
+- Given a report whose answer is a **snapshot**, when a window is offered to it,
+  then it does not take one. **Amended 2026-09-02**, while reviewing this
+  story's plan, because the first draft of this criterion said "used by every
+  report" and that turned out to force a report that lies.
+
+  Agent load is *work still on the person, now*. Filtered to today it would say
+  an agent holding five week-old tickets has a load of zero, which is simply
+  untrue — and `REPORTS-3-API`'s own criteria define load as what is still on
+  them. The queue by status is a snapshot too: filtered to today, `closed: 104`
+  becomes `closed: 0`, and the report stops answering the question it is named
+  for.
+
+  So the window belongs where a period means something — which promises
+  finished, which tickets were raised — and a report that takes one **echoes it
+  in the answer**, so a reader knows which of the two questions was answered.
+  The listing of accounts settled the same shape when it started taking a
+  `state`.
 - Given a zone the runtime does not know, when it is passed, then the answer is
   422 naming the field (E-2, line 28), and never a silent fall back to UTC: a
   report quietly answering about the wrong day is worse than one refusing.
