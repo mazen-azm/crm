@@ -624,6 +624,19 @@ export const en = {
     adminOnlyTitle: 'This is an admin screen',
     adminOnlyBody: 'The reports are for the person answerable for the desk.',
   },
+  reportPeriod: {
+    all: 'Everything',
+    oneDay: 'For',
+    fromLabel: 'From',
+    toLabel: 'to',
+    zoneLabel: 'Times read in',
+    today: 'Today',
+    last7: 'Last 7 days',
+    last30: 'Last 30 days',
+    // Said on the report that has no period, so an admin who sees a period
+    // control on the other two does not wonder whether this one is broken.
+    rightNow: 'This is what is on the desk right now.',
+  },
   states: {
     loading: 'Loading',
     errorTitle: 'That did not load',

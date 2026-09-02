@@ -14,7 +14,7 @@ Entry point for the **reports** feature. Stories execute in order by their `NN` 
 | 106 | `106-story-crm-127.md` | REPORTS-2-WEB admin — I see what share of tickets met their promise | CRM-127 | — |
 | 107 | `107-story-crm-129.md` | REPORTS-3-WEB admin — I see load per agent, idle agents shown as zero | CRM-129 | — |
 | 108 | `108-story-crm-130.md` | REPORTS-4-API admin — today means today where I am, not in UTC | CRM-130 | — |
-| 109 | `109-story-crm-130.md` | REPORTS-4-API admin — today means today where I am, not in UTC | CRM-130 | — |
+| 109 | `109-story-crm-131.md` | REPORTS-4-WEB admin — today means today where I am, not in UTC | CRM-131 | — |
 
 ## Dependency notes
 

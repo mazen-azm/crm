@@ -32,6 +32,14 @@ export function AgentLoadPage() {
     <Stack as="section" gap={4}>
       <Heading level={2}>{t.agentLoadReport.title}</Heading>
 
+      {/* No period control and no period sentence, and this line is why an
+          admin who sees one on the other two reports does not wonder whether
+          this one is broken. Load is what is on somebody NOW; a day filter
+          would report an agent holding five week-old tickets as idle, and a
+          period label over these numbers would be a lie about figures that are
+          correct. */}
+      <Text variant="muted">{t.reportPeriod.rightNow}</Text>
+
       {report.status === 'loading' && !page ? (
         <Skeleton lines={4} height="24px" label={t.states.loading} />
       ) : null}
