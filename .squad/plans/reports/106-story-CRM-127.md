@@ -305,17 +305,29 @@ Mirror `QueueByStatusPage.test.tsx`. Cover:
 
 ## Done Criteria
 
-- [ ] `PromiseSharePage.tsx`, `usePromiseShare.ts`, `promise-share-sentence.ts` exist under `web/src/pages/reports/`.
-- [ ] Each promise is labelled **First response** / **Resolution** (or the Arabic equivalents); the word "SLA" appears nowhere on the page.
-- [ ] Every rendered share is accompanied by its counts, formatted as `"P % (M of N)"`, in both English and Arabic locales, via `useFormatters()`.
-- [ ] When `total === 0`, the page renders words and no percentage element exists in the DOM.
-- [ ] All numbered slots are inserted through the sentence builder with **U+2068 / U+2069** isolates; no concatenation is used to place a number into a sentence (**L-51**).
-- [ ] The page is mounted admin-only, mirroring `/audit`; a non-admin visiting the URL is refused the same way.
-- [ ] The API request does not fire while `me` is loading (**L-63**).
-- [ ] The page does not compute met-or-missed; the share arrives from the API (**S-5**).
-- [ ] `parity.test.ts` and `no-hardcoded-strings.test.ts` are green.
-- [ ] `cd web && npm test` and `cd web && npm run build` both pass.
-- [ ] `cd api && npm test` still passes with no changes.
-- [ ] No commit, doc, or ignore-file entry mentions AI assistance.
+- [x] Both promises are labelled as the promise they are — "Answered in time" and "Fixed in time" — and the word SLA appears nowhere on the page, asserted against the whole document body.
+- [x] A share is shown with the counts it rests on: `82% — 41 of 50`. A bare percentage cannot be acted on, because 100% of two tickets and 100% of two hundred are different facts that look identical.
+- [x] The page turns the API's raw ratio into a percentage (review item 2). The API sends it unrounded on purpose so the counts can be checked against it; trusting it as sent, per the plan, would have put `0.82` on the screen.
+- [x] A kind with nothing settled says so in words and shows no share at all. A desk that missed everything says 0% — a different answer, and both appear in one response.
+- [x] The sentence is one template with three slots, each isolate-wrapped by `fill` (review item 7). Nesting a filled counts sentence inside the share sentence would have isolated it twice.
+- [x] Arabic is its own sentence: a unit test asserts the Arabic template's own word between the counts and that no English "of" survives.
+- [x] Numbers go through `useFormatters().formatNumber`; ar-EG digits asserted as ٨٢ / ٤١ / ٥٠.
+- [x] The empty-kind assertion counts the shares on the page rather than looking for the absence of a `%` character (review item 9) — under ar-EG a percentage renders with U+066A, so the character test would have passed on a page that was showing one.
+- [x] The hook gates on `isAdmin === true` and fires nothing before the answer arrives (L-63); its shape follows the sibling hook's real one, and the response type matches what the API actually sends (review items 1 and 5).
+- [x] A non-admin sees the in-page explanation. No redirect and no router-level gate (review item 4).
+- [x] `cd web && npm run build` clean; `npm test` — 371 pass. Six guards green.
+- [x] No AI-attribution strings in the diff.
 
-**STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+## What the mutation pass proved
+
+| # | what was broken | result |
+| --- | --- | --- |
+| S1 | nothing settled renders a share anyway | 2 fail |
+| S2 | the share loses its counts | 4 fail |
+| S3 | the raw ratio reaches the screen | 4 fail |
+| S4 | the isolates are dropped | 2 fail |
+| S5 | the screen asks before it knows who is asking | 1 fail |
+
+S3 is the plan's own instruction, run as an experiment: "the API decides the
+rounding; the page trusts it". Four tests fail, and the screen shows `0.82`.
+

@@ -31,6 +31,7 @@ export const en = {
     navCategories: 'Ticket categories',
     navAccounts: 'Accounts',
     navQueueReport: 'Queue report',
+    navPromiseReport: 'Promises kept',
     navSetPassword: 'Set a password',
     navMyTickets: 'Your tickets',
     navHome: 'Home',
@@ -588,6 +589,21 @@ export const en = {
     // Said above the zeros, never instead of them. Six zeros is the answer to
     // "how is the desk doing"; an empty screen is not.
     nothingInTheQueue: 'Nothing is in the queue at all.',
+    errorTitle: 'The report did not load',
+    adminOnlyTitle: 'This is an admin screen',
+    adminOnlyBody: 'The reports are for the person answerable for the desk.',
+  },
+  promiseReport: {
+    title: 'Promises kept',
+    // Not "SLA". The reader is being told whether the desk answered people and
+    // whether it fixed their problem — two questions, in the words somebody
+    // would use to ask them.
+    firstResponseLabel: 'Answered in time',
+    resolutionLabel: 'Fixed in time',
+    // One template, three slots. The counts travel with the share because 100%
+    // of two tickets and 100% of two hundred are different facts.
+    result: '{share} — {met} of {settled}',
+    noData: 'Nothing has finished yet, so there is nothing to report.',
     errorTitle: 'The report did not load',
     adminOnlyTitle: 'This is an admin screen',
     adminOnlyBody: 'The reports are for the person answerable for the desk.',

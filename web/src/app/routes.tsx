@@ -16,6 +16,7 @@ import { RaiseTicketPage } from '../pages/tickets/RaiseTicketPage';
 import { TicketQueuePage } from '../pages/tickets/TicketQueuePage';
 import { TicketCategoriesPage } from '../pages/tickets/TicketCategoriesPage';
 import { AuditLogPage } from '../pages/audit/AuditLogPage';
+import { PromiseSharePage } from '../pages/reports/PromiseSharePage';
 import { QueueByStatusPage } from '../pages/reports/QueueByStatusPage';
 import { NotificationsPage } from '../pages/notifications/NotificationsPage';
 
@@ -206,6 +207,16 @@ export function AppRoutes() {
           <RequireAuth>
             <DeskShell>
               <QueueByStatusPage />
+            </DeskShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/reports/promise-share"
+        element={
+          <RequireAuth>
+            <DeskShell>
+              <PromiseSharePage />
             </DeskShell>
           </RequireAuth>
         }
