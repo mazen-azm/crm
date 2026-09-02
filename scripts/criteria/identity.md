@@ -61,6 +61,43 @@ An admin creates, disables and re-enables accounts, and sets roles.
 - Given an address that already belongs to a live account, when it is used
   again, then the answer is 409.
 
+## IDENTITY-2-WEB
+
+The screen an admin manages accounts from.
+
+*Acceptance criteria*
+- Given an admin, when they open the screen, then they see the live and the
+  disabled accounts together, each with its role and its state. A disabled
+  account that is not listed can never be re-enabled, and the API's
+  `/accounts/:id/re-enable` route would have no way to be reached.
+- Given the roles an admin may hand out, when the form offers them, then it
+  offers `admin` and `agent` and not `customer` — the API refuses a customer
+  here on purpose (`identity.rules.js:116`), and a screen offering a choice the
+  API refuses teaches the reader a rule that is not true.
+- Given a disable, when it succeeds, then the number of tickets it unassigned
+  is shown to the admin. The API returns that count beside the user precisely
+  so it can be seen (`identity.service.js:293-295`); dropping it on the screen
+  is where that care is lost, and zero is an answer worth showing.
+- Given the last admin, when disabling them or changing their role is refused
+  with 409, then the screen says which rule refused it. "Something went wrong"
+  is what sends an admin to the database.
+- Given an address that already belongs to an account, when it is used again,
+  then the screen says the address is taken and points at re-enabling, because
+  a taken address is often a disabled colleague rather than a mistake.
+- Given the list, when there are more accounts than a page, then it is paged
+  the way every other list here is paged (BR-4) — the API's `/accounts` takes
+  limit and offset already.
+- Given a reader who is not an admin, when they reach the address directly,
+  then they do not see the screen, and the navigation never offered it.
+- Given a password, when an account is created, then this screen neither shows
+  one nor sets one: setting a password is its own route and its own screen
+  (`/accounts/set-password`), and two ways to set a password are two sets of
+  rules.
+- Given both languages, when the screen renders, then every label, role name
+  and state comes from the resource file (BR-6) and none is a raw `agent`.
+- Given loading, empty and failed, when each happens, then it is a designed
+  state (D-2) and not an accident.
+
 ## IDENTITY-3-WEB
 
 An expired token returns me to sign-in, not a broken screen.
