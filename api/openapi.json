@@ -881,6 +881,25 @@
           }
         }
       }
+    },
+    "/api/v1/reports/promise-share": {
+      "get": {
+        "summary": "What share of promises the desk kept, per clock kind. Admin only. A promise is counted only once it has FINISHED, and there are two ways to finish: the clock stopped, or a breach was recorded against it. A ticket whose deadline has not passed has not kept its promise — it has not broken it yet — so it is on neither side of the fraction. `met = total - breached` would put it on the flattering side, and would read best on the day the desk opened. Breaches are counted from the stored rows and never recomputed from a deadline (S-5): a report doing its own arithmetic would disagree with the queue whenever the sweep was behind, with nothing to say which was lying. This is a read and stays one — it never runs the sweep so its own number looks current. Rows belonging to a soft-deleted ticket, clock or breach are in no count.",
+        "responses": {
+          "200": {
+            "description": "{ kinds }, with first_response and resolution always present. Each carries `met`, `breached`, `settled` (their sum) and `share` — the unrounded ratio, so a reader can check it against the counts beside it. `share` is null when nothing settled: no data is not the same fact as nothing met, and the two look identical once a percentage has been rounded onto a screen."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
     }
   }
 }
