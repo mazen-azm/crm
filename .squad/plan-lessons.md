@@ -1400,6 +1400,13 @@ mutations that write no row. None of them asks *how a caller would come to have
 this parameter*. That question has no census because the answer is a path
 through the product, not a property of a file.
 
+**Swept the other 38 routes the same day** by asking each id-taking route where
+its id comes from. Every other one is answered by a listing the product already
+serves, and `re-enable` is the only verb in the backlog that needs a row a
+listing excludes — so this is one instance, found, not a pattern still hiding.
+The sweep took ten minutes and is the reason that sentence can be written at
+all.
+
 **The rule:** for any route taking an id, name the screen or the earlier
 response that hands the caller that id. If the answer is "the test already had
 it", the reachable half of the feature is missing and it is in a different
