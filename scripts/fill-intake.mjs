@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+// Fill an intake's three hand-written sections from files on disk:
+//   node scripts/fill-intake.mjs <intake.md> <criteria.txt> <hints.md> <out-of-scope.md>
+//
+// GATE 1 is a person writing these three; this only puts them where the
+// planner reads them, so the writing is never lost to a mis-paste.
+import { readFileSync, writeFileSync } from 'node:fs'
+
+const [intake, criteria, hints, scope] = process.argv.slice(2)
+if (!intake || !criteria || !hints || !scope) {
+  console.error('usage: node scripts/fill-intake.mjs <intake.md> <criteria.txt> <hints.md> <out-of-scope.md>')
+  process.exit(1)
+}
+
+let s = readFileSync(intake, 'utf8')
+
+// The blank fenced block under "## Acceptance criteria" — the only empty fence
+// in a fresh intake that follows that heading.
+const acHead = '## Acceptance criteria\n'
+const i = s.indexOf(acHead)
+if (i < 0) { console.error('no acceptance criteria heading'); process.exit(1) }
+const open = s.indexOf('```', i)
+const close = s.indexOf('```', open + 3)
+if (open < 0 || close < 0) { console.error('no fence under acceptance criteria'); process.exit(1) }
+s = s.slice(0, open + 4) + readFileSync(criteria, 'utf8').trimEnd() + '\n' + s.slice(close)
+
+// The hints go after the standing block's last line, replacing the tool's
+// own placeholder sentence.
+const placeholder = '- APIs, screens, services already discussed. Repos/roots: `api, web, android`. Primary language: `JavaScript`.\n'
+if (!s.includes(placeholder)) { console.error('no technical-hints placeholder'); process.exit(1) }
+s = s.replace(placeholder, placeholder + '\n' + readFileSync(hints, 'utf8').trimEnd() + '\n')
+
+const scopeHead = '## Out of scope\n'
+const j = s.indexOf(scopeHead)
+if (j < 0) { console.error('no out-of-scope heading'); process.exit(1) }
+s = s.slice(0, j + scopeHead.length) + '\n' + readFileSync(scope, 'utf8').trimEnd() + '\n'
+
+writeFileSync(intake, s)
+console.log('filled', intake)

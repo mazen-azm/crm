@@ -1353,3 +1353,30 @@ property of the folder. It does not today, and that is worth more than the
 deletions: the checks in this repository exist because a defect was found by
 hand first.
 
+
+## L-65 — A page of results is not the results, and a check that fetches the same page cannot see the difference
+
+Ask a paged API for more than it will give and it answers with what it will
+give, not with an error. `scripts/story-keys.mjs` asked Jira for
+`maxResults=200`; Jira's ceiling is 100 and it applied it silently. The file
+that tells every planner which key holds which story therefore held the first
+hundred issues and nothing after them — **85 of 138 stories**, missing every
+service-levels, notifications, portal and reports story.
+
+**Why nobody noticed for eight sprints:** `--check` refetched, compared, and
+reported "the file agrees with the tracker" every single time. It did agree.
+Both sides were truncated at the same place by the same call, so the comparison
+was the file against itself with extra steps. This is the same shape as the
+existing rule about verifying a plan against two independent statements of one
+fact — and it turns out the rule applies to the tooling, not only to the plans.
+
+**The tell was in the output and went unread:** "wrote 85 stories" next to a
+backlog the same repository elsewhere counts as 138. A generator that prints a
+number and a source that knows the expected number are two statements nobody
+compared.
+
+**The rule:** when reading a list from an API, page it — `nextPageToken` until
+it is absent — and never trust a `maxResults` you did not see honoured. When
+the number of things fetched is knowable from somewhere else in the repository,
+compare the two and fail on a mismatch, rather than printing the count and
+hoping a person does the subtraction.
