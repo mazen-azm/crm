@@ -1,0 +1,27 @@
+/* One row per person. No colour literal here — every value is a token (D-1). */
+.agent-load {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.agent-load__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-1);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.agent-load__who {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.agent-load__count {
+  font-variant-numeric: tabular-nums;
+}
