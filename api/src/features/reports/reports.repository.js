@@ -68,3 +68,84 @@ export function countMetByKind(db) {
     .all()
     .map((row) => ({ kind: row.kind, count: row.n }));
 }
+
+// Load per live staff member.
+//
+// The rows come from `users`, not from `tickets`, and that is the whole story.
+// A `GROUP BY tickets.assignee_id` can only return people who hold something —
+// and the person an admin opened this report to find is the one holding
+// nothing. The LEFT JOIN puts a zero where nothing joins.
+//
+// Live staff: `users.deleted_at IS NULL` and a role that can hold work. A
+// disabled account cannot take any, and a customer never holds a ticket.
+//
+// The status filter sits in the JOIN and not in the WHERE, deliberately: in
+// the WHERE it would drop the person as well as their finished tickets, and an
+// agent whose queue is empty because they cleared it would vanish from the
+// report for having done the work.
+//
+// `u.id` after the name: two people sharing a name would otherwise swap places
+// between two reads of the same data (L-19).
+export function countAssignedLoadByUser(db, { staffRoles, offThePlate }) {
+  if (staffRoles.length === 0 || offThePlate.length === 0) return [];
+  const roles = staffRoles.map(() => '?').join(', ');
+  const statuses = offThePlate.map(() => '?').join(', ');
+  return db
+    .prepare(`
+      SELECT u.id AS id, u.name AS name, u.role AS role, count(t.id) AS n
+        FROM users u
+        LEFT JOIN tickets t
+          ON t.assignee_id = u.id
+         AND t.deleted_at IS NULL
+         AND t.status NOT IN (${statuses})
+       WHERE u.deleted_at IS NULL
+         AND u.role IN (${roles})
+       GROUP BY u.id
+       ORDER BY u.name COLLATE NOCASE, u.id
+    `)
+    .all(...offThePlate, ...staffRoles)
+    // No email. The assignee picker leaves it out on purpose
+    // (identity.service.js:45-53) — "every field that travels is a field that
+    // has to keep being safe" — and a load report needs a name and a number.
+    .map((row) => ({ id: row.id, name: row.name, role: row.role, load: row.n }));
+}
+
+// Work nobody has taken. Its own figure, never a row in the list of people:
+// a name among the names is a person, and "nobody" is not one. It is also the
+// number an admin most needs to see, which is why folding it into a row is how
+// it goes unnoticed.
+export function countUnassignedLoad(db, { offThePlate }) {
+  if (offThePlate.length === 0) return 0;
+  const statuses = offThePlate.map(() => '?').join(', ');
+  return db
+    .prepare(`
+      SELECT count(*) AS n
+        FROM tickets
+       WHERE deleted_at IS NULL
+         AND assignee_id IS NULL
+         AND status NOT IN (${statuses})
+    `)
+    .get(...offThePlate).n;
+}
+
+// Every ticket still on somebody's plate, whoever's it is.
+//
+// It exists so the parts can be checked against the whole. The agent rows
+// cover live staff and the unassigned figure covers a null assignee, which
+// leaves a gap: a ticket assigned to an account that has since been disabled
+// is in neither. IDENTITY-9-API hands those back on disable so it should not
+// arise — and "should not arise" is what was said about the account projection
+// that reported every disabled row as live, and about the out-of-set status in
+// queue-by-status. Both times the check cost one query.
+export function countOpenTickets(db, { offThePlate }) {
+  if (offThePlate.length === 0) return 0;
+  const statuses = offThePlate.map(() => '?').join(', ');
+  return db
+    .prepare(`
+      SELECT count(*) AS n
+        FROM tickets
+       WHERE deleted_at IS NULL
+         AND status NOT IN (${statuses})
+    `)
+    .get(...offThePlate).n;
+}

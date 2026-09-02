@@ -4,4 +4,8 @@
 // numbers through the reader, so there is one place that decides what a report
 // means.
 export { reportsRouter } from './reports.routes.js';
-export { createPromiseShareReader, createQueueByStatusReader } from './reports.read.js';
+export {
+  createAgentLoadReader,
+  createPromiseShareReader,
+  createQueueByStatusReader,
+} from './reports.read.js';

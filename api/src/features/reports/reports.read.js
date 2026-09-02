@@ -1,9 +1,13 @@
+import { STAFF_ROLES } from '../identity/index.js';
 import { CLOCK_KINDS } from '../service-levels/index.js';
 import { STATUSES } from '../tickets/index.js';
 import {
+  countAssignedLoadByUser,
   countBreachedByKind,
   countLiveTicketsByStatus,
   countMetByKind,
+  countOpenTickets,
+  countUnassignedLoad,
 } from './reports.repository.js';
 
 // How many tickets are in each status, for an admin deciding where the desk is
@@ -93,6 +97,47 @@ export function createPromiseShareReader({ db }) {
       }));
 
       return { kinds };
+    },
+  };
+}
+
+// What is still on each person, and what is on nobody.
+//
+// Off somebody's plate. NOT the same as terminal: TRANSITIONS
+// (tickets.rules.js:194-201) makes `closed` the only terminal status — a
+// resolved ticket still has two moves — so this is a statement about workload
+// and not about the state machine.
+//
+// Written out rather than filtered out of STATUSES, because there is nothing
+// in STATUSES to derive it from. A filter naming both members would be two
+// literals wearing a derivation: nothing would follow if the set changed, and
+// it would claim a property it does not have.
+const OFF_THE_PLATE = Object.freeze(['resolved', 'closed']);
+
+export function createAgentLoadReader({ db }) {
+  return {
+    read(_actor) {
+      const agents = countAssignedLoadByUser(db, {
+        staffRoles: STAFF_ROLES,
+        offThePlate: OFF_THE_PLATE,
+      });
+      const unassigned = countUnassignedLoad(db, { offThePlate: OFF_THE_PLATE });
+      const open = countOpenTickets(db, { offThePlate: OFF_THE_PLATE });
+
+      return {
+        agents,
+        // Work nobody has taken, as its own figure — never a row called
+        // "nobody" among the people.
+        unassigned,
+        open,
+        // What the three numbers do not account for: a ticket still open and
+        // assigned to somebody this report does not list, which today means a
+        // disabled account. It should always be zero, and a report that says
+        // so is a report whose parts can be checked against its whole. Hiding
+        // the gap would leave an admin adding up rows that quietly do not
+        // reach the total.
+        unaccounted: open - unassigned - agents.reduce((sum, each) => sum + each.load, 0),
+      };
     },
   };
 }
