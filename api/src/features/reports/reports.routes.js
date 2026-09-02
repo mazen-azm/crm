@@ -3,7 +3,7 @@ import express from 'express';
 import { requirePermission } from '../../platform/http/permission.js';
 
 // req and res stop here. The reader takes values and returns values.
-export function reportsRouter({ queueByStatus, promiseShare }) {
+export function reportsRouter({ queueByStatus, promiseShare, agentLoad }) {
   // Admin only, decided before the reader runs. A report is about how the
   // whole desk is doing, which is not something one agent should be able to
   // read about the others — the same reasoning the audit trail uses, and
@@ -25,6 +25,11 @@ export function reportsRouter({ queueByStatus, promiseShare }) {
   // the sweep so its own number looked current would be a read that writes.
   router.get('/reports/promise-share', adminOnly, (req, res) => {
     res.json(promiseShare.read(req.subject));
+  });
+
+  // Who is holding what, and what nobody is holding.
+  router.get('/reports/agent-load', adminOnly, (req, res) => {
+    res.json(agentLoad.read(req.subject));
   });
 
   return router;

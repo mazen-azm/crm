@@ -900,6 +900,25 @@
           }
         }
       }
+    },
+    "/api/v1/reports/agent-load": {
+      "get": {
+        "summary": "What is still on each person, and what is on nobody. Admin only. Every live staff member has a row, including the ones holding nothing — a query grouped over tickets can only return people who hold something, and the person an admin opens this report to find is exactly the one who does not. A disabled account has no row: the question is who can take work now. Load means work still on the person — assigned, and neither resolved nor closed — not everything they have ever touched, which is a career total. Unassigned work is its own figure and never a row among the people: a name among the names is a person, and it is the number an admin most needs to see.",
+        "responses": {
+          "200": {
+            "description": "{ agents, unassigned, open, unaccounted }. Each agent carries id, name, role and load — no email, for the reason the assignee picker omits it. `open` is every live ticket not resolved or closed, so the parts can be checked against the whole; `unaccounted` is what the rows and the unassigned figure do not reach, which is a ticket assigned to an account this report does not list. It should always be zero, and a report that says so is one whose numbers an admin can add up."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
     }
   }
 }

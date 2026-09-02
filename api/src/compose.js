@@ -5,7 +5,12 @@ import { conversationRouter, createConversationService } from './features/conver
 import { createCustomersService, customersRouter } from './features/customers/index.js';
 import { createIdentityService, identityRouter, identitySubjectResolver } from './features/identity/index.js';
 import { createNotificationsService, notificationsRouter } from './features/notifications/index.js';
-import { createPromiseShareReader, createQueueByStatusReader, reportsRouter } from './features/reports/index.js';
+import {
+  createAgentLoadReader,
+  createPromiseShareReader,
+  createQueueByStatusReader,
+  reportsRouter,
+} from './features/reports/index.js';
 import { createServiceLevels } from './features/service-levels/index.js';
 import { createTicketsService, ticketsRouter, validateTicketFields } from './features/tickets/index.js';
 import { createKeyedThrottle } from './platform/http/throttle.js';
@@ -84,6 +89,7 @@ export function composeApp({ db, secret, now = () => Math.floor(Date.now() / 100
       v1.use(reportsRouter({
         queueByStatus: createQueueByStatusReader({ db }),
         promiseShare: createPromiseShareReader({ db }),
+        agentLoad: createAgentLoadReader({ db }),
       }));
       // One throttle per composed app, the way sign-in's is built inside its
       // own service: every test then starts with empty counters and cannot

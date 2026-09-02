@@ -192,6 +192,58 @@ function checkPlan(p) {
   // making every new-file line a failure.
   const soft = (line, msg) => warn.push(`${p.file}:${line} ${msg}${shipped ? ' [shipped]' : ''}`)
 
+  // L-68 — a plan that tells the builder to register a route with a census.
+  //
+  // The guarantee files read their subjects off the mounted router: audit,
+  // ticket ownership, staff-only, note leaks, stale writes. Nothing is added to
+  // them when a route appears — that is the entire point of reading the routes
+  // off the system. The only lists they hold are EXEMPTIONS, so an instruction
+  // to "add the new route to staff-only.guarantee.test.js so the admin-only
+  // contract is proven" does the exact opposite: it stops the census looking at
+  // the route, while the plan, the commit and the done criteria all say the
+  // gate is proven. The diff reads like a test being extended.
+  //
+  // Two consecutive plans said it, with L-68 already written and sitting in the
+  // lessons file the intake tells the planner to read first. A hint that fails
+  // twice is not a mechanism (L-54), so it is checked here.
+  //
+  // NEGATED covers the corrected wording — "do NOT touch", "needs nothing
+  // added" — the same way it lets a plan name a dialect in order to forbid it.
+  // ONE census is different, and it is named here rather than left to be
+  // rediscovered: audit.guarantee.test.js holds a POSITIVE list, `EXERCISED`,
+  // of the mutating routes the file drives, and its own failure message tells
+  // you to "add it below and assert its audit row, or record it in
+  // NOT_A_MUTATION with a reason". A plan telling a builder to add a mutating
+  // route there is right, and failing it would teach people to route around
+  // this check.
+  //
+  // The other four hold exemption lists only. The distinction is which
+  // direction the list points, and it is not readable from a filename — so it
+  // is written down, with the reason, the way SQL_EXEMPT and ACCEPTED are in
+  // verify-architecture.
+  // Narrow on purpose, and it took two passes to get here. Writing a new
+  // census, extending what one asserts, or adding a genuinely defensible
+  // exemption row are all legitimate and common — the first draft failed ten
+  // shipped plans doing exactly those, and a check that cries wolf gets
+  // relaxed until it catches nothing (the FIRST check above carries the same
+  // warning).
+  //
+  // The defect is the claim, not the edit: putting a ROUTE in a census's list
+  // and saying that PROVES the guarantee. It never does. The lists are
+  // exemptions — an entry stops the census looking — and the one positive list
+  // (EXERCISED, in audit.guarantee.test.js) is a register of routes the file
+  // drives, whose own failure message tells you to add to it.
+  const CENSUS_FILE = /\b[\w.-]*\.guarantee\.test\.js\b/
+  const REGISTERS = /\b(add|adds|added|adding|register|registers|append|include)\b/i
+  const A_ROUTE = /\b(route|endpoint|GET|POST|PATCH|PUT|DELETE)\b|\/api\/v1|`\/[a-z]/
+  const CLAIMS_PROOF = /\b(prove[nds]?|proof|verif\w+|ensur\w+|is covered|are covered|so the [\w -]*(?:contract|gate|rule|guarantee))\b/i
+  for (const [i, line] of body.split('\n').entries()) {
+    if (!CENSUS_FILE.test(line) || !REGISTERS.test(line)) continue
+    if (!A_ROUTE.test(line) || !CLAIMS_PROOF.test(line)) continue
+    if (NEGATED.test(line)) continue
+    say(i + 1, 'tells the builder to add a route to a guarantee census. Those files read every route off the mounted router and need nothing added; their only lists are exemptions, so an entry stops the census checking the route (L-68)')
+  }
+
   // L-21 — the planner writes the world it read as fact. It titles every plan
   // "Story 01" whatever the filename says, and it has claimed to be the first
   // plan in a folder holding three. The heading number is the cheap half to
