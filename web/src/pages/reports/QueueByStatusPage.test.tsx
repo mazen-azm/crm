@@ -13,6 +13,21 @@ const COUNTS = (over: Record<string, number> = {}) => ({
   new: 3, open: 12, pending: 0, resolved: 5, closed: 104, reopened: 0, ...over,
 });
 
+// The stub echoes a window when a zone is asked for, exactly as the API does —
+// that echo is what the screen's period label is read from, so a stub that
+// dropped it would be testing a screen the API never talks to.
+const windowFor = (url: URL) => {
+  const timeZone = url.searchParams.get('timeZone');
+  if (!timeZone) return null;
+  return {
+    timeZone,
+    from: url.searchParams.get('from') ?? '2026-09-03',
+    to: url.searchParams.get('to') ?? '2026-09-03',
+    startUtc: '2026-09-02T21:00:00.000Z',
+    endUtc: '2026-09-03T21:00:00.000Z',
+  };
+};
+
 function desk({ role = 'admin', answer }: { role?: string; answer?: () => Response } = {}) {
   const asked: string[] = [];
   const fetch = vi.fn((input: RequestInfo | URL) => {
@@ -21,10 +36,10 @@ function desk({ role = 'admin', answer }: { role?: string; answer?: () => Respon
       return Promise.resolve(json({ id: 'u-1', role, name: 'Nadia Haddad' })());
     }
     if (url.pathname === '/api/v1/reports/queue-by-status') {
-      asked.push(url.pathname);
+      asked.push(url.search);
       const counts = COUNTS();
       const total = Object.values(counts).reduce((a, b) => a + b, 0);
-      return Promise.resolve((answer ?? json({ counts, total }))());
+      return Promise.resolve((answer ?? json({ counts, total, window: windowFor(url) }))());
     }
     throw new Error(`this screen must not call ${url.pathname}`);
   });
@@ -107,4 +122,59 @@ test('the numbers are the reader\'s, in both languages', async () => {
   // ar-EG, deliberately: format.ts:12 explains why bare 'ar' does not satisfy
   // the criterion, and says not to simplify it back.
   expect(row.getByText('١٠٤')).toBeInTheDocument();
+});
+
+// scripts/criteria/reports.md, section REPORTS-4-WEB.
+
+test('the first load asks with no zone at all, so the report still means what it meant', async () => {
+  const { asked } = desk();
+  open();
+  await screen.findByText(en.queueReport.statusOpen);
+
+  // "Everything" is the default, and it is the request every caller written
+  // before the window existed made. Defaulting to today would have quietly
+  // turned this screen into a different report.
+  await waitFor(() => expect(asked.at(-1)).toBe(''));
+  // And with no window there is no period to state.
+  expect(screen.queryByText(new RegExp(en.reportPeriod.zoneLabel))).not.toBeInTheDocument();
+});
+
+test('choosing a period sends the reader\'s zone, and the label comes back from the answer', async () => {
+  const { asked } = desk();
+  open();
+  await screen.findByText(en.queueReport.statusOpen);
+
+  await userEvent.click(screen.getByRole('button', { name: en.reportPeriod.today }));
+
+  await waitFor(() => expect(asked.at(-1)).toContain('timeZone='));
+  // The label is read from the window the API echoed, never from what the
+  // client asked for — one source, so the period and the numbers cannot
+  // disagree.
+  expect(await screen.findByText(/Africa\/Cairo/)).toBeInTheDocument();
+});
+
+test('a number is never left standing under a period it does not belong to', async () => {
+  // The second request never resolves, so the screen stays in the state it
+  // enters when a period changes — which is the state under test.
+  let calls = 0;
+  const fetch = vi.fn((input: RequestInfo | URL) => {
+    const url = new URL(String(input), 'http://desk.test');
+    if (url.pathname === '/api/v1/me') {
+      return Promise.resolve(json({ id: 'u-1', role: 'admin', name: 'Nadia Haddad' })());
+    }
+    calls += 1;
+    if (calls === 1) return Promise.resolve(json({ counts: COUNTS(), total: Object.values(COUNTS()).reduce((a, b) => a + b, 0) })());
+    return new Promise<Response>(() => {});
+  });
+  vi.stubGlobal('fetch', fetch);
+  open();
+  const shown = await screen.findByText(en.queueReport.statusOpen);
+  expect(shown).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: en.reportPeriod.last7 }));
+
+  // Gone, not stale. The figures for "everything" must not sit under a label
+  // that now says the last seven days.
+  await waitFor(() => expect(screen.queryByText(en.queueReport.statusOpen)).not.toBeInTheDocument());
+  expect(screen.getByRole('button', { name: en.reportPeriod.last7 })).toHaveAttribute('aria-pressed', 'true');
 });

@@ -535,6 +535,17 @@ export const ar = defineLocale({
     adminOnlyTitle: 'هذه شاشة للمدير',
     adminOnlyBody: 'التقارير لمن هو مسؤول عن المكتب.',
   },
+  reportPeriod: {
+    all: 'كل شيء',
+    oneDay: 'ليوم',
+    fromLabel: 'من',
+    toLabel: 'إلى',
+    zoneLabel: 'الأوقات بتوقيت',
+    today: 'اليوم',
+    last7: 'آخر ٧ أيام',
+    last30: 'آخر ٣٠ يومًا',
+    rightNow: 'هذا ما على المكتب الآن.',
+  },
   states: {
     loading: 'جارٍ التحميل',
     errorTitle: 'تعذّر التحميل',

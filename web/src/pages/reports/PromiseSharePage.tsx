@@ -1,4 +1,5 @@
 import {
+  Button,
   Card,
   EmptyState,
   ErrorState,
@@ -7,9 +8,15 @@ import {
   Stack,
   Text,
 } from '../../shared/ui';
+import { useMemo, useState } from 'react';
+
 import { useTranslation } from '../../shared/i18n';
 import { useFormatters } from '../../shared/i18n/useFormatters';
 import { useMe } from '../../shared/session/use-me';
+import { PeriodSentence } from './period-sentence';
+import { readerZone } from './reader-zone';
+import { PERIODS, buildPeriod } from './report-period';
+import type { PeriodKey } from './report-period';
 import { KINDS, usePromiseShare } from './usePromiseShare';
 import type { ClockKind, KindShare } from './usePromiseShare';
 import { shareSentence } from './promise-share-sentence';
@@ -27,7 +34,13 @@ export function PromiseSharePage() {
   const { t } = useTranslation();
   const { formatNumber } = useFormatters();
   const { isAdmin } = useMe();
-  const report = usePromiseShare({ enabled: isAdmin === true });
+  // Read once per mount. A session that crosses a daylight-saving change keeps
+  // the same zone ID, which is right: the zone is the thing that is stable, and
+  // the offset is what moves inside it.
+  const timeZone = useMemo(() => readerZone(), []);
+  const [periodKey, setPeriodKey] = useState<PeriodKey>('all');
+  const period = useMemo(() => buildPeriod(periodKey, timeZone), [periodKey, timeZone]);
+  const report = usePromiseShare({ enabled: isAdmin === true, timeZone, period });
   const page = report.report;
 
   if (isAdmin === false) {
@@ -69,7 +82,28 @@ export function PromiseSharePage() {
     <Stack as="section" gap={4}>
       <Heading level={2}>{t.promiseReport.title}</Heading>
 
-      {report.status === 'loading' && !page ? (
+      <Stack direction="row" gap={2} align="start">
+        {PERIODS.map((key) => (
+          <Button
+            key={key}
+            variant={key === periodKey ? 'primary' : 'secondary'}
+            aria-pressed={key === periodKey}
+            onClick={() => setPeriodKey(key)}
+          >
+            {t.reportPeriod[key]}
+          </Button>
+        ))}
+      </Stack>
+
+      {/* Read from the ANSWER, so the period and the numbers cannot disagree
+          — and null while nothing has arrived, so no label stands over
+          somebody else's figures. */}
+      <PeriodSentence window={page?.window ?? null} />
+
+      {/* No `&& page` here on purpose. While a new period is in flight the
+          skeleton replaces the last one's figures, so a number is never shown
+          under a label it does not belong to. */}
+      {report.status === 'loading' ? (
         <Skeleton lines={3} height="24px" label={t.states.loading} />
       ) : null}
 
@@ -82,7 +116,12 @@ export function PromiseSharePage() {
         />
       ) : null}
 
-      {page ? (
+      {/* `status !== 'loading'` and not merely `page`: useRequest keeps the
+          last answer while the next request is in flight, so gating on `page`
+          alone leaves the previous period's figures on screen UNDER the new
+          period's label — with a skeleton above them, which looks like a
+          screen loading more rather than one showing the wrong thing. */}
+      {page && report.status !== 'loading' ? (
         <Card>
           <Stack gap={3}>{KINDS.map((kind) => line(kind, page.kinds[kind]))}</Stack>
         </Card>

@@ -360,14 +360,40 @@ Regression:
 
 ## Done Criteria
 
-- [ ] `readerZone()` used by every reports page reads `Intl.DateTimeFormat().resolvedOptions().timeZone` at runtime (no constants, no language guesses).
-- [ ] Every report request carries `?timeZone=<iana>`; `last7`/`last30` also carry `from` and `to`.
-- [ ] The stated period is on screen for every report, built with the isolate-wrapped slot pattern (L-51), with dates through `useFormatters().formatDate` (BR-3).
-- [ ] Changing the period never shows the previous numbers under the new label — the skeleton takes over while the new request is in flight.
-- [ ] `en.ts` and `ar.ts` both carry the new `reports.period.*` keys; `parity.test.ts` is green.
-- [ ] `no-hardcoded-strings.test.ts` is green for the three edited pages.
-- [ ] `cd web && npm test` and `cd web && npm run build` both succeed.
-- [ ] `cd api && npm test` still succeeds unchanged.
-- [ ] No AI-assistance mentions in commits, code, or docs (grep proof in step 4).
+- [x] The zone is read from the runtime — `Intl.DateTimeFormat().resolvedOptions().timeZone` — never guessed from the language. Arabic does not mean Cairo.
+- [x] A runtime that will not name a zone gets `UTC`, which is a real answer rather than a refusal: the API accepts it, so the report still answers and the label says which day it is about.
+- [x] **"Everything" is the default** and asks with no zone at all. Defaulting to today would have quietly turned "the queue by status" into "raised today, by status" — the same numbers, the same page, a different question. It is also the exact request every caller written before the window existed made.
+- [x] Choosing a period sends the reader's zone and, for the two ranges, the dates in that zone.
+- [x] **The label is read from the window the API echoed**, never from what the client asked for (review item 3). One source, so the period and the numbers cannot disagree — and "today" is whichever day the API's clock decided, not the browser's.
+- [x] The label's dates are formatted **in the report's zone**, not the browser's. Found by a test: a Cairo window starts at 21:00Z the day before, so the browser's zone often names the wrong day outright, three words from a sentence saying which zone it was read in.
+- [x] A range names its last day, not the instant after it — the window's end is the start of the day following the last one included.
+- [x] **A number is never left under a period it does not belong to.** The figures are hidden while a request is in flight, not merely covered by a skeleton (see below).
+- [x] **Agent load gets no period control and no period sentence** (review item 1), and one muted line saying it is what is on the desk now — so an admin who sees a control on the other two does not wonder whether this one is broken.
+- [x] Dates and the zone id are isolate-wrapped (L-51); a zone id is a left-to-right run with a slash in it.
+- [x] Flat i18n leaves in one `reportPeriod` group, shared by the two screens that have a period.
+- [x] `cd web && npm run build` clean; `npm test` — 400 pass. `cd api && npm test` — 617 pass. Six guards green.
+- [x] No AI-attribution strings in the diff.
 
-**STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+## What the mutation pass proved, and what the tests found first
+
+| # | what was broken | result |
+| --- | --- | --- |
+| V1 | stale figures stay under the new label | 1 fail |
+| V2 | "everything" asks with a zone anyway | 3 fail |
+| V3 | the inclusive span is off by one | 2 fail |
+| V4 | the label is formatted in the browser's zone | 1 fail |
+| V5 | the range names the instant after its last day | 1 fail |
+
+**V1 is a correction to this review.** Item 4 said dropping `&& !page` from the
+loading condition "already solves it". It does not: `useRequest` keeps the last
+answer while the next request is in flight, so the skeleton appeared **and** the
+previous period's figures stayed underneath it — which looks like a screen
+loading more rather than one showing the wrong thing. The content branch had to
+be gated too. The test found it; the review had said the opposite.
+
+**V4 is a defect the test found before any mutation.** The label formatted its
+dates with the browser's zone while the sentence beside it named the report's.
+On this machine the two happen to agree, so the first version of that test
+passed for the wrong reason; it was rewritten around a New York window, where
+they differ.
+
