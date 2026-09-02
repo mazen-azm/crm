@@ -862,6 +862,25 @@
           }
         }
       }
+    },
+    "/api/v1/reports/queue-by-status": {
+      "get": {
+        "summary": "How many live tickets are in each status. Admin only: a report is about how the whole desk is doing, which is not something one agent should be able to read about the others. All six statuses are always present, including the ones nobody is in — a query grouped over tickets can only return rows for statuses that HAVE tickets, and `pending: 0` is the number that says the desk is not stalling anybody. Soft-deleted tickets are in no count, which is what keeps this report agreeing with the queue (BR-1). An aggregate and not a list: its body is six numbers whose size does not grow with the desk, so BR-4's page ceiling does not apply to it.",
+        "responses": {
+          "200": {
+            "description": "{ counts, total }. `counts` holds all six statuses with a number each, zero included. `total` counts every live ticket — not only the ones inside the six — so a status this API could not have written makes the report visibly short rather than quietly wrong."
+          },
+          "401": {
+            "description": "No token, or one that does not resolve to a live account."
+          },
+          "403": {
+            "description": "An agent or a customer asking."
+          },
+          "500": {
+            "description": "Internal."
+          }
+        }
+      }
     }
   }
 }

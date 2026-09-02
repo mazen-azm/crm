@@ -337,19 +337,31 @@ All tests use **`node:test`** — `node --test`, not vitest (review item 1). Fol
 
 ## Done Criteria
 
-- [ ] `api/src/features/reports/` exists with `index.js`, `reports.repository.js`, `reports.read.js`, `reports.routes.js` — and no other files.
-- [ ] `GET /api/v1/reports/queue-by-status` responds `200` for admins with `{ counts: {…six keys…}, total: N }`.
-- [ ] All six status keys are always present; missing statuses appear as `0`.
-- [ ] Soft-deleted tickets are excluded (repository uses `WHERE deleted_at IS NULL`).
-- [ ] `total` counts every live ticket, including one whose status is outside the six — proved by writing such a row through SQL, not asserted as an identity (review item 3).
-- [ ] Non-admin callers receive `403`; the read service is not entered.
-- [ ] `STATUSES` is imported from `../tickets/index.js`; the six names are not retyped in `reports/`.
-- [ ] Empty desk returns `200` with six zeros and `total: 0` (not `404`, not `{}`).
-- [ ] No migration, no new table, no new index.
-- [ ] `api/openapi.json` documents the new route; `openapi-contract.test.js` passes.
-- [ ] `staff-only.guarantee.test.js` passes with the new route present.
-- [ ] `scripts/verify-architecture.mjs` passes.
-- [ ] `cd api && npm test` is green.
-- [ ] No AI-attribution strings in the diff.
+- [x] `api/src/features/reports/` exists with `index.js`, `reports.repository.js`, `reports.read.js`, `reports.routes.js`, and one test file. No rules file: the feature owns no rule.
+- [x] `GET /api/v1/reports/queue-by-status` responds 200 for an admin with `{ counts, total }`.
+- [x] All six statuses are always present; the ones nobody is in say `0`.
+- [x] Soft-deleted tickets are in no count, so the report agrees with the queue (BR-1).
+- [x] `total` counts every live ticket, including one whose status is outside the six — proved by writing such a row through SQL, not asserted as an identity (review item 3). Had the total been summed inside the branch, the report would have said 1 while holding 2 and agreed with itself perfectly.
+- [x] An agent gets 403 from middleware; the reader is never entered. `staff-only.guarantee.test.js` reads the route off the router and holds it there.
+- [x] `STATUSES` is imported from `../tickets/index.js`; the six names appear nowhere in `reports/`.
+- [x] An empty desk answers 200 with six zeros and `total: 0` — not 404, not `{}`.
+- [x] No migration, no new table, no new index.
+- [x] `api/openapi.json` documents the route, in the prose style the rest of the file uses (review item 4). The contract test failed before the entry was written, which is the guard doing its job.
+- [x] `node scripts/verify-architecture.mjs` passes — SQL only in the repository, the tickets feature reached only through its index.
+- [x] `cd api && npm test` — 589 pass, 0 fail.
+- [x] No AI-attribution strings in the diff.
 
-**STOP HERE. Report to the user and wait for confirmation before proceeding to Story 02.**
+## What the mutation pass proved
+
+Four mutations, each reverted immediately.
+
+| # | what was broken | result |
+| --- | --- | --- |
+| R1 | `total` counts only the known six | 1 fail |
+| R2 | the answer is built from the query, not the known set | 5 fail |
+| R3 | soft-deleted tickets are counted | 1 fail |
+| R4 | the admin gate is dropped from the route | 2 fail — one of them the census nobody wrote for this route |
+
+R1 is the review's third item, and it is the reason that item was worth writing:
+under the plan as generated, the mutation would have been the code, and the
+Done Criterion checking it would have passed.
