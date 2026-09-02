@@ -9,15 +9,23 @@
 // `deleted_at IS NULL` is what keeps this report agreeing with the queue
 // (BR-1). Without it the two screens answer the same question differently and
 // nothing says which is right.
-export function countLiveTicketsByStatus(db) {
+// `window` is optional, and its absence is the snapshot this report has always
+// been: how many tickets are in each status right now. With one, the question
+// changes to how many were RAISED in it — a different question, which is why
+// the reader echoes the window back in the answer rather than leaving a number
+// whose period is knowable only from the request that produced it.
+export function countLiveTicketsByStatus(db, { window = null } = {}) {
+  const bounded = window
+    ? 'AND created_at >= ? AND created_at < ?'
+    : '';
   return db
     .prepare(`
       SELECT status, count(*) AS n
       FROM tickets
-      WHERE deleted_at IS NULL
+      WHERE deleted_at IS NULL ${bounded}
       GROUP BY status
     `)
-    .all()
+    .all(...(window ? [window.startUtc, window.endUtc] : []))
     .map((row) => ({ status: row.status, count: row.n }));
 }
 
@@ -34,16 +42,21 @@ export function countLiveTicketsByStatus(db) {
 // the ticket the clock belongs to. Every other query on these tables filters
 // the first two; the third is the one a report has to add for itself, and
 // without it the desk is scored on tickets that no longer exist.
-export function countBreachedByKind(db) {
+// The window here is about when the promise FINISHED, not when the ticket was
+// raised: the question is what share of the promises that came due in this
+// period were kept. `breached_at` is the moment the sweep recorded the miss —
+// there is no `recorded_at` column and never has been.
+export function countBreachedByKind(db, { window = null } = {}) {
+  const bounded = window ? 'AND b.breached_at >= ? AND b.breached_at < ?' : '';
   return db
     .prepare(`
       SELECT b.kind, count(*) AS n
         FROM sla_breaches b
         JOIN tickets t ON t.id = b.ticket_id AND t.deleted_at IS NULL
-       WHERE b.deleted_at IS NULL
+       WHERE b.deleted_at IS NULL ${bounded}
        GROUP BY b.kind
     `)
-    .all()
+    .all(...(window ? [window.startUtc, window.endUtc] : []))
     .map((row) => ({ kind: row.kind, count: row.n }));
 }
 
@@ -52,7 +65,10 @@ export function countBreachedByKind(db) {
 // The LEFT JOIN is what makes this "met" rather than "stopped" — a clock can
 // stop after it has already broken its promise, and counting that as met is
 // the flattering answer.
-export function countMetByKind(db) {
+// And the matching half: a promise kept finished when its clock stopped, so
+// that is the moment the window is measured against.
+export function countMetByKind(db, { window = null } = {}) {
+  const bounded = window ? 'AND c.stopped_at >= ? AND c.stopped_at < ?' : '';
   return db
     .prepare(`
       SELECT c.kind, count(*) AS n
@@ -62,14 +78,19 @@ export function countMetByKind(db) {
           ON b.ticket_id = c.ticket_id AND b.kind = c.kind AND b.deleted_at IS NULL
        WHERE c.deleted_at IS NULL
          AND c.stopped_at IS NOT NULL
-         AND b.ticket_id IS NULL
+         AND b.ticket_id IS NULL ${bounded}
        GROUP BY c.kind
     `)
-    .all()
+    .all(...(window ? [window.startUtc, window.endUtc] : []))
     .map((row) => ({ kind: row.kind, count: row.n }));
 }
 
 // Load per live staff member.
+//
+// This one takes NO window, and that is a decision rather than an omission.
+// Load means work still on the person: filtered to a day, an agent holding five
+// week-old tickets would report zero, which is not a narrower answer but a
+// false one. The criteria say so at scripts/criteria/reports.md, REPORTS-4-API.
 //
 // The rows come from `users`, not from `tickets`, and that is the whole story.
 // A `GROUP BY tickets.assignee_id` can only return people who hold something —

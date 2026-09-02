@@ -361,15 +361,43 @@ Do **not** introduce a new date library. All tests rely on `Intl` and fixed-`now
 
 ## Done Criteria
 
-- [ ] `api/src/features/reports/reports.window.js` exists and exports `resolveReportWindow` and `MAX_WINDOW_DAYS`.
-- [ ] `api/src/features/reports/index.js` re-exports `resolveReportWindow` and `MAX_WINDOW_DAYS`; `KNOWN_TIME_ZONES` stays internal.
-- [ ] All three routes in `reports.routes.js` call `resolveReportWindow(req, { now })` before their reader; `now` is passed through from `composeApp` at `compose.js:89–93`.
-- [ ] Every reader in `reports.read.js` forwards `window` to the repository; no reader re-validates it.
-- [ ] Every SQL in `reports.repository.js` filters by the appropriate `created_at`/`stopped_at`/`recorded_at` column against `[startUtcIso, endUtcIso)`.
-- [ ] `api/openapi.json` documents `timeZone` (required), `from`, `to`, and a `422` for each reports path.
-- [ ] A caller in `Africa/Cairo` at 01:30 local sees a ticket stored `22:30Z` on the previous UTC day counted in **today**; a caller in `America/Los_Angeles` at 23:00 local does **not** see a stamp `02:00Z` of the next UTC day as today. Both proven by `reader-timezone.guarantee.test.js`.
-- [ ] Missing / unknown `timeZone` answers **422 VALIDATION_FAILED** with `fields: ['timeZone']`. There is no code path that silently substitutes UTC.
-- [ ] A range longer than `MAX_WINDOW_DAYS` is refused with 422 naming `to`.
-- [ ] `cd api && npm test` is green; `git grep` for AI-attribution strings is empty.
+- [x] A ticket stored `22:30Z` on 2 September is in a Cairo reader's today, whose window runs `21:00Z` on the 2nd to `21:00Z` on the 3rd — the concrete case the story exists for, and the one `date(created_at)` gets wrong.
+- [x] The mirror holds: the same instant is in a New York reader's today too, on a different calendar day and a different pair of instants.
+- [x] The window is optional (review item 1). With none, every report answers exactly what it answered before the parameter existed, so the three screens shipped this morning keep working.
+- [x] An unknown zone is 422 naming `timeZone`, never a quiet fall back to UTC. A range with no zone to read it in is refused for the same reason.
+- [x] A span longer than 92 days names **both** edges (review item 5): the span is what is wrong, and a screen highlighting one of the two would point at the wrong control.
+- [x] Storage is untouched. The zone moves the boundary; no row is rewritten, and no column stores an offset — an offset is not a zone, because a zone changes offset twice a year.
+- [x] **The load report takes no window** (review item 2, and the criteria were amended to say so). Filtered to a day it would report an agent holding five week-old tickets as idle.
+- [x] Queue-by-status echoes the window it used, or null. Its answer means one of two different things and the request is not where a reader should have to look for which.
+- [x] The promise report measures the window against when a promise **finished** — a clock that stopped or a breach that was recorded — not when the ticket was raised. Proved by moving only `stopped_at`.
+- [x] `sla_breaches.breached_at`, not the `recorded_at` the plan guessed at (review item 3).
+- [x] Documented in `api/openapi.json`, prose, including what no window means and why agent-load has none.
+- [x] `cd api && npm test` — 617 pass. `cd web` — 380 pass, build clean. Six guards green.
+- [x] No AI-attribution strings in the diff.
 
-**STOP HERE. Report to the user and wait for confirmation before proceeding to the next story.**
+## What the mutation pass proved — and the two bugs the tests found first
+
+| # | what was broken | result |
+| --- | --- | --- |
+| W1 | one pass at the boundary instead of two | 1 fail |
+| W2 | the far edge is `start + 24 hours` | 1 fail |
+| W3 | an unknown zone falls back to no window | 1 fail |
+| W4 | the span ceiling is removed | 1 fail |
+| W5 | the window never reaches the query | 4 fail |
+
+**W1 passed at first**, and that was the honest signal: the second pass was
+unpinned. It only differs when a zone changes offset between midnight UTC and
+midnight local — so a test was written for New Zealand leaving daylight time on
+5 April 2026, where one pass lands an hour late and the local day is 25 hours
+long. With that test, W1 fails.
+
+**Two real defects were found by the tests, not by the review** — see L-69:
+
+- `end = startOfLocalDay(to) + DAY_MS`, written ten lines below a comment
+  explaining why a fixed 24 hours is wrong at the other end of the same
+  function.
+- `Intl.supportedValuesOf('timeZone')` does not contain `UTC`, so the most
+  obvious zone anybody would send answered 422. The plan that was deleted said
+  to use a `try/catch` on `Intl.DateTimeFormat` instead and was right; the
+  review kept the `Set` for being cleaner.
+
