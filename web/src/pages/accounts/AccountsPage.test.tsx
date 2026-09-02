@@ -250,6 +250,40 @@ test('a disable says how much work it handed back, including when it is none', a
   expect(await screen.findByText(en.accounts.unassignedNone)).toBeInTheDocument();
 });
 
+test('what the last action said does not outlive it', async () => {
+  desk();
+  open();
+  await screen.findByText('Nadia Haddad');
+
+  await userEvent.click(screen.getAllByRole('button', { name: en.accounts.disable })[0]);
+  expect(await screen.findByText(/3 tickets were handed back/)).toBeInTheDocument();
+
+  // Re-enable somebody, and the count from the disable must go. Left alone it
+  // sits above a list where nothing was handed back — a sentence standing over
+  // state it no longer describes. Found by opening the screen and pressing the
+  // two buttons in order; no test was looking for it.
+  await userEvent.selectOptions(screen.getByLabelText(en.accounts.showLabel), 'disabled');
+  await userEvent.click(await screen.findByRole('button', { name: en.accounts.reEnable }));
+
+  await waitFor(() =>
+    expect(screen.queryByText(/tickets were handed back/)).not.toBeInTheDocument());
+});
+
+test('changing which accounts are shown clears it too', async () => {
+  desk();
+  open();
+  await screen.findByText('Nadia Haddad');
+
+  await userEvent.click(screen.getAllByRole('button', { name: en.accounts.disable })[0]);
+  expect(await screen.findByText(/3 tickets were handed back/)).toBeInTheDocument();
+
+  await userEvent.selectOptions(screen.getByLabelText(en.accounts.showLabel), 'disabled');
+
+  // The sentence is about one person, and the list no longer contains them.
+  await waitFor(() =>
+    expect(screen.queryByText(/tickets were handed back/)).not.toBeInTheDocument());
+});
+
 test('each refusal says which rule refused it, not that something went wrong', async () => {
   desk({ disable: json({ code: 'LAST_ADMIN', requestId: 'r-1' }, 409) });
   open();

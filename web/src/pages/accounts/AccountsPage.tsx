@@ -82,7 +82,21 @@ export function AccountsPage() {
     }
   };
 
+  // Every action clears what the LAST one said.
+  //
+  // The unassigned count is about one particular disable. Left alone it
+  // outlives the thing it describes: disable somebody, re-enable them, and
+  // "1 ticket was handed back to the queue" is still sitting above a list where
+  // nothing was handed back — a sentence standing over state it no longer
+  // describes, which is the same defect as a stale number under a fresh label.
+  // Found by opening the screen and pressing the two buttons in order.
+  const forgetLastAnswer = () => {
+    disabling.reset();
+    reEnabling.reset();
+  };
+
   const run = async (id: string, action: () => Promise<unknown>) => {
+    forgetLastAnswer();
     setBusyId(id);
     try {
       await action();
@@ -181,7 +195,12 @@ export function AccountsPage() {
             <Select
               id={id}
               value={list.state}
-              onChange={(e) => list.set({ state: e.target.value as AccountState })}
+              onChange={(e) => {
+                // Looking at a different set of accounts makes the last
+                // action's sentence about somebody who may not be on screen.
+                forgetLastAnswer();
+                list.set({ state: e.target.value as AccountState });
+              }}
             >
               {ACCOUNT_STATES.map((each) => (
                 <option key={each} value={each}>{showLabel[each]}</option>

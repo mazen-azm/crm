@@ -1502,3 +1502,30 @@ hazard lives**. Both instances here were in one function, ten lines apart.
 And when the plan you are discarding disagrees with the one you are keeping,
 the disagreement is the most valuable thing in it. It is the only place two
 independent attempts saw the same question differently, and it was right.
+
+## L-70 — What one action said must not outlive it, and only running the thing shows that
+
+The accounts screen answers a disable with the number of tickets it handed back
+— "1 ticket was handed back to the queue." Correct, tested, and it stayed on
+screen afterwards: disable somebody, re-enable them, and the sentence was still
+sitting above a list where nothing had been handed back.
+
+Fourteen tests covered that screen and none of them pressed two buttons in a
+row. Each asserted one action in isolation, which is how the whole suite was
+written and how the defect survived it. It took thirty seconds in a browser.
+
+It is the same defect the reports spent the day on — a stale number under a
+fresh label — wearing different clothes: a **sentence** standing over state it
+no longer describes. The report version was found by a criterion; this one was
+not, because nobody thought to write "and then do something else".
+
+**The rule:** any message that is the answer to a particular action carries an
+implicit "just now" and an implicit "about that". Both expire. Clear it when the
+next action starts, and when the thing it was about leaves the screen — and
+write at least one test that performs **two** actions in sequence, because a
+suite of single-action tests cannot see this class at all.
+
+**And the general one:** a green suite has no headers and no pixels. Every
+defect found by opening this product in a browser has been of a kind the tests
+were not shaped to ask about. That is not a gap to be closed by more tests of
+the same shape; it is the reason to run it.
