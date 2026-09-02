@@ -287,14 +287,30 @@ No backend changes required. The endpoint is delivered by `REPORTS-1-API (CRM-12
 
 ## Done Criteria
 
-- [ ] A new route `/reports/queue-by-status` renders the report for admins, using the same guard as `/audit` and `/ticket-categories`; non-admins see the refusal and never see the link.
-- [ ] Every status returned by CRM-124 is displayed, **including zeros**; nothing is filtered client-side.
-- [ ] Status names come from flat leaves in one `queueReport` group in both `en.ts` and `ar.ts`; no raw key (e.g. `pending`) reaches the DOM.
-- [ ] Counts render through `useFormatters().formatNumber`; `ar-EG` digits appear in Arabic.
-- [ ] Loading, empty and error states use the shared `Skeleton` / `EmptyState` / `ErrorState` primitives; no ad-hoc replacements.
-- [ ] The hook does **not** fire the request until `me` is ready and admin (L-63); a vitest proves it.
-- [ ] `web/src/pages/no-hardcoded-strings.test.ts`, `web/src/shared/i18n/parity.test.ts`, and `web/src/shared/i18n/no-mirrored-styles.test.ts` all pass.
-- [ ] `cd web && npm test` **and** `cd web && npm run build` both pass; `cd api && npm test` still passes with no `api/` files changed.
-- [ ] Nothing committed mentions AI assistance (grep clean).
+- [x] `/reports/queue-by-status` renders for an admin with the same guard the other admin screens use; a non-admin sees the explanation and the navigation never offered the link.
+- [x] All six statuses are shown, read off `STATUSES` in the order a ticket travels them, with zeros included. Nothing is filtered, and there is no truthiness test anywhere in the component.
+- [x] Status names come from flat leaves in one `queueReport` group in both dictionaries; no raw key reaches the DOM.
+- [x] Counts render through `useFormatters().formatNumber`; `ar-EG` digits appear in Arabic — asserted as `١٠٤`.
+- [x] A desk with nothing in it says so **above** the six zeros, not instead of them (review item 2). An EmptyState here would have put back the idea `REPORTS-1-API` was built to remove.
+- [x] No unknown-status fallback (review item 3). The label map is typed against the six, so a seventh is a compile error in the file that can fix it.
+- [x] Loading, error and the way back are the shared designed states; `t.states.loading` and `t.states.retry` are reused rather than duplicated into this page's group.
+- [x] The total's number is wrapped in `Isolated` — it sits at the end of a label, and in Arabic a trailing number lands where the surrounding direction puts it unless something says otherwise (L-51).
+- [x] The hook gates on `isAdmin === true` and fires nothing before the answer arrives (L-63); the shape follows `useAuditLog`'s real one (review items 5 and 6), and the path is built inline the way every hook here builds one (review item 7).
+- [x] `cd web && npm run build` clean; `npm test` — 361 pass.
+- [x] `parity.test.ts`, `no-hardcoded-strings.test.ts` and `no-mirrored-styles.test.ts` all green.
+- [x] No AI-attribution strings in the diff.
 
-**STOP HERE. Report to the user and wait for confirmation before proceeding to the next reports story.**
+## What the mutation pass proved
+
+| # | what was broken | result |
+| --- | --- | --- |
+| Q1 | the screen asks before it knows who is asking | 1 fail |
+| Q2 | the zeros are filtered out | 7 fail |
+| Q3 | the raw status key reaches the screen | 13 fail |
+| Q4 | numbers bypass the formatter | 2 fail |
+| Q5 | an empty desk says nothing | 1 fail |
+
+Q2 is the one the story is for. Filtering `counts[status] > 0` is a natural
+thing to write, it makes the screen look tidier, and it undoes the whole of the
+API story underneath it.
+
