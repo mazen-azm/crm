@@ -18,6 +18,7 @@ Entry point for the **identity** feature. Stories execute in order by their `NN`
 | 60 | `60-story-crm-52.md` | IDENTITY-7-WEB any — I change my own password, knowing the current one | CRM-52 | — |
 | 61 | `61-story-crm-50.md` | IDENTITY-6-WEB admin — I set a user's password, so a locked-out person gets back in | CRM-50 | — |
 | 84 | `84-story-crm-53.md` | IDENTITY-8-API any — changing my password ends every other session | CRM-53 | — |
+| 101 | `101-story-crm-45.md` | IDENTITY-2-WEB admin — I create, disable and re-enable accounts, and set roles | CRM-45 | — |
 
 ## Dependency notes
 

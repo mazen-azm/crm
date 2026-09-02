@@ -106,6 +106,9 @@ export function DeskShell({ children }: { children: ReactNode }) {
             not this link is here. */}
         {isAdmin === true ? (
           <>
+          <Link to="/accounts" className="desk-shell__nav-item">
+            {t.shell.navAccounts}
+          </Link>
           <Link to="/ticket-categories" className="desk-shell__nav-item">
             {t.shell.navCategories}
           </Link>
