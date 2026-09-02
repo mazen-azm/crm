@@ -1380,3 +1380,29 @@ it is absent — and never trust a `maxResults` you did not see honoured. When
 the number of things fetched is knowable from somewhere else in the repository,
 compare the two and fail on a mismatch, rather than printing the count and
 hoping a person does the subtraction.
+
+## L-66 — A route reachable only with an id no client can obtain is a route nothing can call
+
+`POST /accounts/:id/re-enable` has been served, documented and tested since
+`IDENTITY-2-API`. Nothing outside a test can reach it: `GET /accounts` returns
+live accounts only (`identity.repository.js:84`, `WHERE deleted_at IS NULL`),
+so a disabled account appears in no listing this API has, and its id is
+knowable only to whoever already had it.
+
+The story's own criterion — "a disabled account, re-enabled, is the same row" —
+passed honestly. The service test created the account, disabled it, and still
+held the id from the first call. Every layer was right on its own terms and the
+feature did not work.
+
+**Why the usual checks miss it:** the route census finds routes that exist, the
+contract test finds routes that are undocumented, and the audit census finds
+mutations that write no row. None of them asks *how a caller would come to have
+this parameter*. That question has no census because the answer is a path
+through the product, not a property of a file.
+
+**The rule:** for any route taking an id, name the screen or the earlier
+response that hands the caller that id. If the answer is "the test already had
+it", the reachable half of the feature is missing and it is in a different
+layer from the story that will be blamed for it. Ask it at planning time — it
+costs one sentence, and it has now caught the same class of defect four times
+(L-56, L-59, L-61, and this).
