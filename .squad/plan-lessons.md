@@ -1437,3 +1437,33 @@ that it is not readable — do not assert that one particular way of putting it
 there was not used. A spy asks "did you call this?"; the requirement asks "is it
 there?". Those are the same question only until somebody finds a second door,
 and a harness that substitutes a global has already opened one.
+
+## L-68 — A census has a list of exemptions, and a plan will try to add your route to it
+
+`staff-only.guarantee.test.js` reads every route off the mounted router and
+requires each to refuse a customer. It carries one list, `OPEN_TO_A_CUSTOMER`:
+the routes that may be reached by one, each with a written reason.
+
+REPORTS-2-API's plan said, under "Test Plan": *extend
+`staff-only.guarantee.test.js` — add `/reports/promise-share` to the endpoint
+list so the admin-only contract is proven.* Following that would have **exempted
+the route from the only test that would catch a missing gate**, while the plan,
+the commit and the Done Criteria all said the gate was proven.
+
+It is an easy mistake to make and a hard one to see afterwards, because the
+diff looks like a test being extended.
+
+**Two rules from it.**
+
+A census that reads its subjects off the running system needs **nothing added**
+when a route appears — that is the whole point of reading them off the system.
+If a plan tells you to register a new route with a census, the plan has
+misunderstood which direction that file works in. The only lists such a file
+holds are exemptions.
+
+And an exemption list must be **hard to add to by accident**: this one is named
+for what it permits, and its header says that an entry without a defensible
+reason "satisfies the census with a claim, which is the failure a census exists
+to prevent arriving through its own front door." That header is why the review
+caught it. Name these lists for what they let through, never for what they
+cover.
